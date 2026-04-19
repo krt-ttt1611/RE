@@ -1,0 +1,251 @@
+{
+  "main": {
+    "id": "272e5aec80391dba",
+    "type": "split",
+    "children": [
+      {
+        "id": "7978c6a35da54443",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "fc75ef4353e0a8e6",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Write_up"
+            }
+          },
+          {
+            "id": "1aa0e082bbb37b3e",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Write_up."
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "507343acfa32a11c",
+    "type": "split",
+    "children": [
+      {
+        "id": "e3507eef5dfc3603",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "eac341cb941cdea2",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "bf4156c092e166ad",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "83c2cd2cb529b329",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "a1e966216e3543c8",
+    "type": "split",
+    "children": [
+      {
+        "id": "a36e03693bae2e05",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d5798eb59e5c7ac0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for Write_up."
+            }
+          },
+          {
+            "id": "5e9ef46c8acfa153",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from Write_up."
+            }
+          },
+          {
+            "id": "fe2d57128cb6fa64",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "50c12ef5aaf6e0fd",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "6c2dc31e026b843e",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of Write_up."
+            }
+          },
+          {
+            "id": "69a688f54f8d2262",
+            "type": "leaf",
+            "state": {
+              "type": "latex-panel-view",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "LaTeX snippets"
+            }
+          },
+          {
+            "id": "271b256aa2ac351c",
+            "type": "leaf",
+            "state": {
+              "type": "git-view",
+              "state": {},
+              "icon": "git-pull-request",
+              "title": "Source Control"
+            }
+          }
+        ],
+        "currentTab": 6
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "latex-panel-helper:Open LaTeX panel": false,
+      "obsidian-git:Open Git source control": false
+    }
+  },
+  "active": "1aa0e082bbb37b3e",
+  "lastOpenFiles": [
+    "buoi2/BAITAP_REV/rev7/chall.i64",
+    "buoi2/BAITAP_REV/rev7/chall.$$$",
+    "ảnh/Pasted image 20260419100854.png",
+    "buoi2/BAITAP_REV/rev6/Write_up..md",
+    "Pasted image 20260419141000.png",
+    "ảnh/Pasted image 20260419100745.png",
+    "ảnh/Pasted image 20260419111142.png",
+    "ảnh/Pasted image 20260419132911.png",
+    "ảnh/Pasted image 20260419141000.png",
+    "ảnh/Pasted image 20260419150201.png",
+    "Pasted image 20260419150201.png",
+    "buoi2/BAITAP_REV/rev7/Write_up.md",
+    "ảnh",
+    "buoi2/BAITAP_REV/rev7/solve.py",
+    "buoi2/BAITAP_REV/rev7/chall.til",
+    "buoi2/BAITAP_REV/rev7/chall.id2",
+    "buoi2/BAITAP_REV/rev6/chall.i64",
+    "buoi2/BAITAP_REV/rev6/chall.$$$",
+    "buoi2/BAITAP_REV/rev7/chall.nam",
+    "buoi2/BAITAP_REV/rev7/chall.id1",
+    "buoi2/BAITAP_REV/rev7/chall.id0",
+    "Pasted image 20260419132911.png",
+    "buoi2/__ROL1__.md",
+    "Pasted image 20260419111142.png",
+    "2026-04-19.md"
+  ]
+}
