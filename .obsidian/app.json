@@ -1,3 +1,6 @@
 {
-  "attachmentFolderPath": "ảnh"
+  "attachmentFolderPath": "ảnh",
+  "useMarkdownLinks": true,
+  "newLinkFormat": "relative",
+  "alwaysUpdateLinks": true
 }

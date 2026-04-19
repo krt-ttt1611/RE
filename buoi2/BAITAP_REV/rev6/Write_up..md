@@ -1,14 +1,14 @@
 Đầu tiên, chạy thử chương trình.
-![[Pasted image 20260419100745.png]]
+![[../../../image/Pasted image 20260419100745.png]]
 Không có gì đặc biệt.
 Sử dung IDA để phân tích chương trình.
-![[Pasted image 20260419100854.png]]
+![[../../../image/Pasted image 20260419100854.png]]
 Dòng 9 đến dòng 12, chương trình yêu cầu nhập chuỗi và xử lí chuỗi đầu vào.
 Dòng 13, ta biết chuỗi nhập cần có độ dài 37.
 Từ dòng 18 trở đi, đây là logic chính của chương trình.
 [[__ROL1__]]
 Ở tham số thứ 2 có 1 hằng số lạ, có thể là magic number, kiểm tra bằng AI.
-![[Pasted image 20260419111142.png]]
+![[../../../image/Pasted image 20260419111142.png]]
 Ngoài ra, phép and 0xfc có tác dụng ép cho 2 bit cuối phải bằng 0. Tóm lại đoạn này có thể biểu diễn bằng công thức toán học.
 $$ v5 mod(5) + 1 $$
 Từ đó, ta có thể biết được 2 tham số trong lệnh xoay bit:
@@ -52,4 +52,4 @@ def solve():
 print(solve())
 ```
 Sau khi chạy, ta được chuỗi giải mã là: ISPCLUB{xor_ladders_like_small_steps}. Kiểm tra thử.
-![[Pasted image 20260419132911.png]]
+![[../../../image/Pasted image 20260419132911.png]]

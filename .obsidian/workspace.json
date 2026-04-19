@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Write_up."
+              "title": "Write_up"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for Write_up."
+              "title": "Backlinks for Write_up"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from Write_up."
+              "title": "Outgoing links from Write_up"
             }
           },
           {
@@ -171,13 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev6/Write_up..md",
+                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of Write_up."
+              "title": "Outline of Write_up"
             }
           },
           {
@@ -220,21 +220,21 @@
       "obsidian-git:Open Git source control": false
     }
   },
-  "active": "1aa0e082bbb37b3e",
+  "active": "eac341cb941cdea2",
   "lastOpenFiles": [
+    "buoi2/BAITAP_REV/rev6/Write_up..md",
     "buoi2/BAITAP_REV/rev7/chall.i64",
     "buoi2/BAITAP_REV/rev7/chall.$$$",
-    "ảnh/Pasted image 20260419100854.png",
-    "buoi2/BAITAP_REV/rev6/Write_up..md",
+    "image/Pasted image 20260419100854.png",
     "Pasted image 20260419141000.png",
-    "ảnh/Pasted image 20260419100745.png",
-    "ảnh/Pasted image 20260419111142.png",
-    "ảnh/Pasted image 20260419132911.png",
-    "ảnh/Pasted image 20260419141000.png",
-    "ảnh/Pasted image 20260419150201.png",
+    "image/Pasted image 20260419100745.png",
+    "image/Pasted image 20260419111142.png",
+    "image/Pasted image 20260419132911.png",
+    "image/Pasted image 20260419141000.png",
+    "image/Pasted image 20260419150201.png",
     "Pasted image 20260419150201.png",
     "buoi2/BAITAP_REV/rev7/Write_up.md",
-    "ảnh",
+    "image",
     "buoi2/BAITAP_REV/rev7/solve.py",
     "buoi2/BAITAP_REV/rev7/chall.til",
     "buoi2/BAITAP_REV/rev7/chall.id2",
@@ -242,7 +242,6 @@
     "buoi2/BAITAP_REV/rev6/chall.$$$",
     "buoi2/BAITAP_REV/rev7/chall.nam",
     "buoi2/BAITAP_REV/rev7/chall.id1",
-    "buoi2/BAITAP_REV/rev7/chall.id0",
     "Pasted image 20260419132911.png",
     "buoi2/__ROL1__.md",
     "Pasted image 20260419111142.png",
