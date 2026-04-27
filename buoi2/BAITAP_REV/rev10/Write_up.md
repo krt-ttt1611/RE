@@ -1,0 +1,38 @@
+![](../../../ảnh/Pasted%20image%2020260427064129.png)
+code bruteforce:
+```python
+'''input1 = input[0]
+   input2 = input1;
+   input1 = input[v4];
+   if ( arr_1[v4] != (arr_2[v4] ^ (unsigned __int8)(input1 + input2)) )'''
+
+arr_1 = [
+    0, 216, 238, 197, 208, 201, 230, 199, 109, 100, 
+  119,  82, 101, 123, 112,   8,  28,  25,  16,  53, 
+   37,  49, 214, 216, 217, 197, 248, 200, 210, 141, 
+  134, 176, 140, 175, 162, 151, 138,   0,   0,   0, 
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
+    0,   0,   0,   0,   0,   0,   0,   0,   0,   0, 
+    0,   0,   0,   0
+]
+
+arr_2 = [
+    0,  68,  77,  86,  95, 104, 113, 122, 131, 140, 
+  149, 158, 167, 176, 185, 194, 203, 212, 221, 230, 
+  239, 248,   1,  10,  19,  28,  37,  46,  55,  64, 
+   73,  82,  91, 100, 109, 118, 127
+]
+
+
+
+char = ''
+for j in range(32, 126):
+        text = chr(j) 
+        for i in range(1, 37):
+                char = ((arr_1[i] ^ arr_2[i]) - ord(text[i-1])) & 0xff
+                if char < 0 or char > 255:
+                        break;
+                text += chr(char)
+        print(text)
+```
+Flag là: ISPCLUB{sum_chain_needs_known_prefix}

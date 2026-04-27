@@ -36,7 +36,10 @@ def solve():
     char = array1[i] ^ array3[i]
     char = rol(char, step)
     char -= array2[i]
-    text += chr(char & 0xff)
+    text += chr(char & 0xff) # có thể bị tràn dẫn đến âm
   return text
 
 print(solve())
+
+
+print("openssl req -config intermediate/openssl.cnf -key intermediate/private/plc2.example.com.key.pem -subj ’/CN=plc2.example.com/O=Example./C=US/ST=CA’ -new -sha256 -out intermediate/csr/plc2.example.com.csr.pem")
