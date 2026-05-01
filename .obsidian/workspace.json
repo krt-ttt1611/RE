@@ -11,10 +11,14 @@
             "id": "fc75ef4353e0a8e6",
             "type": "leaf",
             "state": {
-              "type": "graph",
-              "state": {},
-              "icon": "lucide-git-fork",
-              "title": "Graph view"
+              "type": "markdown",
+              "state": {
+                "file": "buoi2/BAITAP_REV/rev15/Write_up.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "Write_up"
             }
           }
         ]
@@ -74,7 +78,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 200.5,
+    "collapsed": true
   },
   "right": {
     "id": "a1e966216e3543c8",
@@ -198,23 +203,31 @@
       "command-palette:Open command palette": false,
       "bases:Create new base": false,
       "latex-panel-helper:Open LaTeX panel": false,
-      "obsidian-git:Open Git source control": false
+      "obsidian-git:Open Git source control": false,
+      "sheet-plus:Create excel file": false
     }
   },
-  "active": "eac341cb941cdea2",
+  "active": "271b256aa2ac351c",
   "lastOpenFiles": [
-    "buoi2/BAITAP_REV/rev13/Write_up.md",
-    "buoi2/BAITAP_REV/rev13/chall.til",
-    "buoi2/BAITAP_REV/rev13/chall.id2",
-    "buoi2/BAITAP_REV/rev13/chall.nam",
-    "buoi2/BAITAP_REV/rev13/chall.id1",
-    "buoi2/BAITAP_REV/rev13/chall.id0",
-    "buoi2/BAITAP_REV/rev13/solve.py",
-    "buoi2/BAITAP_REV/rev12/chall.$$$",
+    "buoi2/BAITAP_REV/rev15/chall.i64",
+    "Untitled.md",
+    "buoi2/BAITAP_REV/rev15/Write_up.md",
+    "buoi4/Task.md",
+    "buoi2/BAITAP_REV/rev15/chall.til",
+    "buoi2/BAITAP_REV/rev15/chall.id2",
+    "buoi2/BAITAP_REV/rev15/chall.nam",
+    "buoi2/BAITAP_REV/rev15/chall.id1",
+    "buoi2/BAITAP_REV/rev15/chall.id0",
+    "buoi2/BAITAP_REV/test.c",
+    "buoi2/BAITAP_REV/rev15/chall.$$$",
     "buoi2/BAITAP_REV/rev12/Write_up.md",
-    "buoi2/BAITAP_REV/rev12/chall.id2",
-    "buoi2/BAITAP_REV/rev12/chall.til",
-    "buoi2/BAITAP_REV/rev12/chall.nam",
+    "buoi3/Tìm hiểu về Assembly.md",
+    "ảnh/Pasted image 20260501154451.png",
+    "buoi2/BAITAP_REV/rev15/solve.py",
+    "buoi2/BAITAP_REV/rev14/chall.i64",
+    "buoi2/BAITAP_REV/rev14/Write_up.md",
+    "ảnh/Pasted image 20260501072341.png",
+    "buoi2/BAITAP_REV/rev13/Write_up.md",
     "ảnh/Pasted image 20260427154504.png",
     "buoi2/BAITAP_REV/rev11/Write_up.md",
     "buoi2/BAITAP_REV/rev8/Write_up.md",
@@ -226,13 +239,10 @@
     "ảnh/Pasted image 20260426231957.png",
     "buoi2/BAITAP_REV/rev7/Write_up.md",
     "ảnh/Pasted image 20260426225333.png",
-    "buoi3/Tìm hiểu về Assembly.md",
     "buoi2/BAITAP_REV/rev6/Write_up..md",
     "buoi2/__ROL1__.md",
     "ảnh/Pasted image 20260421001130.png",
     "ảnh/Pasted image 20260421001124.png",
-    "ảnh/Pasted image 20260420233925.png",
-    "ảnh/Pasted image 20260419223333.png",
     "2026-04-19.md",
     "Untitled.canvas"
   ]
