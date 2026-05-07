@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev15/Write_up.md",
+                "file": "buoi 5/PE_file.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Write_up"
+              "title": "PE_file"
             }
           }
         ]
@@ -78,8 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200.5,
-    "collapsed": true
+    "width": 200.5
   },
   "right": {
     "id": "a1e966216e3543c8",
@@ -207,42 +206,45 @@
       "sheet-plus:Create excel file": false
     }
   },
-  "active": "271b256aa2ac351c",
+  "active": "fc75ef4353e0a8e6",
   "lastOpenFiles": [
-    "buoi2/BAITAP_REV/rev15/chall.i64",
-    "Untitled.md",
-    "buoi2/BAITAP_REV/rev15/Write_up.md",
-    "buoi4/Task.md",
-    "buoi2/BAITAP_REV/rev15/chall.til",
-    "buoi2/BAITAP_REV/rev15/chall.id2",
-    "buoi2/BAITAP_REV/rev15/chall.nam",
-    "buoi2/BAITAP_REV/rev15/chall.id1",
-    "buoi2/BAITAP_REV/rev15/chall.id0",
-    "buoi2/BAITAP_REV/test.c",
-    "buoi2/BAITAP_REV/rev15/chall.$$$",
-    "buoi2/BAITAP_REV/rev12/Write_up.md",
+    "ảnh/Pasted image 20260507231025.png",
+    "buoi 5/test.exe",
+    "buoi 5/test64.exe",
+    "ảnh/Pasted image 20260507225925.png",
+    "ảnh/Pasted image 20260507224933.png",
+    "ảnh/Pasted image 20260507223215.png",
+    "ảnh/Pasted image 20260507223209.png",
+    "ảnh/Pasted image 20260507223137.png",
+    "ảnh/Pasted image 20260507205808.png",
+    "ảnh/Pasted image 20260507205648.png",
+    "ảnh/Pasted image 20260507205642.png",
+    "buoi 5/PE_file.md",
+    "ảnh/Pasted image 20260507202938.png",
+    "ảnh/Pasted image 20260507193103.png",
+    "test.exe",
+    "test.c",
+    "buoi 5/test.exe.til",
+    "buoi 5/test.exe.id2",
+    "buoi 5/test.exe.nam",
+    "buoi 5/test.exe.id1",
+    "buoi 5/test.exe.id0",
+    "documentary/65b235f0eef082e477ff6166.zip",
+    "buoi4/Calling_convention.md",
     "buoi3/Tìm hiểu về Assembly.md",
-    "ảnh/Pasted image 20260501154451.png",
-    "buoi2/BAITAP_REV/rev15/solve.py",
-    "buoi2/BAITAP_REV/rev14/chall.i64",
+    "buoi4/buổi 4.md",
+    "buoi2/BAITAP_REV/rev15/Write_up.md",
+    "buoi2/BAITAP_REV/rev12/Write_up.md",
+    "Untitled.md",
     "buoi2/BAITAP_REV/rev14/Write_up.md",
-    "ảnh/Pasted image 20260501072341.png",
     "buoi2/BAITAP_REV/rev13/Write_up.md",
-    "ảnh/Pasted image 20260427154504.png",
     "buoi2/BAITAP_REV/rev11/Write_up.md",
     "buoi2/BAITAP_REV/rev8/Write_up.md",
     "buoi2/BAITAP_REV/rev9/write_up.md",
     "buoi2/BAITAP_REV/rev10/Write_up.md",
-    "ảnh/Pasted image 20260427072926.png",
-    "ảnh/Pasted image 20260427064129.png",
-    "ảnh/Pasted image 20260426232046.png",
-    "ảnh/Pasted image 20260426231957.png",
     "buoi2/BAITAP_REV/rev7/Write_up.md",
-    "ảnh/Pasted image 20260426225333.png",
     "buoi2/BAITAP_REV/rev6/Write_up..md",
     "buoi2/__ROL1__.md",
-    "ảnh/Pasted image 20260421001130.png",
-    "ảnh/Pasted image 20260421001124.png",
     "2026-04-19.md",
     "Untitled.canvas"
   ]
