@@ -41,9 +41,13 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
   return 1LL;
 }
 ```
+
 - v5 lấy kí tự thứ 2 tính từ con trỏ input_ptr làm tham số đầu vào cho hàm mã hóa.
+
 - v6 sử dụng các kí tự của chuỗi đầu vào để làm tham số cho hàm mã hóa.
+
 - v7 sử dụng v5 và v6 để làm tham số cho hàm mã hóa.
+
 Code giải mã:
 ```python
 arr_1 = [
@@ -72,6 +76,8 @@ for count_i in range(0, 38, 2):
 
 print(text)
 ```
+
 Flag là: ISPCLUB{tiny_feistel_still_reversible}
+
 **Chú ý: Cần chú ý kiểu dữ liệu của các biến, không giống ngôn ngữ bậc cao, nếu khai báo số vượt quá giới hạn thì máy tính sẽ tự động vứt các bit thừa đi, nếu ta sử dụng ngôn ngữ bậc cao khoogn dùng bitmask để xóa bit thừa thì sẽ gây ảnh hưởng đến kết quả (như hàm rol bên trên là ví dụ).** 
 

@@ -74,9 +74,11 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
   return 1LL;
 }
 ```
+
 _ bittest: Kiểm tra bit ở vị trí j của buffer v5 là 0 hay 1.
 
 _Loop_1_: Tạo giá trị cho biến v7 để làm đầu vào cho loop_2.
+
 _Loop_2_: Tạo giá trị cho biến v11 để làm đầu vào cho khối điều kiện check.
 
 arr_2 và arr_3 đã biết --> biết v11 (arr_2[count_24] ^ arr_3[count_24])
@@ -154,6 +156,7 @@ for count_24 in range (0, 33):
 print(text)
 
 ```
+
 Flag là: ISPCLUB{bit_planes_make_homework}
 
 

@@ -1,22 +1,37 @@
 Đầu tiên, chạy thử chương trình.    
+
 ![Pasted image 20260419100745](../../../image/Pasted%20image%2020260419100745.png)    
     
 Không có gì đặc biệt.    
+
 Sử dung IDA để phân tích chương trình.    
+
 ![Pasted image 20260419100854](../../../image/Pasted%20image%2020260419100854.png)    
     
 Dòng 9 đến dòng 12, chương trình yêu cầu nhập chuỗi và xử lí chuỗi đầu vào.    
+
 Dòng 13, ta biết chuỗi nhập cần có độ dài 37.    
+
 Từ dòng 18 trở đi, đây là logic chính của chương trình.    
+
 [__ROL1__](../../__ROL1__.md)    
+
 Ở tham số thứ 2 có 1 hằng số lạ, có thể là magic number, kiểm tra bằng AI.    
+
 ![Pasted image 20260419111142](../../../image/Pasted%20image%2020260419111142.png)    
+
 Ngoài ra, phép and 0xfc có tác dụng ép cho 2 bit cuối phải bằng 0. Tóm lại đoạn này có thể biểu diễn bằng công thức toán học.    
+
 $$ v5 mod(5) + 1 $$  
+
 Từ đó, ta có thể biết được 2 tham số trong lệnh xoay bit:    
+
 - Dữ liệu đầu vào là kí tự có index là v5 trong chuỗi cho trước, thực hiện xor với kí tự v3 trong chuỗi nhập vào, sau đó công với v4 xor với 0x37.    
+
 - Số bước xoay là v5 mod(5) + 1.    
+
 Đọc tiếp logic bên dưới, v5 và v3 được tăng 1 sau mỗi vòng lặp, nghĩa là vòng lặp sẽ duyệt từng kí tự trong chuỗi cho trước và chuỗi nhập vào, sau đó thực hiện phép toán trên điều kiện của vòng lặp. v4 được tăng thêm 13 mỗi vòng lặp. Ngoài ra, nếu vòng lặp lặp đủ 37 lần thì sẽ thành công.    
+
 Đây là code giải mã    
 ```python    
      
@@ -53,5 +68,7 @@ def solve():
     
 print(solve())    
 ```    
+
 Sau khi chạy, ta được chuỗi giải mã là: ISPCLUB{xor_ladders_like_small_steps}. Kiểm tra thử.    
+
 ![Pasted image 20260419132911](../../../image/Pasted%20image%2020260419132911.png)    

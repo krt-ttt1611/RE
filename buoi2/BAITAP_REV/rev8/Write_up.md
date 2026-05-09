@@ -1,4 +1,5 @@
 ![](../../../ảnh/Pasted%20image%2020260426225333.png)
+
 Code giải mã.
 ```python
 arr_1 = [
@@ -57,4 +58,5 @@ for i in range(0, 30):
 
 print(text)
 ```
+
 chuỗi giải mã là: ISPCLUB{nibble_swap_then_sbox}

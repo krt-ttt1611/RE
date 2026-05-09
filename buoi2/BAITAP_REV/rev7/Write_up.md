@@ -1,5 +1,7 @@
 ![Pasted image 20260419141000](../../../image/Pasted%20image%2020260419141000.png)    
+
 Câu này cũng tương tự, duyệt từng phần tử trong 3 chuỗi dữ liệu cho trước và chuỗi đầu vào, sau đó thực hiện phép logic rồi so sánh.    
+
 Code giải mã.    
 ```python    
 #array1[v4] == (array3[v4] ^ __ROR1__(*v3 + array2[v4], v4 % 7 + 1))    
@@ -45,6 +47,9 @@ def solve():
     
 print(solve())    
 ```    
+
 ***Chú ý: Thêm phép & 0xff trong các phép - và + để tránh tràn số***    
+
 Flag là: ISPCLUB{rotate_right_not_always_wrong}    
+
 ![Pasted image 20260419150201](../../../image/Pasted%20image%2020260419150201.png)    

@@ -1,4 +1,5 @@
 ![](../../../ảnh/Pasted%20image%2020260427064129.png)
+
 code bruteforce:
 ```python
 '''input1 = input[0]
@@ -35,4 +36,5 @@ for j in range(32, 126):
                 text += chr(char)
         print(text)
 ```
+
 Flag là: ISPCLUB{sum_chain_needs_known_prefix}
