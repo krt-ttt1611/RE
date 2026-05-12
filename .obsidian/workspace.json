@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev16/Write_up.md",
+                "file": "buoi2/BAITAP_REV/rev17/Write_up.md",
                 "mode": "source",
                 "source": false
               },
@@ -206,8 +206,17 @@
       "sheet-plus:Create excel file": false
     }
   },
-  "active": "271b256aa2ac351c",
+  "active": "fc75ef4353e0a8e6",
   "lastOpenFiles": [
+    "buoi2/BAITAP_REV/rev17/solve.py",
+    "buoi2/BAITAP_REV/rev17/chall.py",
+    "ảnh/Pasted image 20260511173815.png",
+    "buoi2/BAITAP_REV/rev16/Write_up.md",
+    "buoi2/BAITAP_REV/rev17/Write_up.md",
+    "buoi2/BAITAP_REV/rev17/chall.til",
+    "buoi2/BAITAP_REV/rev17/chall.nam",
+    "buoi2/BAITAP_REV/rev17/chall.id1",
+    "buoi2/BAITAP_REV/rev17/chall.id0",
     "buoi2/BAITAP_REV/rev16/chall.$$$",
     "ảnh/Pasted image 20260511163216.png",
     "documentary/Richard_Reese-Understanding_and_Using_C_Pointers-EN.pdf",
@@ -215,16 +224,9 @@
     "buoi2/BAITAP_REV/rev16/solve.py",
     "buoi3/Tìm hiểu về Assembly.md",
     "toán/GF(2).md",
-    "buoi2/BAITAP_REV/rev16/Write_up.md",
     "toán",
     "buoi2/BAITAP_REV/rev15/Write_up.md",
-    "buoi2/BAITAP_REV/rev16/chall.til",
-    "buoi2/BAITAP_REV/rev16/chall.id2",
-    "buoi2/BAITAP_REV/rev16/chall.nam",
-    "buoi2/BAITAP_REV/rev16/chall.id1",
-    "buoi2/BAITAP_REV/rev16/chall.id0",
     "buoi5/PE_file.md",
-    "fixmd.py",
     "buoi4/Calling_convention.md",
     "buoi4/buổi 4.md",
     "image/Pasted image 20260419100745.png",
@@ -236,7 +238,6 @@
     "image/Pasted image 20260419141000.png",
     "ảnh/Pasted image 20260507231025.png",
     "ảnh/Pasted image 20260507225925.png",
-    "ảnh/Pasted image 20260507224933.png",
     "buoi2/BAITAP_REV/rev12/Write_up.md",
     "buoi2/BAITAP_REV/rev14/Write_up.md",
     "buoi2/BAITAP_REV/rev13/Write_up.md",
