@@ -54,12 +54,15 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
 }
 ```
 __ SETP__(x, y): set parity, đếm số lượng bit 1 của phép x - y, nếu chẵn thì trả về 1, ngược lại thì 0 (hay nói cách khác là lấy từng bit dữ liệu xor với nhau). Ngoài ra , cụm dữ liệu sẽ bị ép xuống 8 bit (nhằm mục đích mô phỏng thanh ghi PF).
+
 _Type Punning_: Là kỹ thuật thao tác với vùng nhớ, hiểu đơn giản là "đọc 1 đoạn dữ liệu kiểu X và diễn giải nó như là kiểu Y". Trong bài này, kỹ thuật type punning ở đây đó là thông qua việc ép kiểu con trỏ rồi giải tham chiếu, từ đó có thể lấy được từng cụm 4 bytes dữ liệu (dòng 36). Cụ thể:
+
 - Đầu tiên, ép kiểu con trỏ char để lợi dụng, quy luật Pointer Arithmetic, nếu ép kiểu nào thì khi cộng, giá trị cộng thêm sẽ được nhân với kích thước của kiểu dữ liệu đó. Do char có kích thước là 1 byte, việc này giúp con trỏ trượt đi chính xác từng byte một trong bộ nhớ (ví dụ: cộng thêm count_2 sẽ trượt đúng  count_2 bytes) để dừng đúng tại tọa độ cần tìm mà không bị nhảy cóc sai vị trí (ví dụ như nếu thay vì ép kiểu char mà ép là word, thì 1 lần nó sẽ dịch đi count_2 word, là count_2 * 4 bytes).
 - Tiếp theo, mở rộng kích thước đọc: Sau khi trượt đến đúng vị trí, ta tiếp tục ép kiểu con trỏ đó lên thành (_ DWORD * ). Việc này giúp thay đổi "thước đo" của CPU tại vị trí đó từ 1 byte lên thành 4 bytes (kích thước của 1 DWORD).
 - Cuối cùng, giải tham chiếu để lấy khối dữ liệu 1 dword (4 bytes).
 
 Logic của chương trình như sau:
+
 - Đầu tiên là khối do - while chạy từ dòng 29 đến dòng 35:
 	- Dòng 31 thưc chất là lấy 4 bytes liên tiếp trong chuỗi đầu vào, and với từng bộ dword trong mảng arr_1 (có con trỏ là arg_1), sau đó ép về 4 byte, rồi lấy 2 byte cao xor với 2 byte thấp. Kết quả ra được 1 word, đưa vào out_func_1
 	- Dòng 32, do tính chất ép về 8 bit của lệnh _ SETP_, nên có thể hiểu là ép tiếp out_func_1 về 8 bit bằng cách xor 8 bit cao 8 bit thấp. Sau đó xor tất cả các bit lại với nhau, rồi dịch phải đi count_3 bit. Kết hợp với việc v8 = v8 or với out_func_2, ta có thể biết rằng v8 chính là các out_func_2 ghép lại.
