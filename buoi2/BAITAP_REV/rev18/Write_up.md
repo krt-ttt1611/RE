@@ -1,4 +1,5 @@
 ![](../../../ảnh/Pasted%20image%2020260513065344.png)
+
 Đây là dạng bài máy ảo, tác giả sẽ tạo ra 1 máy ảo, tự định nghĩa các tập lệnh, thanh ghi. Chương trình sẽ đóng vai trò như phần cứng dùng để chạy máy ảo này.
 ```cpp
 __int64 __fastcall main(int a1, char **a2, char **a3)
@@ -78,9 +79,12 @@ LABEL_13:
 }
 ```
 Phân tích logic chương trình:
+
 - Đầu tiên, chương trình sẽ đọc 2048 bytes của file ram.bin, rồi lưu con trỏ vào biến ins_ptr.
 - Sau đó, nhảy vào khối switch với điều kiện là byte thứ 512 của khối dữ liệu trong file bin. Check thử file bin bằng hexedit, ta thấy byte đó bằng 1, nên sẽ bỏ qua case 0, là case check flag.
+
 ![](../../../ảnh/Pasted%20image%2020260513080349.png)
+
 - Đọc các case còn lại thì ta có thể đoán được là chúng có tác dụng gen flag. Sau khi gen xong thì mới gọi đến case input và check flag.
 -  Ở đây, biến ins đóng vai trò như 1 con trỏ lệnh, kết hợp với chỉ số sẽ trỏ lần lượt đến các byte cách nhau 3 đơn vị. Sau đó, switch có tác dụng kiểm tra xem byte đó nằm trong các giá trị từ 0 đến 4, và quyết định xem sẽ thực thi case nào (là thực thi các lệnh).
 - Phân tích lần lượt các case.
@@ -91,6 +95,9 @@ Phân tích logic chương trình:
 - Các case này có tác dụng ghi đè flag lên các byte dữ liệu phía trên của file.
 
  Ta còn phát hiện ra 1 điểm đặc biệt của chương trình nữa, đó là sau khi thực hiện xong việc ghi đè, flag sẽ được lưu ở dạng bản rõ ngay trong file. Nên ý tường ở đây là ta sẽ đặt 1 breakpoint ở chỗ check flag sau đó chạy chương trình. Khi chạy đến đoạn check flag thì ta chỉ cần đọc dữ liệu ở vùng nhớ chứa flag là được.
+
  ![](../../../ảnh/Pasted%20image%2020260513083320.png)
+
  Đã thấy flag.
+
  flag: ISPCLUB{vm_bytecode_can_be_emulated}
