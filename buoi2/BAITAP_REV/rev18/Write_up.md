@@ -94,7 +94,7 @@ Phân tích logic chương trình:
 	- Nếu ins[512] = 4 -> ins_ptr[ins[512 + 1]] = rol1(ins_ptr[v9], v8)
 - Các case này có tác dụng ghi đè flag lên các byte dữ liệu phía trên của file.
 
- Ta còn phát hiện ra 1 điểm đặc biệt của chương trình nữa, đó là sau khi thực hiện xong việc ghi đè, flag sẽ được lưu ở dạng bản rõ ngay trong file. Nên ý tường ở đây là ta sẽ đặt 1 breakpoint ở chỗ check flag sau đó chạy chương trình. Khi chạy đến đoạn check flag thì ta chỉ cần đọc dữ liệu ở vùng nhớ chứa flag là được.
+ Ta còn phát hiện ra 1 điểm đặc biệt của chương trình nữa, đó là sau khi thực hiện xong việc ghi đè, flag sẽ được lưu ở dạng bản rõ ngay trong RAM. Nên ý tường ở đây là ta sẽ đặt 1 breakpoint ở chỗ check flag sau đó chạy chương trình. Khi chạy đến đoạn check flag thì ta chỉ cần đọc dữ liệu ở vùng nhớ chứa flag là được.
 
  ![](../../../ảnh/Pasted%20image%2020260513083320.png)
 
