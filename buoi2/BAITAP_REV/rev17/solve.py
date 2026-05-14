@@ -10,3 +10,4 @@ for i in range(len(EXPECTED)):
     flag[i] = ALPHABET[pos]
 
 print("".join(flag))
+

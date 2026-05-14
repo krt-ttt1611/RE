@@ -13,7 +13,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev16/Write_up.md",
+                "file": "buoi2/BAITAP_REV/rev18/Write_up.md",
                 "mode": "source",
                 "source": false
               },
@@ -156,7 +156,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev7/Write_up.md",
+                "file": "buoi2/BAITAP_REV/rev18/Write_up.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
@@ -208,23 +208,24 @@
   },
   "active": "fc75ef4353e0a8e6",
   "lastOpenFiles": [
-    "buoi2/BAITAP_REV/rev17/Write_up.md",
-    "buoi2/BAITAP_REV/rev18/Write_up.md",
-    "buoi2/BAITAP_REV/rev19/chall.til",
+    "buoi2/BAITAP_REV/rev19/Write_up.md",
+    "buoi2/BAITAP_REV/rev19/solve.py",
     "buoi2/BAITAP_REV/rev19/chall.id2",
+    "buoi2/BAITAP_REV/rev19/chall.til",
     "buoi2/BAITAP_REV/rev19/chall.nam",
     "buoi2/BAITAP_REV/rev19/chall.id1",
     "buoi2/BAITAP_REV/rev19/chall.id0",
+    "buoi2/BAITAP_REV/rev19/chall.$$$",
+    "buoi2/BAITAP_REV/rev19/chall.i64",
+    "buoi2/BAITAP_REV/rev16/Write_up.md",
+    "buoi2/BAITAP_REV/rev17/Write_up.md",
+    "buoi2/BAITAP_REV/rev18/Write_up.md",
     "buoi2/BAITAP_REV/rev19/program.bin.nam",
     "buoi2/BAITAP_REV/rev19/program.bin.id1",
-    "buoi2/BAITAP_REV/rev19/program.bin.id0",
-    "buoi2/BAITAP_REV/rev18/chall.i64",
-    "buoi2/BAITAP_REV/rev18/chall.$$$",
     "ảnh/Pasted image 20260513083320.png",
     "ảnh/Pasted image 20260513080349.png",
     "ảnh/Pasted image 20260513065344.png",
     "ảnh/Pasted image 20260511173815.png",
-    "buoi2/BAITAP_REV/rev16/Write_up.md",
     "ảnh/Pasted image 20260511163216.png",
     "buoi3/Tìm hiểu về Assembly.md",
     "toán/GF(2).md",
