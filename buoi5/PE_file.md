@@ -391,7 +391,7 @@ PE32+ gần như tương tự với PE32, chỉ khác ở một số điểm:
 
 *5. Quá trình load chương trình vào RAM.* 
 
-Đầu tiên, loader sẽ đọc phần dos header, kiểm tra magic byte có đúng là 4d 5a không, đọc lfanew để lấy địa chỉ của pe header rồi nhảy đến đó. Sau đó, loader sẽ kiểm tra phần signature, đọc machine để kiểm tra tương tích phần cứng, đọc imagebase, sizeofimage để cấp phát vùng nhớ. Tiếp theo, dựa vào section header, loader copy từng section từ ổ đĩa lên ram, căn chỉnh địa chỉ sao cho bằng bội số của sectionalignment, và phân quyền dựa trên characteristic. Loader đọc Import table rồi load địa chỉ các hàm cần thiết vào IAT. Cuối cùng, loader nhảy đến entrypoint để bắt đầu thực thi.
+Đầu tiên, loader sẽ đọc phần dos header, kiểm tra magic byte có đúng là 4d 5a không, đọc lfanew để lấy địa chỉ của pe header rồi nhảy đến đó. Sau đó, loader sẽ kiểm tra phần signature, đọc machine để kiểm tra tương tích phần cứng, đọc imagebase, sizeofimage để cấp phát vùng nhớ. Tiếp theo, dựa vào section header, loader copy từng section từ ổ đĩa lên ram, căn chỉnh địa chỉ sao cho bằng bội số của section alignment, và phân quyền dựa trên characteristic. Loader đọc Import table rồi load địa chỉ các hàm cần thiết vào IAT. Cuối cùng, loader nhảy đến entrypoint để bắt đầu thực thi.
 
 
 
