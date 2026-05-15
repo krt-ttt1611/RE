@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "buoi2/BAITAP_REV/rev18/Write_up.md",
+                "file": "buoi6/ELF_file.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Write_up"
+              "title": "ELF_file"
             }
           }
         ]
@@ -208,6 +208,13 @@
   },
   "active": "fc75ef4353e0a8e6",
   "lastOpenFiles": [
+    "buoi5/PE_file.md",
+    "buoi6/ELF_file.md",
+    "buoi4/Calling_convention.md",
+    "buoi2/BAITAP_REV/rev18/Write_up.md",
+    "buoi6/prob",
+    "buoi6",
+    "New folder",
     "buoi2/BAITAP_REV/rev19/Write_up.md",
     "buoi2/BAITAP_REV/rev19/solve.py",
     "buoi2/BAITAP_REV/rev19/chall.id2",
@@ -216,12 +223,8 @@
     "buoi2/BAITAP_REV/rev19/chall.id1",
     "buoi2/BAITAP_REV/rev19/chall.id0",
     "buoi2/BAITAP_REV/rev19/chall.$$$",
-    "buoi2/BAITAP_REV/rev19/chall.i64",
     "buoi2/BAITAP_REV/rev16/Write_up.md",
     "buoi2/BAITAP_REV/rev17/Write_up.md",
-    "buoi2/BAITAP_REV/rev18/Write_up.md",
-    "buoi2/BAITAP_REV/rev19/program.bin.nam",
-    "buoi2/BAITAP_REV/rev19/program.bin.id1",
     "ảnh/Pasted image 20260513083320.png",
     "ảnh/Pasted image 20260513080349.png",
     "ảnh/Pasted image 20260513065344.png",
@@ -230,8 +233,6 @@
     "buoi3/Tìm hiểu về Assembly.md",
     "toán/GF(2).md",
     "buoi2/BAITAP_REV/rev15/Write_up.md",
-    "buoi5/PE_file.md",
-    "buoi4/Calling_convention.md",
     "buoi4/buổi 4.md",
     "image/Pasted image 20260419100745.png",
     "Untitled.md",

@@ -22,3 +22,6 @@ for check_ip in range(12, len(data), 15):
             arg_1 = (arg_1 - byte_1) & 0xff
         elif byte_0 == 0x40:
             arg_1 = (arg_1 & 0xffffff00) |  ror(arg_1, byte_1)
+
+
+            

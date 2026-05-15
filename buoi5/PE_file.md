@@ -1,6 +1,6 @@
 *1. PE file là gì.* 
 
-PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho Win32) và PE32+ (cho Win64).
+PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho kiến trúc CPU 32 bit) và PE32+ (cho kiến trúc CPU 64 bit).
 
 *2. PE32.* 
 
