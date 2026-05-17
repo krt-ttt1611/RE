@@ -172,7 +172,7 @@ for count in range(0, 10):
     out_func_2 = out_func_2
     bit_check = Extract(count_3, count_3, BitVecVal(v8, 32))
     solver.add(out_func_2 == bit_check)
-#đoạn này bí quá r nên gemini :(()
+#đoạn này bí quá r nên gemini :((
   for byte_pos in range(4):
       b = Extract(byte_pos*8 + 7, byte_pos*8, data)
       solver.add(b >= 0x20, b <= 0x7E)   # printable ASCII

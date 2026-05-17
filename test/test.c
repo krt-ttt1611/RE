@@ -1,6 +1,1 @@
-#include <stdio.h>
-
-int main(){
-	printf("hello world");
-	return 0;
-}
+*input_ptr ^ *((_BYTE *)&ptr[7] + (count_1 & 7)) ^ *((_BYTE *)&ptr[3] + (count_1 & 15))
