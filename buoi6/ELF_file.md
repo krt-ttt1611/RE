@@ -136,7 +136,7 @@ Nếu file có segment `PT_INTERP`, kernel sẽ load thêm dynamic linker (`ld-l
 
 *6. Bài tập.*
 
-Đầu tiên, kiểm tra chương tình bằng lệnh `file`.
+Đầu tiên, kiểm tra chương trình bằng lệnh `file`.
 
 ![](../ảnh/Pasted%20image%2020260517085131.png)
 
