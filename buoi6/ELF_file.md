@@ -196,7 +196,7 @@ v5 = 0x467774475B8E5B57LL;
 v6[0] = 0x8388858543568685LL;
 *(_QWORD *)((char *)v6 + 5) = 0x9081824487838885LL;
 ```
-Tạo ra một vùng dữ liệu 152 bits, cấu trúc như sau:
+Tạo ra một vùng dữ liệu 168 bits, cấu trúc như sau:
 
 ![](../ảnh/Pasted%20image%2020260517102419.png)
 
