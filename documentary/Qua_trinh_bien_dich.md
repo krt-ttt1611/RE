@@ -1,4 +1,5 @@
 https://tapit.vn/qua-trinh-bien-dich-mot-chuong-trinh-cc/
+
 # TÓM TẮT QUÁ TRÌNH BIÊN DỊCH (COMPILATION PIPELINE)
 
 **Mục tiêu:** Biến mã nguồn (Source Code) thành chương trình chạy được (Executable). **Quy trình chuẩn:** Tiền xử lý ➔ Biên dịch ➔ Hợp ngữ ➔ Liên kết.

@@ -91,6 +91,7 @@ result:
 }
 ```
 Phân tích logic chương trình:
+
 - Đầu tiên, chương trình đọc dữ liệu trong file rồi đưa vào buffer `data` với con trỏ là `ptr`.
 - Sau đó yêu cầu nhập dữ liệu từ bàn phím và lưu vào `input_data`. Độ dài là 33 kí tự.
 - Vì byte đầu tiên trong file là 0x10 = 16 nên chương trình sẽ nhảy đến dòng 49, và nhảy đến `func_2`.
@@ -100,6 +101,7 @@ Phân tích logic chương trình:
             goto result;
 	```
 	Có nhiệm vụ kiểm tra xem có đọc dữ liệu nằm vượt quá file không (lệnh này dịch ra thực chất là `ip - ptr + 2`, + 2 ý chỉ đến byte cuối cùng của 1 chunk đang xét).
+
 - Tiếp đó, lấy `ip[0]` gán cho `byte 0`, `ip[1]` gán cho `byte 1`. So sánh `byte_0` với 0x40, nếu khác thì nhảy lại về `func_1`, nếu bằng thì đi tiếp xuống dưới.
 - `func_1` kiểm tra `byte_0`, nếu bằng 0x30 thì `arg_1 += byte_1`, nếu bằng 0x10 thì `arg_1 = input_data[byte_1]`, còn nếu bằng 0x30 thì `arg_1 ^= byte_1`.
 - `func_3` khi `byte_0` = 0x40, byte thấp của `arg_1` sẽ được xoay bit trái đi `byte_1` bước.
@@ -113,11 +115,15 @@ Phân tích logic chương trình:
 | 0x30    | `arg_1 += byte_1`                                         |
 | 0x40    | `LOBYTE(arg_1) = __ROL1__(arg_1, byte_1)`                 |
 | 0x50    | `if ( (_BYTE)byte_1 == (_BYTE)arg_1 )        goto func_2` |
+
 - Sau khi nhảy ra khỏi vòng lặp, nếu `byte_0` = 0xff (-1) thì sẽ nhảy vào result và in ra correct.
 - Bản chất lênh 0x50 như 1 lệnh để check xem kí tự trong chuỗi nhập vào đã đúng chưa.
+
 Từ logic trên, ta xây dựng chương trình giải mã. Ý tưởng như sau:
+
 - Biết `byte_1` nên cũng sẽ biết `arrg_1`.
 - Biết `byte_0` nên cũng  sẽ biết được lệnh mà máy ảo thực thi. Ta sẽ viết hàm giãi mã cho từng lệnh. Sau đó với mỗi bộ 3 tham số `byte_0`, `byte_1`, `arg_1` ta sẽ giải ra được chuỗi đầu vào.
+
 Code giải mã:
 ```python
 with open("program.bin", "rb") as f:

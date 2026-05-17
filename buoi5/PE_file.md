@@ -1,6 +1,6 @@
 *1. PE file là gì.* 
 
-PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho kiến trúc CPU 32 bit) và PE32+ (cho kiến trúc CPU 64 bit).
+PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho kiến trúc CPU 32 bit) và PE32+ (cho kiến trúc CPU 64 bit). Trên Window, có 
 
 *2. PE32.* 
 
@@ -387,11 +387,14 @@ PE32+ gần như tương tự với PE32, chỉ khác ở một số điểm:
 
 - Thông tin về địa chỉ Base of Code không còn.
 
+- Kích thước  các trường dữ liệu mở rộng lên 64bit.
 - ...
 
 *5. Quá trình load chương trình vào RAM.* 
 
-Đầu tiên, loader sẽ đọc phần dos header, kiểm tra magic byte có đúng là 4d 5a không, đọc lfanew để lấy địa chỉ của pe header rồi nhảy đến đó. Sau đó, loader sẽ kiểm tra phần signature, đọc machine để kiểm tra tương tích phần cứng, đọc imagebase, sizeofimage để cấp phát vùng nhớ. Tiếp theo, dựa vào section header, loader copy từng section từ ổ đĩa lên ram, căn chỉnh địa chỉ sao cho bằng bội số của section alignment, và phân quyền dựa trên characteristic. Loader đọc Import table rồi load địa chỉ các hàm cần thiết vào IAT. Cuối cùng, loader nhảy đến entrypoint để bắt đầu thực thi.
+Đầu tiên, loader đọc DOS Header, kiểm tra magic bytes có đúng là `4D 5A` không, sau đó đọc `e_lfanew` để lấy offset của PE Header rồi nhảy đến đó. Tại PE Header, loader kiểm tra Signature (`50 45 00 00`), đọc `Machine` trong File Header để xác nhận tương thích kiến trúc CPU, rồi đọc `ImageBase` và `SizeOfImage` trong Optional Header để cấp phát vùng nhớ ảo. Loader sẽ ưu tiên cấp phát tại địa chỉ `ImageBase`, nếu vùng đó đã bị chiếm thì sẽ tìm vùng khác và thực hiện relocation dựa vào bảng `.reloc` (nếu có).
+
+Tiếp theo, dựa vào Section Headers, loader copy từng section từ ổ đĩa lên RAM theo cơ chế memory-mapped file — tức là chưa copy thật sự ngay mà chỉ tạo mapping, khi nào CPU truy cập mới thực sự đọc từ đĩa lên (demand paging). Địa chỉ bắt đầu của mỗi section được căn chỉnh theo `SectionAlignment`, phần dư được padding bằng 0. Quyền truy cập từng section được thiết lập dựa trên `Characteristics`. Sau đó loader đọc Import Directory, tìm và load các DLL cần thiết, resolve địa chỉ thực của từng hàm rồi ghi vào IAT. Cuối cùng, loader nhảy đến `ImageBase + AddressOfEntryPoint` để bắt đầu thực thi.
 
 
 
