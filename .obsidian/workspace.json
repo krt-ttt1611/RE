@@ -11,14 +11,10 @@
             "id": "fc75ef4353e0a8e6",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "buoi2/BAITAP_REV/rev22/Write_up.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Write_up"
+              "title": "New tab"
             }
           }
         ]
@@ -206,22 +202,22 @@
       "sheet-plus:Create excel file": false
     }
   },
-  "active": "271b256aa2ac351c",
+  "active": "eac341cb941cdea2",
   "lastOpenFiles": [
+    "buoi2/BAITAP_REV/rev20/Write_up.md",
+    "2026-05-18.md",
+    "buoi2/BAITAP_REV/rev21/Write_up.md",
+    "buoi2/BAITAP_REV/rev22/Write_up.md",
+    "buoi2/BAITAP_REV/rev23/chall.til",
+    "buoi2/BAITAP_REV/rev23/chall.id2",
+    "buoi2/BAITAP_REV/rev23/chall.nam",
+    "buoi2/BAITAP_REV/rev23/chall.id1",
+    "buoi2/BAITAP_REV/rev23/chall.id0",
     "buoi2/BAITAP_REV/rev22/chall.i64",
     "buoi2/BAITAP_REV/rev22/chall.$$$",
     "buoi2/BAITAP_REV/rev22/solve.py",
-    "buoi2/BAITAP_REV/rev21/Write_up.md",
-    "buoi2/BAITAP_REV/rev22/Write_up.md",
     "buoi2/BAITAP_REV/rev22/chall.til",
     "buoi2/BAITAP_REV/rev22/chall.id2",
-    "buoi2/BAITAP_REV/rev22/chall.nam",
-    "buoi2/BAITAP_REV/rev22/chall.id1",
-    "buoi2/BAITAP_REV/rev22/chall.id0",
-    "buoi2/BAITAP_REV/rev21/chall.i64",
-    "buoi2/BAITAP_REV/rev21/chall.$$$",
-    "buoi2/BAITAP_REV/rev21/solve.py",
-    "buoi2/BAITAP_REV/rev20/Write_up.md",
     "documentary/Little Endian vs Big Endian.md",
     "buoi6/ELF_file.md",
     "ảnh/Pasted image 20260517102540.png",
