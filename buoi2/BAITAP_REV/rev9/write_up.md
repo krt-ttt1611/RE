@@ -1,8 +1,8 @@
-![](Pasted%20image%2020260426231957.png)
+![](../../../image/Pasted%20image%2020260426231957.png)
 
 đây là script python, đổi phần mở rộng file thành .py để đọc.
 
-![](Pasted%20image%2020260426232046.png)
+![](../../../image/Pasted%20image%2020260426232046.png)
 
 ord(): chuyển từ text --> dec.
 

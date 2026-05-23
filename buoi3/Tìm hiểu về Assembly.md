@@ -12,7 +12,7 @@ a) Thanh ghi đa dụng: Các thanh ghi này lưu được cả dữ liệu và 
 
 - Các thanh ghi: RAX, RBX, RCX, RDX, RSI, RDI, R8-R15, RSP, RBP.
 
-- Cấu trúc:1 thanh ghi có độ lớn 64 bit sẽ được chia thành 2 phần, 32 bit cao và 32 bit thấp. 32 bit thấp được coi là 1 thanh ghi khác (tiền tố E), và cũng được chia đôi thành 2 phần 16 bit. 16 bit thấp tiếp tục được chia thành 2 phần, 8 bit cao (h) và 8 bit thấp (l)![](Pasted%20image%2020260419223333.png)
+- Cấu trúc:1 thanh ghi có độ lớn 64 bit sẽ được chia thành 2 phần, 32 bit cao và 32 bit thấp. 32 bit thấp được coi là 1 thanh ghi khác (tiền tố E), và cũng được chia đôi thành 2 phần 16 bit. 16 bit thấp tiếp tục được chia thành 2 phần, 8 bit cao (h) và 8 bit thấp (l)![](../image/Pasted%20image%2020260419223333.png)
 
 - Một số tác dụng đặc biệt:
 
@@ -164,7 +164,7 @@ f) Phép toán trên bit.
 
 Stack trong Assembly là một vùng nhớ đặc biệt, hoạt động theo nguyên tắc LIFO (Last-In, First-Out - Vào sau, Ra trước). Nó được dùng để lưu trữ tạm thời dữ liệu, địa chỉ trả về (return address) của hàm, và biến cục bộ. Stack phát triển từ địa chỉ cao xuống địa chỉ thấp và được quản lý bởi con trỏ Stack (SP/ESP/RSP).
 
-![](Pasted%20image%2020260420233925.png)
+![](../image/Pasted%20image%2020260420233925.png)
 
 1 số thao tác với stack.
 
@@ -204,4 +204,4 @@ b) Rẽ nhánh không có điều kiện.
 
 Vòng lặp: Về bản chất, vòng lặp trong asm chính là việc sử dụng kết hợp các câu lệnh rẽ nhánh. Ví dụ:
 
-![](Pasted%20image%2020260421001130.png)
+![](../image/Pasted%20image%2020260421001130.png)

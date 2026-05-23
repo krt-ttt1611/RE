@@ -1,4 +1,4 @@
-![](Pasted%20image%2020260511163216.png)
+![](../../../image/Pasted%20image%2020260511163216.png)
 ```c
 //main
 __int64 __fastcall main(int a1, char **a2, char **a3)

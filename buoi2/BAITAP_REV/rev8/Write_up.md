@@ -1,4 +1,4 @@
-![](Pasted%20image%2020260426225333.png)
+![](../../../image/Pasted%20image%2020260426225333.png)
 
 Code giải mã.
 ```python

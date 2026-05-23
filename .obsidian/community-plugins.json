@@ -2,7 +2,7 @@
   "latex-panel-helper",
   "code-styler",
   "obsidian-git",
-  "obsidian-link-converter",
   "sheet-plus",
-  "highlightr-plugin"
+  "highlightr-plugin",
+  "obsidian-link-converter"
 ]
