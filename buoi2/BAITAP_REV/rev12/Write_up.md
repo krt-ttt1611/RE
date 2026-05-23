@@ -1,4 +1,4 @@
-![](../../../ảnh/Pasted%20image%2020260427154504.png)
+![](Pasted%20image%2020260427154504.png)
 
 Câu lệnh ở dòng 23 là chia lấy dư cho 3 được tối ưu bằng magic number (lấy máy casio ra bấm) rồi cộng thêm 1. Bitmask 0xfe phía sau có tác dụng ép cho bit cuối của phép nhân 2/3 luôn bằng 0, nghĩa là số chẵn.
 

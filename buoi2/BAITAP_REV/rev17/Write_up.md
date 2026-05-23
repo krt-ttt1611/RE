@@ -1,4 +1,4 @@
-![](../../../ảnh/Pasted%20image%2020260511173815.png)
+![](Pasted%20image%2020260511173815.png)
 
 file python -> đổi phần mở rộng thành .py
 ```python

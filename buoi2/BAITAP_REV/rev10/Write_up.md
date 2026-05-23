@@ -1,4 +1,4 @@
-![](../../../ảnh/Pasted%20image%2020260427064129.png)
+![](Pasted%20image%2020260427064129.png)
 
 code bruteforce:
 ```python

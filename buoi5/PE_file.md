@@ -4,7 +4,7 @@ PE (Portable Executable file format) là một định dạng file dành riêng 
 
 *2. PE32.* 
 
-![](../ảnh/Pasted%20image%2020260505090955.png)
+![](Pasted%20image%2020260505090955.png)
 
 Hình trên là minh họa cho cấu trúc cơ bản của 1 PE32 file. 
 
@@ -146,11 +146,11 @@ int main(){
 
 Sau khi biên dịch xong, dùng PE-Bear để xem và phân tích.
 
-![](../ảnh/Pasted%20image%2020260507225925.png)
+![](Pasted%20image%2020260507225925.png)
 
 3.1. DOS Header.
 
-![](../ảnh/Pasted%20image%2020260507174948.png)
+![](Pasted%20image%2020260507174948.png)
 
 Hình trên là tất cả 19 thành phần của DOS Header. Chúng ta chỉ cần quan tâm đến 2 thành phần sau:
 
@@ -162,7 +162,7 @@ Hình trên là tất cả 19 thành phần của DOS Header. Chúng ta chỉ c�
 
 a) Signature.
 
-![](../ảnh/Pasted%20image%2020260507192924.png)
+![](Pasted%20image%2020260507192924.png)
 
 Phần này chỉ gồm 4 bytes: 0x50, 0x45, 0x00 và 0x00, dịch ra lần lượt là P, E, 0 , 0.
 
@@ -191,7 +191,7 @@ typedef struct _IMAGE_FILE_HEADER {
 } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
 ```
 
-![](../ảnh/Pasted%20image%2020260507202938.png)
+![](Pasted%20image%2020260507202938.png)
 
 - Machine: Khai báo kiến trúc CPU mà file được thiết kế để chạy. Loader sẽ kiểm tra thôn tin này trước khi chạy để xem có tương thích không.
 
@@ -304,9 +304,9 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 } IMAGE_OPTIONAL_HEADER32, *PIMAGE_OPTIONAL_HEADER32;
 ```
 
-![](../ảnh/Pasted%20image%2020260507205648.png)
+![](Pasted%20image%2020260507205648.png)
 
-![](../ảnh/Pasted%20image%2020260507223215.png)
+![](Pasted%20image%2020260507223215.png)
 
 Phần này chứa tất cả 224 bytes dữ liệu:
 
@@ -358,7 +358,7 @@ Phần này chứa tất cả 224 bytes dữ liệu:
 
 3.4. Section Headers.
 
-![](../ảnh/Pasted%20image%2020260507224933.png)
+![](Pasted%20image%2020260507224933.png)
 
 Phần này chứa thông tin về các section của file:
 
@@ -383,7 +383,7 @@ PE32+ gần như tương tự với PE32, chỉ khác ở một số điểm:
 
 - Phần magic ở Optional Haeder đổi thành 0x20B (PE32 là 0x10B)
 
-![](../ảnh/Pasted%20image%2020260507231025.png)
+![](Pasted%20image%2020260507231025.png)
 
 - Thông tin về địa chỉ Base of Code không còn.
 

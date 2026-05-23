@@ -75,7 +75,7 @@ char __fastcall sub_12C0(char a1, char a2)
 
 Tiếp tục kiểm tra thử 2 địa chỉ &off_3DD0 và &off_3DD8. Nó nhảy đến 1 giao diện mới gọi là disassembly listing: Bảng này liệt kê tất cả nội dung của file binary sau khi được dịch ngược. Gồm code, data và metadata.
 
-![](../../../ảnh/Pasted%20image%2020260501154451.png)
+![](Pasted%20image%2020260501154451.png)
 
 1 dòng sẽ gồm các thành phần chính:
 

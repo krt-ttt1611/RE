@@ -10,7 +10,7 @@ Trong bài viết này chỉ tập trung về executable file.
 
 *2. ELF32.*
 
-![](../ảnh/Pasted%20image%2020260516075154.png)
+![](Pasted%20image%2020260516075154.png)
 
 Hình trên là cấu trúc của 1 file ELF32 từ 2 góc nhìn: Góc nhìn liên kết (nhìn từ linker) và góc nhìn thực thi (nhìn từ loader). ELF header nằm ở phần đầu của file và chứa các thông tin tổng quát về chương trình. Program header table chứa các thông tin để giúp loader tạo 1 process image. Section header table chứa các thông tin về các section của file. Trong linux, các trường thông tin (trừ section header table) được định nghĩa là các cấu trúc, có thể xem trong file elf.h.
 ```c
@@ -71,7 +71,7 @@ Ta sẽ tạo 1 file code c rồi biên dịch bằng gcc để tạo ra 1 file 
 
 **a) ELF Header.**
 
-![](../ảnh/Pasted%20image%2020260516202857.png)
+![](Pasted%20image%2020260516202857.png)
 
 - `Magic`: Chứa các byte định danh của file: 0x7f, 0x45, 0x4c, 0x46, dịch ra text là '0x7f', E, L, F. Ngoài ra, các byte phía sau còn chứa thêm các thông tin khác như class, data endianness...
 - `Class`: ELF32.
@@ -94,7 +94,7 @@ Ta sẽ tạo 1 file code c rồi biên dịch bằng gcc để tạo ra 1 file 
 
 **b) Program Header.**
 
-![](../ảnh/Pasted%20image%2020260516214036.png)
+![](Pasted%20image%2020260516214036.png)
 
 Bảng đầu tiên chứa thông tin của các segment:
 
@@ -117,7 +117,7 @@ Bảng thứ 2 là ảnh xạ từ segment vào các section. Các số 00, 01..
 
 **c) Section header.**
 
-![](../ảnh/Pasted%20image%2020260517080105.png)
+![](Pasted%20image%2020260517080105.png)
 
 Như đã nói ở trên, bảng section header gồm tất cả 29 phần tử, trong đó từ 1 đến 27 là thông tin về các section có trong file, section 0 là NULL, và section 28 là bảng tên của tất cả section có trong bảng. `Type` là loại section, `Addr` là địa chỉ trên ổ cứng, `off` là địa chỉ offset trên RAM, `Size` là kích thước, `ES` cho biết với các section được định nghĩa là struct, thì 1 phần tử struct có kích thước bao nhiêu byte. `Flag` là cờ quyền, `Lk` trỏ đến 1 section khác (nếu cần). `Inf` chứa thêm thông tin tùy thuộc vào section. `Al` dùng để căn chỉnh địa chỉ section.
 
@@ -138,19 +138,19 @@ Nếu file có segment `PT_INTERP`, kernel sẽ load thêm dynamic linker (`ld-l
 
 Đầu tiên, kiểm tra chương trình bằng lệnh `file`.
 
-![](../ảnh/Pasted%20image%2020260517085131.png)
+![](Pasted%20image%2020260517085131.png)
 
 Đây là file elf32, không có program header và section header.
 
 Ta sẽ dùng hexedit để thử so sánh 2 file cùng format elf32 (test và prob).
 
-![](../ảnh/Pasted%20image%2020260517092743.png)
+![](Pasted%20image%2020260517092743.png)
 
 File bên trái là file test, bên phải là prob. Bắt đầu từ byte thứ 18, 2 file đã có sự khác biệt: Nếu theo chuẩn ELF32, thì byte 28 (0x1c) đến byte 31 (0x1f) là của trường thông tin `e_phoff` (`e_ident`: 16 bytes,  `e_type`:  2 bytes, `e_machine`: 2 bytes, `e_version`: 4 bytes, `e_entry`: 4 bytes), trong khi đấy ở file prob, từ byte 28 đến 31 toàn bộ đều là 00, nghĩa là vùng này đang nằm ở trường dữ liệu phía trước nó. Trong ELF64, kích thước các trường dữ liệu trước `e_phoff` là:`e_ident`: 16 bytes,  `e_type`:  2 bytes, `e_machine`: 2 bytes, `e_version`: 4 bytes, `e_entry`: 8 bytes, nên file này khả năng cao là file ELF64. Ngoài ra địa chỉ offset của program header trong trường `e_phoff` là 0x40, nghĩa là 64 bytes, đây cũng là chuẩn của ELF64, điều này càng khẳng định giả định trên. Ta sẽ sửa thử byte ở thứ 5 tính từ đầu file thành 02 (là magic byte của ELF64) rồi kiểm tra lại.
 
-![](../ảnh/Pasted%20image%2020260517094204.png)
+![](Pasted%20image%2020260517094204.png)
 
-![](../ảnh/Pasted%20image%2020260517094231.png)
+![](Pasted%20image%2020260517094231.png)
 
 File đã được khôi phục. Dùng IDA để phần tích.
 ```c
@@ -198,7 +198,7 @@ v6[0] = 0x8388858543568685LL;
 ```
 Tạo ra một vùng dữ liệu 168 bits, cấu trúc như sau:
 
-![](../ảnh/Pasted%20image%2020260517102419.png)
+![[Pasted image 20260517102419.png|Pasted image 20260517102540.png]]
 
 Sau đó lấy từng byte trong khối dữ liệu, từ đi 19 rồi so sánh với từng kí tự trong chuỗi nhập.
 
@@ -218,4 +218,4 @@ print(text)
 ```
 Flag: DH{H4ad3rsC0rrupt1on}
 
-![](../ảnh/Pasted%20image%2020260517102540.png)
+![](Pasted%20image%2020260517102540.png)

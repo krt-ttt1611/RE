@@ -1,4 +1,4 @@
-![Pasted image 20260419141000](../../../image/Pasted%20image%2020260419141000.png)    
+![Pasted image 20260419141000](Pasted%20image%2020260419141000.png)    
 
 Câu này cũng tương tự, duyệt từng phần tử trong 3 chuỗi dữ liệu cho trước và chuỗi đầu vào, sau đó thực hiện phép logic rồi so sánh.    
 
@@ -52,4 +52,4 @@ print(solve())
 
 Flag là: ISPCLUB{rotate_right_not_always_wrong}    
 
-![Pasted image 20260419150201](../../../image/Pasted%20image%2020260419150201.png)    
+![Pasted image 20260419150201](Pasted%20image%2020260419150201.png)    
