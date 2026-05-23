@@ -198,7 +198,7 @@ v6[0] = 0x8388858543568685LL;
 ```
 Tạo ra một vùng dữ liệu 168 bits, cấu trúc như sau:
 
-![[Pasted image 20260517102419.png|Pasted image 20260517102540.png]]
+![Pasted image 20260517102540.png](../image/Pasted%20image%2020260517102419.png)
 
 Sau đó lấy từng byte trong khối dữ liệu, từ đi 19 rồi so sánh với từng kí tự trong chuỗi nhập.
 
