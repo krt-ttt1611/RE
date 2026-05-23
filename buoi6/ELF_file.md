@@ -10,7 +10,7 @@ Trong bài viết này chỉ tập trung về executable file.
 
 *2. ELF32.*
 
-![](Pasted%20image%2020260516075154.png)
+![Pasted image 20260516075154](../image/Pasted%20image%2020260516075154.png)
 
 Hình trên là cấu trúc của 1 file ELF32 từ 2 góc nhìn: Góc nhìn liên kết (nhìn từ linker) và góc nhìn thực thi (nhìn từ loader). ELF header nằm ở phần đầu của file và chứa các thông tin tổng quát về chương trình. Program header table chứa các thông tin để giúp loader tạo 1 process image. Section header table chứa các thông tin về các section của file. Trong linux, các trường thông tin (trừ section header table) được định nghĩa là các cấu trúc, có thể xem trong file elf.h.
 ```c
