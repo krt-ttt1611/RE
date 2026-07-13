@@ -3876,3 +3876,6 @@ settings:
         title: 🐛 Submit an Issue or Feature Request!
         description: Visit [Primary's Github Issue Page](https://git.new/primary/obsidian) to submit an issue or feature request. <br> No Github account? Send me a message through [Twitter](https://x.com/ceciliamay_) or directly via [Email](mailto:contact.ceciliamay@gmail.com)
 */
+
+/* Custom highlight color */
+mark, .cm-s-obsidian span.cm-formatting-highlight, .cm-s-obsidian span.cm-highlight, .cm-highlight { color: #4CAF50 !important; background-color: transparent !important; }

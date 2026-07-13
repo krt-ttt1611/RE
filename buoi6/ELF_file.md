@@ -35,7 +35,7 @@ typedef struct
   Elf32_Half    e_shstrndx;             /* Section header string table index */
 } Elf32_Ehdr;
 
-//Program table
+//Program header table
 typedef struct
 {
   Elf32_Word    p_type;                 /* Segment type */
