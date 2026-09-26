@@ -1,0 +1,86 @@
+# **LAB_04-1.malware**
+1. 
+địa chỉ `4001092` -> offset `1092`. dùng offset để không phải tính base addr.
+![[Pasted image 20260926091116.png]]Nhảy vào, đặt bp, rồi f9 để nó chạy đến.
+![[Pasted image 20260926091148.png]]
+Vậy, malware đang gọi đến API `GetProcAddress`, đây là 1 API giúp lấy địa chỉ của 1 hàm hoặc 1 biến trong 1 DLL đang nạp trong tiến trình.
+```asm
+00E5107A    6A 00           push 0
+00E5107C    53              push ebx
+00E5107D    52              push edx                    edx:GetProcAddress
+00E5107E    51              push ecx
+00E5107F    6A 00           push 0
+00E51081    68 6C6C6F63     push 636F6C6C
+00E51086    68 75616C41     push 416C6175
+00E5108B    68 56697274     push 74726956
+00E51090    54              push esp
+00E51091    53              push ebx
+00E51092    FF D2           call edx                    edx:GetProcAddress
+```
+`GetProcAddress` thuộc `stdcall`, nên các tham số được push vào stack từ phải qua trái. Hàm này nhận vào 2 tham số, nên `ebx` và `esp` lần lượt là 2 tham số của hàm, esp là con trỏ tới đỉnh stack, mà stack khi đó đang chứa các giá trị từ dòng 6, 7, 8. Nên nếu ghép các giá trị này lại, ta sẽ được tên định danh cần tìm.
+
+| Vị trí (Offset)                | Byte trên Stack (Little-Endian) | Ký tự tương ứng         | Lệnh `push` ban đầu | Ý nghĩa / Ghi chú                |
+| ------------------------------ | ------------------------------- | ----------------------- | ------------------- | -------------------------------- |
+| **`[ESP]`** _(Đỉnh Stack)_     | `56 69 72 74`                   | `'V'` `'i'` `'r'` `'t'` | `push 74726956h`    | Đầu chuỗi (_"Virt"_)             |
+| **`[ESP+4]`**                  | `75 61 6C 41`                   | `'u'` `'a'` `'l'` `'A'` | `push 416C6175h`    | Tiếp theo (_"ualA"_)             |
+| **`[ESP+8]`**                  | `6C 6C 6F 63`                   | `'l'` `'l'` `'o'` `'c'` | `push 636F6C6Ch`    | Tiếp theo (_"lloc"_)             |
+| **`[ESP+12]`** _(Địa chỉ cao)_ | `00 00 00 00`                   | `\0` `\0` `\0` `\0`     | `push 0`            | Null-terminator (kết thúc chuỗi) |
+Như đã thấy, đây là API `VirtualAlloc`, dùng để cấp phát, đặt trước, hoặc thay đổi trạng thái của các trang bộ nhớ ảo trực tiếp từ hệ điều hành cho tiến trình hiện tại. Khi kết hợp với `GetProcAddress`, nó tạo ra hành vi unpacking của malware.
+```
+[BƯỚC 1]                   [BƯỚC 2]                   [BƯỚC 3]                   [BƯỚC 4]
+Tránh mặt AV/EDR   ───►  Xin RAM thực thi    ───►  Giải mã Payload    ───►  Chuyển quyền chạy
+(Stack Strings +         VirtualAlloc(...,         (XOR, RC4,             (JMP / CALL EAX
+ GetProcAddress)          PAGE_EXECUTE_READWRITE)   Decompress)            hoặc CreateThread)
+```
+
+2. 
+ ![[Pasted image 20260926093510.png]]
+ Đúng như đã nói, ngay sau đó, ở địa chỉ `0x00401a6`, caller gọi đến `VirtualAlloc`, Dựa vào các tham số, ta biết nó đang cấp phát 1 vùng nhớ kích thước `0xb000` byte, với quyền `rwx (0x40)`, kiểu cấp phát `MEM_RESERVE` (giữ dải địa chỉ ảo được cấp phát để các tiến trình, luồng khác không xâm phạm) và `MEM_COMMIT` (cấp phát ngay lập tức, cho phép đọc ghi mà không bị lỗi trang nhớ `Acess Violation`) (`0x1000 | 0x2000 = 0x3000`), và cấp phát tại địa chỉ `0xc000000`.
+
+3. 
+![[Pasted image 20260926094052.png]]
+Xem địa chỉ `0x00e135d`. Ta thấy nó gọi đến hàm nằm trong `ecx + 10`. Click vào.
+![[Pasted image 20260926094210.png]]
+Vậy là nó lại gọi `GetProcAddress`. Nếu vậy thì lệnh pop kia dùng để khôi phục con trỏ `ebp` gốc sau khi thực thi 1 hàm mới.
+Tương tự với các địa chỉ `1372` và `1388`
+![[Pasted image 20260926095924.png]]
+
+4. 
+Bài này nếu ta tìm trong bảng symbol, chắc chắn sẽ không thấy, vì nó đang thực hiện phân giải API động, nên x32dbg không quét được.
+Tuy nhiên, chúng ta vẫn có cách để bắt được các API được gọi. Nhớ lại rằng, bài này, muốn gọi được API thì trước tiên phải thông qua 1 bước, đó là gọi `GetProcAddress` để lấy địa chỉ API. Mà hàm này lại có tham số là tên API, nên ta chỉ cần đặt bp tại mỗi vị trí gọi hàm này, rồi xem tham số là sẽ tìm được các API được gọi.
+![[Pasted image 20260926101946.png]]
+Dùng lệnh `bp GetProcAddress` để đặt bp.
+![[Pasted image 20260926102052.png]]
+Đầu tiên chính là `VirtualAlloc` ban nãy đã thấy.
+![[Pasted image 20260926102132.png]]
+Tiếp đó là `GetModuleFileNameA`
+![[Pasted image 20260926102155.png]]
+Tiếp theo là `ExitProccess`
+![[Pasted image 20260926102216.png]]
+Tiếp theo là `CopyFileA`
+![[Pasted image 20260926102234.png]]
+Tiếp theo là `GetWindowsDirectoryA`
+![[Pasted image 20260926102301.png]]
+`LoadLibraryA`
+![[Pasted image 20260926102317.png]]
+`RegCreateKeyA`
+![[Pasted image 20260926102352.png]]
+`RegSetKeyValueA`
+![[Pasted image 20260926102420.png]]
+`RegCloseKeyA`
+![[Pasted image 20260926102444.png]]
+`MessageBoxA`
+
+5. Đã trình bày bên trên.
+
+6. 
+Malware thực hiện kỹ thuật unpack payload độc hại bên trong ra 1 không gian địa chỉ mới, sau đó sửa registry key. Cuối cùng dùng `MessageBoxA` để hiển thị hộp thoại `infected` ra màn hình, rồi thoát.
+Muốn biết `RegSetKeyValueA` đã sửa cái gì, ta cần phải debug động.
+Nói 1 cách đơn giản, chúng ta không thể đặt bp với API `RegSetKeyValueA` với `RegCreateKeyA`. Để hiểu 1 chút về cơ chế đặt bp API của xdbg, nó không đặt vào địa chỉ trên chương trình, mà nó đặt vào địa chỉ trong dll. Chính vì thế, để có thể đặt được bp, bắt buộc dll phải được load vào trước. Malware này dùng `loadLibrary` đẻ load thư viện `advapi32.dll`. Chính vì thế, ta phải đợi `GetProcAddress` chạy qua, thậm chí phải chạy quá 1 đoạn code dài, khi đó `LoadLibraryA` mới được chạy, và ta mới có thể đặt bp.
+Sau khi đặt bp thì ta tìm được 2 hàm như sau:
+![[Pasted image 20260926120329.png]]
+Đầu tiên là hàm `RegCreateKeyA`, nó trả về handle của key `software...run`, đây là key có tác dụng autostart các chương trình khi khởi động, được dùng rất phổ biến trong cơ chế persistent của malware. 
+![[Pasted image 20260926120620.png]]
+Tiếp đến là `RegSetKeyValueA`, nó có tác dụng thêm 1 cặp `<name, value>` vào key. Đọc tham số, ta có thể biết được nó đang muốn cho `virus.exe` autostart.
+
+
