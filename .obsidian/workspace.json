@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "MA/pma/MALWARE_FUNCTIONALITY.md",
+                "file": "MA/pma/lab/LAB_05.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "MALWARE_FUNCTIONALITY"
+              "title": "LAB_05"
             }
           },
           {
@@ -238,6 +238,13 @@
   },
   "active": "1e1b9440351a693f",
   "lastOpenFiles": [
+    "image/Pasted image 20260928094946.png",
+    "image/Pasted image 20260928085029.png",
+    "image/Pasted image 20260928084823.png",
+    "MA/pma/MALWARE_FUNCTIONALITY.md",
+    "MA/pma/lab/LAB_05.md",
+    "image/Pasted image 20260928083708.png",
+    "image/Pasted image 20260928082752.png",
     "MA/pma/AVANCED_DYNAMIC_ANALYSIS.md",
     "MA/pma/AVANCED_STATIC_ANALYSIS.md",
     "MA/scratch/integrate_all_figures_and_tables.py",
@@ -247,17 +254,12 @@
     "image/PMA_Fig13-14_Encrypted_Write_Graph.png",
     "image/PMA_Fig13-11_PEiD_KANAL.png",
     "image/PMA_Fig13-10_FindCrypt2_Output.png",
-    "image/PMA_Fig13-9_Crypto_Imports_IDA.png",
-    "image/PMA_Fig13-4_Base64_ATT.png",
-    "image/PMA_Fig13-2_Search_XOR_IDA.png",
-    "image/PMA_Fig13-1_XOR_Attack_At_Noon.png",
     "MA/scratch/extract_all_remaining_figures.py",
     "MA/scratch",
     "MA/pma/MALWARE_FUNCTIONALITY.md.bak",
     "MA/pma/AVANCED_DYNAMIC_ANALYSIS.md.bak",
     "MA/pma/AVANCED_STATIC_ANALYSIS.md.bak",
     "MA/pma/BASIC_ANALYSIS.md",
-    "MA/pma/MALWARE_FUNCTIONALITY.md",
     "MA/pma/lab/LAB_04.md",
     "MA/WinInternal/COM/COM.md",
     "MA/pma/lab/LAB_03.md",
@@ -282,7 +284,6 @@
     "MA/Malware-master/Labs/Lab_02/solution.md",
     "MA/Malware-master/Labs/Lab_01/solution.md",
     "MA/Malware-master/README.md",
-    "crack/Feedback.md",
     "Untitled.canvas"
   ]
 }
