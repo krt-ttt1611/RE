@@ -31,7 +31,7 @@ Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên tr
    - `ESP`: Con trỏ đỉnh ngăn xếp (Stack Pointer), luôn trỏ tới đỉnh hiện tại của Call Stack.
    - `EBP`: Con trỏ khung ngăn xếp (Base Pointer / Frame Pointer), cố định vị trí của Stack Frame để tham chiếu tham số và biến cục bộ.
 
-![[PMA_Fig4-4_Register_Breakdown.png]]
+![PMA_Fig4-4_Register_Breakdown.png](../../image/PMA_Fig4-4_Register_Breakdown.png)
 
 *Hình 4.1: Cấu trúc phân chia thanh ghi 32-bit EAX thành các phần 16-bit (AX) và 8-bit (AH, AL).*
 
@@ -90,11 +90,11 @@ Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên tr
 
 *Bảng 4.3: Bảng phân loại chi tiết các thanh ghi trong vi xử lý x86.*
 
-![[PMA_Fig4-5_EBX_Memory_Access.png]]
+![PMA_Fig4-5_EBX_Memory_Access.png](../../image/PMA_Fig4-5_EBX_Memory_Access.png)
 
 *Hình 4.2: Sử dụng thanh ghi cơ sở EBX và độ lệch để truy xuất dữ liệu trong bộ nhớ RAM.*
 
-![[PMA_Fig4-6_Multiplication_Result.png]]
+![PMA_Fig4-6_Multiplication_Result.png](../../image/PMA_Fig4-6_Multiplication_Result.png)
 
 *Hình 4.3: Kết quả phép nhân 64-bit được chia thành 32-bit cao lưu trong EDX và 32-bit thấp lưu trong EAX.*
 
@@ -154,11 +154,11 @@ Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên tr
    - `call address`: Đẩy địa chỉ quay về (`return address`) vào stack, sau đó nhảy tới `address`.
    - `ret`: Lấy địa chỉ quay về từ đỉnh stack nạp lại vào `EIP`.
 
-![[PMA_Fig4-7_Stack_Layout.png]]
+![PMA_Fig4-7_Stack_Layout.png](../../image/PMA_Fig4-7_Stack_Layout.png)
 
 *Hình 4.2: Cấu trúc bộ nhớ Call Stack trong kiến trúc x86 với chiều tăng trưởng bộ nhớ đi xuống (từ địa chỉ cao về địa chỉ thấp).*
 
-![[PMA_Fig4-8_Stack_Frame.png]]
+![PMA_Fig4-8_Stack_Frame.png](../../image/PMA_Fig4-8_Stack_Frame.png)
 
 *Hình 4.3: Chi tiết một Stack Frame: EBP phân tách giữa tham số truyền vào ([EBP + x]) và biến cục bộ ([EBP - x]).*
 
@@ -171,7 +171,7 @@ Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên tr
 
 IDA Pro (Interactive DisAssembler) là tiêu chuẩn công nghiệp trong phân tích tĩnh mã độc.
 
-![[PMA_Fig5-2_IDA_GraphMode.png]]
+![PMA_Fig5-2_IDA_GraphMode.png](../../image/PMA_Fig5-2_IDA_GraphMode.png)
 
 *Hình 5.1: Chế độ Graph Mode trong IDA Pro hiển thị luồng điều khiển (Control Flow) của hàm dưới dạng đồ thị trực quan.*
 
@@ -194,45 +194,45 @@ IDA Pro (Interactive DisAssembler) là tiêu chuẩn công nghiệp trong phân 
 
 ### 5.2 Khảo Sát Giao Diện và Công Cụ Phân Tích Chuyên Sâu Trong IDA Pro
 
-![[PMA_Fig5-1_IDA_Load_File.png]]
+![PMA_Fig5-1_IDA_Load_File.png](../../image/PMA_Fig5-1_IDA_Load_File.png)
 
 *Hình 5.2: Hộp thoại nạp tệp thực thi vào IDA Pro, lựa chọn kiến trúc CPU và chế độ phân tích.*
 
-![[PMA_Fig5-3_IDA_Text_Mode.png]]
+![PMA_Fig5-3_IDA_Text_Mode.png](../../image/PMA_Fig5-3_IDA_Text_Mode.png)
 
 *Hình 5.3: Chế độ hiển thị văn bản tuần tự (Text Mode) trong cửa sổ Disassembly của IDA Pro.*
 
-![[PMA_Fig5-4_IDA_Nav_Bar.png]]
+![PMA_Fig5-4_IDA_Nav_Bar.png](../../image/PMA_Fig5-4_IDA_Nav_Bar.png)
 
 *Hình 5.4: Thanh điều hướng (Navigation Bar) trực quan hóa cấu trúc bộ nhớ: màu xanh dương là mã thực thi (.text), màu nâu là dữ liệu (.data), màu đỏ là compiler runtime.*
 
-![[PMA_Fig5-5_IDA_Search.png]]
+![PMA_Fig5-5_IDA_Search.png](../../image/PMA_Fig5-5_IDA_Search.png)
 
 *Hình 5.5: Hộp thoại tìm kiếm chuỗi ký tự, dãy byte hoặc giá trị hằng số (Search Text / Sequence of Bytes).*
 
-![[PMA_Fig5-6_IDA_Xrefs.png]]
+![PMA_Fig5-6_IDA_Xrefs.png](../../image/PMA_Fig5-6_IDA_Xrefs.png)
 
 *Hình 5.6: Cửa sổ truy vết tham chiếu chéo (Xrefs) liệt kê tất cả các vị trí gọi đến hàm hoặc truy cập biến.*
 
 #### Đồ thị Luồng và Phân Tích Hàm Trong IDA Pro
 
-![[PMA_Fig5-7_IDA_Graph_Options.png]]
+![PMA_Fig5-7_IDA_Graph_Options.png](../../image/PMA_Fig5-7_IDA_Graph_Options.png)
 
 *Hình 5.7: Các tùy chọn đồ họa nâng cao trong IDA Pro (Flowchart, Call Graph, Xref Graph).*
 
-![[PMA_Fig5-8_IDA_Xref_Graph_Program.png]]
+![PMA_Fig5-8_IDA_Xref_Graph_Program.png](../../image/PMA_Fig5-8_IDA_Xref_Graph_Program.png)
 
 *Hình 5.8: Đồ thị tham chiếu chéo toàn bộ chương trình (Program Xrefs Graph) thể hiện kiến trúc phân tầng các module.*
 
-![[PMA_Fig5-9_IDA_Xref_Graph_Func.png]]
+![PMA_Fig5-9_IDA_Xref_Graph_Func.png](../../image/PMA_Fig5-9_IDA_Xref_Graph_Func.png)
 
 *Hình 5.9: Đồ thị cuộc gọi của một hàm cụ thể (Function Call Graph) thể hiện các hàm con mà nó triệu gọi.*
 
-![[PMA_Fig5-10_IDA_Operand_Manipulation.png]]
+![PMA_Fig5-10_IDA_Operand_Manipulation.png](../../image/PMA_Fig5-10_IDA_Operand_Manipulation.png)
 
 *Hình 5.10: Chỉnh sửa hiển thị toán hạng (Operand Manipulation): đổi số hex sang thập phân, char hoặc offset.*
 
-![[PMA_Fig5-11_IDA_Symbolic_Constants.png]]
+![PMA_Fig5-11_IDA_Symbolic_Constants.png](../../image/PMA_Fig5-11_IDA_Symbolic_Constants.png)
 
 *Hình 5.11: Cửa sổ ánh xạ hằng số tượng trưng (Symbolic Constants): chuyển đổi các mã cờ số học sang hằng số Windows API chuẩn (như `OPEN_EXISTING`, `GENERIC_READ`).*
 
@@ -297,11 +297,11 @@ ProcessData:
 
 Cấu trúc `if-else` thường xuất hiện dưới dạng một lệnh kiểm tra so sánh (`cmp` hoặc `test`) theo sau bởi một lệnh nhảy có điều kiện (`jz`, `jnz`, `jge`, `jle`).
 
-![[PMA_Fig6-1_If_Graph.png]]
+![PMA_Fig6-1_If_Graph.png](../../image/PMA_Fig6-1_If_Graph.png)
 
 *Hình 6.1: Đồ thị Disassembly thể hiện cấu trúc rẽ nhánh if-else đơn giản trong IDA Pro.*
 
-![[Pasted image 20260913181318.png]]
+![Pasted image 20260913181318.png](../../image/Pasted%20image%2020260913181318.png)
 
 *Hình 6.2: Cấu trúc đồ thị của câu lệnh if lồng nhau (Nested If Constructs).*
 
@@ -316,7 +316,7 @@ Các vòng lặp được nhận diện thông qua:
 3. Lệnh tăng/giảm biến đếm (`inc`, `dec`, `add`).
 4. Lệnh kiểm tra điều kiện lặp và lệnh nhảy ngược lại đầu vòng lặp (`jmp` hoặc `jcc`).
 
-![[PMA_Fig6-2_Loop_Graph.png]]
+![PMA_Fig6-2_Loop_Graph.png](../../image/PMA_Fig6-2_Loop_Graph.png)
 
 *Hình 6.3: Cấu trúc đồ thị vòng lặp for trong IDA Pro với đường rẽ nhánh quay ngược lên đầu khối kiểm tra.*
 
@@ -329,7 +329,7 @@ Trình biên dịch tối ưu hóa cấu trúc `switch-case` theo hai phương p
 1. **Kiểu if-else nối tiếp:** Sử dụng một chuỗi các lệnh `cmp` và `je` liên tiếp. Áp dụng khi có ít case (dưới 4-5 case) hoặc giá trị các case phân tán rộng.
 2. **Kiểu Bảng Nhảy (Jump Table):** Tạo một mảng con trỏ địa chỉ chứa đích nhảy của từng case. CPU tính toán chỉ mục (`index`) và thực hiện nhảy gián tiếp `jmp ds:JumpTable[eax*4]` chỉ trong 1 lệnh duy nhất.
 
-![[PMA_Fig6-4_JumpTable.png]]
+![PMA_Fig6-4_JumpTable.png](../../image/PMA_Fig6-4_JumpTable.png)
 
 *Hình 6.4: Đồ thị Disassembly của cấu trúc switch-case sử dụng Jump Table trong IDA Pro.*
 
@@ -370,9 +370,9 @@ Ký pháp Hungarian giúp việc nhận diện kiểu dữ liệu của biến v
 
 Hình _7.1_ Liệt kê một số kiểu dữ liệu phổ biến của WinAPI.
 
-![[Pasted image 20260914082713.png]]
+![Pasted image 20260914082713.png](../../image/Pasted%20image%2020260914082713.png)
 
-![[Pasted image 20260914082845.png]]
+![Pasted image 20260914082845.png](../../image/Pasted%20image%2020260914082845.png)
 
 #### b. Khái niệm và Vai trò của Handle
 
@@ -506,7 +506,7 @@ Regedit là công cụ có sẵn trong Windows để xem và sửa Registry.
 - Khung bên phải hiển thị value entry.
 - Mỗi value có name, type và data
 
-![[Pasted image 20260914093723.png]]
+![Pasted image 20260914093723.png](../../image/Pasted%20image%2020260914093723.png)
 
 #### d. Cơ chế tự khởi động cùng hệ điều hành (Persistence via Run Keys)
 
@@ -1024,7 +1024,7 @@ Nhờ vậy, instance thứ 2 của malware sẽ phát hiện mutex đã tồn t
 
 #### e. Windows Services (Dịch vụ hệ thống)
 
-![[PMA_Fig7-2_VMware_NAT_Registry.png]]
+![PMA_Fig7-2_VMware_NAT_Registry.png](../../image/PMA_Fig7-2_VMware_NAT_Registry.png)
 
 *Hình 7.4: Khóa Registry cấu hình dịch vụ VMware NAT Service trong hệ thống Windows.*
 
@@ -1159,7 +1159,7 @@ CLSID: `0002DF01-0000-0000-C000-000000000046`
 
 Đại diện cho Internet Explorer.
 
-![[Pasted image 20260919152359.png]]
+![Pasted image 20260919152359.png](../../image/Pasted%20image%2020260919152359.png)
 
 Windows dùng Registry để tìm code tương ứng với CLSID:
 ```
@@ -1290,7 +1290,7 @@ SEH cũng từng được dùng trong exploit. Vì pointer tới exception handl
 
 ### 7.5 Phân Định Chế Độ Thực Thi User Mode và Kernel Mode
 
-![[PMA_Fig7-3_User_Kernel_Mode.png]]
+![PMA_Fig7-3_User_Kernel_Mode.png](../../image/PMA_Fig7-3_User_Kernel_Mode.png)
 
 *Hình 7.6: Ranh giới phân định đặc quyền giữa User Mode (Ring 3) và Kernel Mode (Ring 0) trên Windows.*
 
@@ -1356,7 +1356,7 @@ Vì vậy phần lớn malware vẫn không cần có thành phần kernel.
 
 ### 7.6 Windows Native API và Kỹ Thuật Lẩn Tránh Giám Sát
 
-![[PMA_Fig7-4_NativeAPI_Bypass.png]]
+![PMA_Fig7-4_NativeAPI_Bypass.png](../../image/PMA_Fig7-4_NativeAPI_Bypass.png)
 
 *Hình 7.7: Kỹ thuật gọi trực tiếp Native API trong ntdll.dll để né tránh các hook giám sát bảo mật đặt tại tầng WinAPI subsystem.*
 

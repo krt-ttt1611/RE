@@ -30,11 +30,11 @@ Hàm băm mật mã đóng vai trò như một "vân tay số" (fingerprint) duy
   - **SHA-1 / SHA-256:** Cho độ dài băm 160-bit và 256-bit, an toàn và chống va chạm tốt hơn.
 - **Công cụ tính toán:** Trên giao diện đồ họa có thể dùng **WinMD5**, hoặc trên dòng lệnh Windows sử dụng `certutil -hashfile <filename> MD5` hoặc `Get-FileHash` trong PowerShell.
 
-![[PMA_Fig1-1_WinMD5.png]]
+![PMA_Fig1-1_WinMD5.png](../../image/PMA_Fig1-1_WinMD5.png)
 
 *Hình 1.1: Giao diện tính toán mã băm MD5 của tệp thực thi bằng công cụ WinMD5.*
 
-> [!NOTE]
+> **📝 NOTE**
 > Khi có mã băm (MD5/SHA-256), việc đầu tiên cần làm là tra cứu trên **VirusTotal** hoặc **MalwareBazaar** để xem phân tích của cộng đồng trước khi bắt tay dịch ngược chi tiết.
 
 ---
@@ -53,11 +53,11 @@ Tìm kiếm chuỗi ký tự (Strings) là phương pháp trích xuất các chu
 - **ASCII:** Sử dụng 1 byte cho mỗi ký tự, kết thúc bằng một byte NULL (`0x00`).
 - **Unicode (UTF-16LE trên Windows):** Sử dụng 2 byte cho mỗi ký tự (ký tự ASCII thông thường sẽ có thêm byte `0x00` xen kẽ), kết thúc bằng hai byte NULL (`0x00 0x00`).
 
-![[PMA_Fig1-2_ASCII_String.png]]
+![PMA_Fig1-2_ASCII_String.png](../../image/PMA_Fig1-2_ASCII_String.png)
 
 *Hình 1.2: Cấu trúc lưu trữ chuỗi ASCII "BAD" trong bộ nhớ (mỗi ký tự 1 byte kết thúc bởi NULL byte).*
 
-![[PMA_Fig1-3_Unicode_String.png]]
+![PMA_Fig1-3_Unicode_String.png](../../image/PMA_Fig1-3_Unicode_String.png)
 
 *Hình 1.3: Cấu trúc lưu trữ chuỗi Unicode UTF-16LE của từ "BAD" (mỗi ký tự chiếm 2 byte).*
 
@@ -86,18 +86,18 @@ Khi một chương trình đóng gói được thực thi:
 2. Unpacker Stub giải nén và giải mã phần payload thực sự vào bộ nhớ.
 3. Stub chuyển quyền điều khiển (nhảy) tới Điểm nhập cảnh gốc (**Original Entry Point - OEP**) của chương trình thật.
 
-![[Pasted image 20260907203702.png]]
+![Pasted image 20260907203702.png](../../image/Pasted%20image%2020260907203702.png)
 
 *Hình 1.4: Cơ chế đóng gói tệp. Bên trái là tệp gốc chứa đầy đủ chuỗi và mã lệnh; bên phải là tệp bị đóng gói chỉ lộ Unpacker Stub.*
 
-> [!WARNING]
+> **⚠️ WARNING**
 > Nếu tệp thực thi chứa cực ít chuỗi hoặc các chuỗi chỉ liên quan đến cơ chế giải nén (`LoadLibrary`, `GetProcAddress`, tên packer), khả năng rất cao tệp đã bị đóng gói. Phân tích tĩnh bề mặt lúc này sẽ không đem lại hiệu quả.
 
 #### b. Nhận diện Packer bằng PEiD và Detect It Easy (DiE)
 
 - **PEiD:** Công cụ kinh điển sử dụng cơ sở dữ liệu chữ ký byte tại Entry Point để nhận diện packer (như UPX, ASPack, Petite...).
 
-![[Pasted image 20260907203933.png]]
+![Pasted image 20260907203933.png](../../image/Pasted%20image%2020260907203933.png)
 
 *Hình 1.5: Giao diện nhận diện packer UPX bằng công cụ PEiD.*
 
@@ -138,7 +138,7 @@ Thông tin về các hàm Windows API mà chương trình nhập (Import) hoặc
 
 Công cụ **Dependency Walker** (`depends.exe`) phân tích danh sách DLL và hàm được liên kết lúc nạp. Do bản gốc chạy chậm trên Windows 10/11, nên sử dụng bản viết lại hiện đại là **Dependencies** (mã nguồn mở trên GitHub).
 
-![[Pasted image 20260907212331.png]]
+![Pasted image 20260907212331.png](../../image/Pasted%20image%2020260907212331.png)
 
 *Hình 1.6: Phân tích các DLL phụ thuộc của tiến trình hệ thống bằng Dependency Walker.*
 
@@ -146,7 +146,7 @@ Công cụ **Dependency Walker** (`depends.exe`) phân tích danh sách DLL và 
 
 Mỗi DLL hệ thống đảm nhiệm một vai trò chức năng riêng biệt. Quan sát danh sách DLL nạp vào cho phép suy đoán hành vi của phần mềm:
 
-![[Pasted image 20260907212648.png]]
+![Pasted image 20260907212648.png](../../image/Pasted%20image%2020260907212648.png)
 
 *Hình 1.7: Bảng 1.1 trong sách PMA liệt kê các DLL Windows phổ biến và chức năng tương ứng.*
 
@@ -170,7 +170,7 @@ Mỗi DLL hệ thống đảm nhiệm một vai trò chức năng riêng biệt.
 
 #### a. Mẫu PotentialKeylogger.exe (Tệp thực thi không bị đóng gói)
 
-![[Pasted image 20260907213251.png]]
+![Pasted image 20260907213251.png](../../image/Pasted%20image%2020260907213251.png)
 
 *Hình 1.8: Danh sách hàm import của mẫu PotentialKeylogger.exe trích xuất bằng Dependency Walker.*
 
@@ -188,18 +188,18 @@ Khi phân tích danh sách Import của mẫu này:
 
 4. **Hàm xuất (Exports):** Mẫu `.exe` này xuất hai hàm bất thường: `LowLevelKeyboardProc` và `LowLevelMouseProc`.
 
-![[Pasted image 20260907223323.png]]
+![Pasted image 20260907223323.png](../../image/Pasted%20image%2020260907223323.png)
 
 *Hình 1.9: Chi tiết hàm callback LowLevelKeyboardProc dùng làm tham số cho SetWindowsHookEx.*
 
 Theo tài liệu Microsoft MSDN, `LowLevelKeyboardProc` là hàm callback được truyền vào `SetWindowsHookEx` để đón bắt các sự kiện bàn phím thô ở cấp độ thấp (`WH_KEYBOARD_LL`).
 
-> [!IMPORTANT]
+> **❗ IMPORTANT**
 > **Kết luận phân tích tĩnh:** `PotentialKeylogger.exe` là một phần mềm độc hại thuộc loại Keylogger cục bộ, tự duy trì qua khóa Registry Run, giám sát phím bằng hook cấp thấp và hỗ trợ kích hoạt giao diện qua phím nóng.
 
 #### b. Mẫu PackedProgram.exe (Tệp thực thi bị đóng gói)
 
-![[Pasted image 20260907224220.png]]
+![Pasted image 20260907224220.png](../../image/Pasted%20image%2020260907224220.png)
 
 *Hình 1.10: Danh sách hàm import cực kỳ nghèo nàn của PackedProgram.exe.*
 
@@ -221,7 +221,7 @@ Sau PE Header là danh sách các Section chứa dữ liệu thực tế:
 - `.data`: Chứa các biến và dữ liệu toàn cục (global variables) có thể đọc và ghi.
 - `.rsrc`: Chứa toàn bộ tài nguyên của ứng dụng (biểu tượng icon, ảnh, menu, hộp thoại, tệp âm thanh và String Table).
 
-![[Pasted image 20260907230444.png]]
+![Pasted image 20260907230444.png](../../image/Pasted%20image%2020260907230444.png)
 
 *Hình 1.11: Danh sách các tên section phổ biến của tệp PE trên Windows.*
 
@@ -232,7 +232,7 @@ Xem xét trực tiếp các cấu trúc nội bộ trong PE Header cung cấp c�
 - `IMAGE_FILE_HEADER.TimeDateStamp`: Thời điểm tệp được biên dịch. Nếu ngày biên dịch nằm trong tương lai hoặc thuộc thập kỷ trước trong khi phần mềm mới xuất hiện, timestamp có thể đã bị làm giả (timestomping).
 - `IMAGE_FILE_HEADER.Characteristics`: Cờ xác định tệp là EXE (`IMAGE_FILE_EXECUTABLE_IMAGE`) hay DLL (`IMAGE_FILE_DLL`).
 
-![[PMA_Fig1-7_PEview_FileHeader.png]]
+![PMA_Fig1-7_PEview_FileHeader.png](../../image/PMA_Fig1-7_PEview_FileHeader.png)
 
 *Hình 1.12: Khảo sát IMAGE_FILE_HEADER của tệp bằng công cụ PEview.*
 
@@ -240,11 +240,11 @@ Xem xét trực tiếp các cấu trúc nội bộ trong PE Header cung cấp c�
   - `Virtual Size`: Kích thước thực tế mà section sẽ chiếm khi nạp lên bộ nhớ RAM.
   - `Size of Raw Data`: Kích thước của section được lưu trữ trên tệp vật lý ở ổ cứng.
 
-![[PMA_Fig1-8_PEview_SectionHeader.png]]
+![PMA_Fig1-8_PEview_SectionHeader.png](../../image/PMA_Fig1-8_PEview_SectionHeader.png)
 
 *Hình 1.13: Khảo sát IMAGE_SECTION_HEADER phân vùng .text trong PEview.*
 
-> [!TIP]
+> **💡 TIP**
 > **Quy tắc vàng phát hiện Packer qua Section:**
 > Nếu một section có `Virtual Size` lớn hơn rất nhiều so với `Size of Raw Data` (ví dụ section chỉ chiếm 1 KB trên đĩa nhưng khi nạp đòi tới 100 KB trên RAM), điều đó báo hiệu section này sẽ được Unpacker Stub dùng để bung mã độc đã nén vào bộ nhớ.
 
@@ -252,7 +252,7 @@ Xem xét trực tiếp các cấu trúc nội bộ trong PE Header cung cấp c�
 
 Section `.rsrc` có thể được kiểm tra chi tiết bằng **Resource Hacker**. Mã độc thường cất giấu các thành phần nhạy cảm như tệp nén, driver độc hại (`.sys`), DLL phụ hoặc mã khai thác bên trong section tài nguyên này.
 
-![[PMA_Fig1-9_ResourceHacker.png]]
+![PMA_Fig1-9_ResourceHacker.png](../../image/PMA_Fig1-9_ResourceHacker.png)
 
 *Hình 1.14: Giao diện Resource Hacker mở tệp calc.exe, hiển thị các tài nguyên nhúng bên trong.*
 
@@ -276,7 +276,7 @@ Phân tích mã độc đòi hỏi môi trường thực thi hoàn toàn biệt 
 
 #### a. Cấu hình mạng tùy biến (Custom Virtual Networking)
 
-![[PMA_Fig2-4_VMware_CustomNet.png]]
+![PMA_Fig2-4_VMware_CustomNet.png](../../image/PMA_Fig2-4_VMware_CustomNet.png)
 
 *Hình 2.2: Thiết lập mạng ảo tùy biến (Custom Networking VMnet) kết nối nhiều máy ảo phân tích trong cùng một phân vùng cô lập.*
 
@@ -287,7 +287,7 @@ Việc cấu hình card mạng của máy ảo quyết định ranh giới an to
 2. **NAT:** Chia sẻ kết nối Internet của máy Host. Chỉ bật khi chủ động cần phân tích hành vi kết nối Internet ra ngoài và đã có các lớp giám sát.
 3. **Host-Only Networking (Khuyến nghị chuẩn):** Tạo ra một mạng nội bộ hoàn toàn cô lập giữa máy Host và các máy Guest, không có đường ra Internet bên ngoài.
 
-![[PMA_Fig2-3_VMware_HostOnly.png]]
+![PMA_Fig2-3_VMware_HostOnly.png](../../image/PMA_Fig2-3_VMware_HostOnly.png)
 
 *Hình 2.1: Kiến trúc mạng Host-Only trong VMware giúp cô lập máy ảo phân tích khỏi mạng Internet vật lý.*
 
@@ -305,14 +305,14 @@ Snapshot là tính năng lưu lại trạng thái toàn vẹn (bộ nhớ RAM, c
   4. Thu thập toàn bộ log và bằng chứng phân tích.
   5. Revert (hoàn nguyên) máy ảo về lại Clean Snapshot để xóa sổ hoàn toàn mọi dấu vết lây nhiễm trước khi phân tích mẫu tiếp theo.
 
-![[PMA_Fig2-5_Snapshot_Timeline.png]]
+![PMA_Fig2-5_Snapshot_Timeline.png](../../image/PMA_Fig2-5_Snapshot_Timeline.png)
 
 *Hình 2.3: Dòng thời gian sử dụng tính năng Snapshot để đưa hệ điều hành trở về trạng thái sạch sau khi thử nghiệm mã độc.*
 
 ---
 
 
-![[PMA_Fig2-6_Snapshot_Manager.png]]
+![PMA_Fig2-6_Snapshot_Manager.png](../../image/PMA_Fig2-6_Snapshot_Manager.png)
 
 *Hình 2.4: Giao diện quản lý cây trạng thái máy ảo VMware Snapshot Manager, cho phép rẽ nhánh và hoàn nguyên về trạng thái sạch.*
 
@@ -335,7 +335,7 @@ Phân tích động cơ bản (Basic Dynamic Analysis) là quá trình kích ho�
 
 Sandbox tự động là môi trường ảo hóa tích hợp sẵn các công cụ giám sát. Khi người dùng tải tệp lên, Sandbox sẽ tự động thực thi tệp trong vài phút, ghi lại toàn bộ hoạt động và xuất ra báo cáo tóm tắt chi tiết.
 
-![[Pasted image 20260912144527.png]]
+![Pasted image 20260912144527.png](../../image/Pasted%20image%2020260912144527.png)
 
 *Hình 3.1: Mục lục báo cáo phân tích tự động được xuất ra từ hệ thống Sandbox GFI.*
 
@@ -361,7 +361,7 @@ Windows không cung cấp cách nhấn đúp để chạy tệp `.dll`. Ta sử 
 rundll32.exe DLLName, ExportName [Arguments]
 ```
 
-![[Pasted image 20260912145533.png]]
+![Pasted image 20260912145533.png](../../image/Pasted%20image%2020260912145533.png)
 
 *Hình 3.2: Cú pháp thực thi hàm export của DLL bằng tiện ích rundll32.exe.*
 
@@ -389,7 +389,7 @@ rundll32.exe DLLName, ExportName [Arguments]
 
 Process Monitor (ProcMon) thuộc bộ công cụ Sysinternals là công cụ giám sát thời gian thực toàn diện nhất đối với hoạt động của hệ điều hành Windows.
 
-![[PMA_Fig3-2_Procmon_Capture.png]]
+![PMA_Fig3-2_Procmon_Capture.png](../../image/PMA_Fig3-2_Procmon_Capture.png)
 
 *Hình 3.3: Giao diện chụp sự kiện hệ thống của Process Monitor khi mẫu mã độc mm32.exe hoạt động.*
 
@@ -409,7 +409,7 @@ Hệ điều hành Windows sinh ra hàng trăm nghìn sự kiện mỗi phút. N
   - `Process Name is <ten_malware.exe> then Include`
   - Hoặc `Operation is SetDispositionInformationFile then Include` (bắt hành vi tự xóa tệp).
 
-![[PMA_Fig3-3_Procmon_Filter.png]]
+![PMA_Fig3-3_Procmon_Filter.png](../../image/PMA_Fig3-3_Procmon_Filter.png)
 
 *Hình 3.4: Thiết lập bộ lọc sự kiện theo Process Name trong Process Monitor.*
 
@@ -417,11 +417,11 @@ Hệ điều hành Windows sinh ra hàng trăm nghìn sự kiện mỗi phút. N
 
 Thanh công cụ của ProcMon cung cấp năm biểu tượng nút bấm để bật/tắt nhanh các nhóm sự kiện tương ứng:
 
-![[PMA_Fig3-4_Procmon_FilterButtons.png]]
+![PMA_Fig3-4_Procmon_FilterButtons.png](../../image/PMA_Fig3-4_Procmon_FilterButtons.png)
 
 *Hình 3.5: Các nút bật/tắt nhanh bộ lọc sự kiện trên thanh công cụ ProcMon (Registry, File System, Network, Process, Profiling).*
 
-> [!TIP]
+> **💡 TIP**
 > Trong menu `Filter`, hãy bật tùy chọn **Drop Filtered Events**. Tính năng này chỉ lưu trữ các sự kiện khớp với bộ lọc vào RAM, loại bỏ toàn bộ dữ liệu thừa nhằm tránh tràn bộ nhớ khi chạy lâu.
 
 ---
@@ -430,7 +430,7 @@ Thanh công cụ của ProcMon cung cấp năm biểu tượng nút bấm để 
 
 Process Explorer (PE) cung cấp cây phân cấp tiến trình (Process Tree) trực quan, cho thấy chính xác tiến trình cha nào đã sinh ra tiến trình con độc hại.
 
-![[Pasted image 20260912153226.png]]
+![Pasted image 20260912153226.png](../../image/Pasted%20image%2020260912153226.png)
 
 *Hình 3.6: Cửa sổ chính của Process Explorer hiển thị cây tiến trình và chỉ số hệ thống.*
 
@@ -438,11 +438,11 @@ Process Explorer (PE) cung cấp cây phân cấp tiến trình (Process Tree) t
 
 Trong cửa sổ thuộc tính của tiến trình (Process Properties -> tab Image), nút **Verify** cho phép xác minh chữ ký số của tệp nhị phân trên đĩa với Microsoft.
 
-![[Pasted image 20260912153936.png]]
+![Pasted image 20260912153936.png](../../image/Pasted%20image%2020260912153936.png)
 
 *Hình 3.7: Kiểm tra thuộc tính tiến trình svchost.exe nghi vấn trong Process Explorer.*
 
-> [!WARNING]
+> **⚠️ WARNING**
 > **Điểm mù của nút Verify:** Nút Verify chỉ xác thực tệp nhị phân lưu trên đĩa cứng. Nếu mã độc sử dụng kỹ thuật **Process Hollowing** (rút ruột tiến trình) hoặc **DLL Injection** (tiêm mã độc vào tiến trình hệ thống hợp lệ `svchost.exe`), nút Verify vẫn báo chữ ký hợp lệ của Microsoft dù mã đang chạy trên RAM thực chất là mã độc!
 
 #### b. So sánh chuỗi bộ nhớ với chuỗi tệp trên đĩa (Disk vs. Memory Strings)
@@ -452,7 +452,7 @@ Tab **Strings** trong Process Explorer cho phép chuyển đổi giữa hai ch�
 - **Image:** Đọc các chuỗi từ tệp tĩnh trên đĩa cứng.
 - **Memory:** Đọc các chuỗi đang nằm trực tiếp trong không gian bộ nhớ ảo của tiến trình đang chạy.
 
-![[Pasted image 20260912154322.png]]
+![Pasted image 20260912154322.png](../../image/Pasted%20image%2020260912154322.png)
 
 *Hình 3.8: So sánh danh sách chuỗi trên đĩa (trái) và chuỗi trong bộ nhớ RAM (phải) để phát hiện mã độc nạp ngầm.*
 
@@ -475,7 +475,7 @@ Khi mở một tệp tài liệu nghi vấn (Word, PDF), hãy quan sát cây ti�
 
 Regshot là công cụ mã nguồn mở so sánh ảnh chụp cấu trúc Windows Registry và hệ thống tệp trước và sau khi thực thi mã độc.
 
-![[Pasted image 20260912155814.png]]
+![Pasted image 20260912155814.png](../../image/Pasted%20image%2020260912155814.png)
 
 *Hình 3.9: Báo cáo kết quả so sánh Registry do Regshot tạo ra, phát hiện khóa tự khởi động vừa được thêm mới.*
 
@@ -495,7 +495,7 @@ Mã độc thường cố gắng kết nối ra ngoài để báo cáo tín hi�
 
 Mã độc thường gửi truy vấn phân giải tên miền trước khi gửi dữ liệu. **ApateDNS** lắng nghe trên cổng UDP 53 của máy phân tích và tự động phản hồi mọi truy vấn DNS bằng một địa chỉ IP cục bộ được cấu hình trước.
 
-![[Pasted image 20260912161941.png]]
+![Pasted image 20260912161941.png](../../image/Pasted%20image%2020260912161941.png)
 
 *Hình 3.10: ApateDNS giả lập phân giải tên miền evil.malwar3.com về IP máy cục bộ.*
 
@@ -507,7 +507,7 @@ nc -l -p 80
 ```
 *(Tham số `-l` bật chế độ lắng nghe; `-p 80` chỉ định cổng 80).*
 
-![[Pasted image 20260912161954.png]]
+![Pasted image 20260912161954.png](../../image/Pasted%20image%2020260912161954.png)
 
 *Hình 3.11: Bắt và tương tác với phiên kết nối Reverse Shell của mã độc RShell bằng Netcat.*
 
@@ -517,7 +517,7 @@ nc -l -p 80
 
 Wireshark là công cụ giám sát và phân tích lưu lượng gói tin mạng chuyên sâu.
 
-![[PMA_Fig3-10_Wireshark_DNS_HTTP.png]]
+![PMA_Fig3-10_Wireshark_DNS_HTTP.png](../../image/PMA_Fig3-10_Wireshark_DNS_HTTP.png)
 
 *Hình 3.12: Bắt và phân tích chi tiết cấu trúc gói tin HTTP GET của mã độc trong Wireshark.*
 
@@ -530,7 +530,7 @@ Wireshark là công cụ giám sát và phân tích lưu lượng gói tin mạn
 
 Khi mã độc trao đổi dữ liệu qua giao thức tùy biến, việc đọc từng gói tin đơn lẻ rất rời rạc. Nhấp chuột phải vào một gói tin TCP và chọn **Follow -> TCP Stream** để Wireshark tự động ghép nối toàn bộ cuộc hội thoại truyền nhận hai chiều giữa client và server.
 
-![[PMA_Fig3-11_Wireshark_Follow_TCP_Stream.png]]
+![PMA_Fig3-11_Wireshark_Follow_TCP_Stream.png](../../image/PMA_Fig3-11_Wireshark_Follow_TCP_Stream.png)
 
 *Hình 3.13: Cửa sổ Follow TCP Stream trong Wireshark tái tạo nguyên vẹn nội dung phiên truyền dữ liệu TCP.*
 
@@ -540,7 +540,7 @@ Khi mã độc trao đổi dữ liệu qua giao thức tùy biến, việc đọ
 
 Trong khi ApateDNS và Netcat chỉ hỗ trợ đơn giản, **INetSim** là một bộ công cụ mô phỏng dịch vụ mạng hoàn chỉnh chạy trên máy ảo Linux.
 
-![[Pasted image 20260912163358.png]]
+![Pasted image 20260912163358.png](../../image/Pasted%20image%2020260912163358.png)
 
 *Hình 3.14: Bảng danh sách các dịch vụ mạng mà INetSim có khả năng mô phỏng mặc định.*
 
@@ -554,12 +554,12 @@ Trong khi ApateDNS và Netcat chỉ hỗ trợ đơn giản, **INetSim** là m�
 
 Để đạt hiệu quả tối đa, các công cụ phân tích động luôn được phối hợp theo một quy trình tuần tự khép kín:
 
-![[PMA_Fig3-12_Virtual_Network_Setup.png]]
+![PMA_Fig3-12_Virtual_Network_Setup.png](../../image/PMA_Fig3-12_Virtual_Network_Setup.png)
 
 *Hình 3.15: Mô hình thiết lập mạng phân tích động kết hợp giữa máy ảo Windows (chạy mẫu mã độc) và máy ảo Linux INetSim (giả lập toàn bộ dịch vụ mạng).*
 
 
-![[PMA_Fig3-16_Wireshark_CustomProto.png]]
+![PMA_Fig3-16_Wireshark_CustomProto.png](../../image/PMA_Fig3-16_Wireshark_CustomProto.png)
 
 *Hình 3.16: Bắt và phân tích cấu trúc giao thức mạng tùy biến của mã độc qua cổng 443 bằng Wireshark.*
 

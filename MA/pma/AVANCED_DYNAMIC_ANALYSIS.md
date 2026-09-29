@@ -83,11 +83,11 @@ Tương tự, nếu malware mã hóa dữ liệu trước khi gửi, ta có th�
 
 ##### Software Execution Breakpoints (Điểm dừng phần mềm INT 3)
 
-![[PMA_Fig8-1_Breakpoint_Parameters.png]]
+![PMA_Fig8-1_Breakpoint_Parameters.png](../../image/PMA_Fig8-1_Breakpoint_Parameters.png)
 
 *Hình 8.1: Đặt Breakpoint tại lời gọi API nhạy cảm để quan sát trực tiếp các tham số truyền vào trên Stack.*
 
-![[PMA_Fig8-2_Data_Before_Encryption.png]]
+![PMA_Fig8-2_Data_Before_Encryption.png](../../image/PMA_Fig8-2_Data_Before_Encryption.png)
 
 *Hình 8.2: Trích xuất nội dung văn bản gốc (Plaintext) tại bộ nhớ đệm ngay trước khi hàm mã hóa của mã độc được kích hoạt.*
 
@@ -249,7 +249,7 @@ OllyDbg là trình gỡ lỗi hợp ngữ 32-bit (Assembly-level debugger) kinh 
 
 Giao diện chính của OllyDbg được chia thành 4 khung cửa sổ trực quan:
 
-![[PMA_Fig9-2_OllyDbg_Interface.png]]
+![PMA_Fig9-2_OllyDbg_Interface.png](../../image/PMA_Fig9-2_OllyDbg_Interface.png)
 
 *Hình 9.1: Bốn cửa sổ làm việc then chốt trong giao diện OllyDbg: Disassembler (góc trên trái), Registers (góc trên phải), Memory Dump (góc dưới trái), và Stack (góc dưới phải).*
 
@@ -264,7 +264,7 @@ Giao diện chính của OllyDbg được chia thành 4 khung cửa sổ trực 
 
 Nhấn tổ hợp phím `Alt + M` để mở cửa sổ **Memory Map**. Cửa sổ này hiển thị toàn bộ các trang bộ nhớ mà tiến trình đang chiếm giữ:
 
-![[PMA_Fig9-4_Memory_Map.png]]
+![PMA_Fig9-4_Memory_Map.png](../../image/PMA_Fig9-4_Memory_Map.png)
 
 *Hình 9.2: Cửa sổ Memory Map hiển thị các phân vùng bộ nhớ của tiến trình nc.exe và các thư viện DLL đã nạp.*
 
@@ -292,7 +292,7 @@ Khi mã độc bị đóng gói (Packed), Unpacker Stub sẽ giải nén mã đ�
 2. Khi tiến trình dừng tại OEP, sử dụng plugin **OllyDump** để trích xuất (dump) toàn bộ không gian bộ nhớ của tiến trình thành một tệp PE nhị phân trên đĩa.
 3. Sử dụng công cụ **Scylla** hoặc **Import REConstructor (ImpREC)** để tái tạo lại bảng địa chỉ hàm nhập (Import Address Table - IAT) bị packer phá hủy.
 
-![[PMA_Fig9-16_OllyDump.png]]
+![PMA_Fig9-16_OllyDump.png](../../image/PMA_Fig9-16_OllyDump.png)
 
 *Hình 9.3: Giao diện plugin OllyDump trích xuất tiến trình đã giải mã tại OEP.*
 
@@ -304,55 +304,55 @@ OllyDbg cho phép sửa đổi trực tiếp các lệnh assembly (ví dụ đ�
 ---
 
 
-![[PMA_Fig9-1_OllyDbg_CommandLine.png]]
+![PMA_Fig9-1_OllyDbg_CommandLine.png](../../image/PMA_Fig9-1_OllyDbg_CommandLine.png)
 
 *Hình 9.2: Truyền tham số dòng lệnh cho mẫu mã độc khi mở trong OllyDbg (File -> Open -> Arguments).*
 
-![[PMA_Fig9-3_OllyDbg_Modify_Register.png]]
+![PMA_Fig9-3_OllyDbg_Modify_Register.png](../../image/PMA_Fig9-3_OllyDbg_Modify_Register.png)
 
 *Hình 9.4: Chỉnh sửa trực tiếp giá trị thanh ghi và cờ trạng thái CPU trong cửa sổ Registers của OllyDbg.*
 
-![[PMA_Fig9-5_DLL_Relocation.png]]
+![PMA_Fig9-5_DLL_Relocation.png](../../image/PMA_Fig9-5_DLL_Relocation.png)
 
 *Hình 9.5: Cơ chế tái định vị DLL (Relocation) khi nạp vào không gian bộ nhớ tiến trình.*
 
-![[PMA_Fig9-6_OllyDbg_Threads.png]]
+![PMA_Fig9-6_OllyDbg_Threads.png](../../image/PMA_Fig9-6_OllyDbg_Threads.png)
 
 *Hình 9.6: Cửa sổ quản lý các luồng xử lý (Threads Window) trong OllyDbg, hiển thị ID luồng, trạng thái tạm dừng và điểm nhập.*
 
-![[PMA_Fig9-7_OllyDbg_Stack_Thread.png]]
+![PMA_Fig9-7_OllyDbg_Stack_Thread.png](../../image/PMA_Fig9-7_OllyDbg_Stack_Thread.png)
 
 *Hình 9.7: Ngăn xếp Call Stack tại thời điểm một luồng độc hại bắt đầu khởi chạy.*
 
-![[PMA_Fig9-8_OllyDbg_Cond_Breakpoint.png]]
+![PMA_Fig9-8_OllyDbg_Cond_Breakpoint.png](../../image/PMA_Fig9-8_OllyDbg_Cond_Breakpoint.png)
 
 *Hình 9.8: Thiết lập điểm dừng có điều kiện (Conditional Breakpoint `Shift + F2`) dựa trên giá trị thanh ghi hoặc tham số bộ nhớ.*
 
-![[PMA_Fig9-10_OllyDbg_Call_Exports.png]]
+![PMA_Fig9-10_OllyDbg_Call_Exports.png](../../image/PMA_Fig9-10_OllyDbg_Call_Exports.png)
 
 *Hình 9.9: Kỹ thuật triệu gọi trực tiếp các hàm xuất (Exports) của tệp DLL mã độc trong OllyDbg.*
 
-![[PMA_Fig9-11_OllyDbg_Cond_Tracing.png]]
+![PMA_Fig9-11_OllyDbg_Cond_Tracing.png](../../image/PMA_Fig9-11_OllyDbg_Cond_Tracing.png)
 
 *Hình 9.10: Tính năng theo dõi luồng thực thi có điều kiện (Conditional Tracing) để phát hiện vùng nhớ giải nén ngầm.*
 
-![[PMA_Fig9-12_OllyDbg_Exceptions.png]]
+![PMA_Fig9-12_OllyDbg_Exceptions.png](../../image/PMA_Fig9-12_OllyDbg_Exceptions.png)
 
 *Hình 9.11: Cấu hình bảng chuyển tiếp ngoại lệ (Debugging Options -> Exceptions) để bỏ qua các lỗi do mã độc cố tình tạo ra.*
 
-![[PMA_Fig9-13_OllyDbg_Patch_Options.png]]
+![PMA_Fig9-13_OllyDbg_Patch_Options.png](../../image/PMA_Fig9-13_OllyDbg_Patch_Options.png)
 
 *Hình 9.12: Menu ngữ cảnh chỉnh sửa mã lệnh nhị phân (Assemble / Binary Edit / Fill with NOPs).*
 
-![[PMA_Fig9-14_OllyDbg_Patch_To_Disk.png]]
+![PMA_Fig9-14_OllyDbg_Patch_To_Disk.png](../../image/PMA_Fig9-14_OllyDbg_Patch_To_Disk.png)
 
 *Hình 9.13: Quy trình hai bước lưu trữ toàn bộ các sửa đổi trong bộ nhớ ra tệp thực thi sạch trên đĩa cứng.*
 
-![[PMA_Fig9-15_OllyDbg_Set_Label.png]]
+![PMA_Fig9-15_OllyDbg_Set_Label.png](../../image/PMA_Fig9-15_OllyDbg_Set_Label.png)
 
 *Hình 9.14: Đặt nhãn người dùng (User-defined Label `:`) để đánh dấu các địa chỉ hàm trọng tâm trong OllyDbg.*
 
-![[PMA_Fig9-17_OllyDbg_CmdLine_BP.png]]
+![PMA_Fig9-17_OllyDbg_CmdLine_BP.png](../../image/PMA_Fig9-17_OllyDbg_CmdLine_BP.png)
 
 *Hình 9.15: Thanh công cụ Command Line plugin (`Alt + F1`) giúp đặt nhanh breakpoint theo tên API (`bp CreateFileA`).*
 
@@ -394,7 +394,7 @@ WinDbg là debugger miễn phí của Microsoft. So với OllyDbg, ưu thế qua
 
 ### 10.1 Trình Điều Khiển Thiết Bị và Mã Lệnh Tầng Kernel (Drivers & Kernel Code)
 
-![[PMA_Fig10-1_User_Kernel_Flow.png]]
+![PMA_Fig10-1_User_Kernel_Flow.png](../../image/PMA_Fig10-1_User_Kernel_Flow.png)
 
 *Hình 10.1: Sơ đồ luồng xử lý lời gọi hàm từ ứng dụng User-mode đi qua I/O Manager xuống thiết bị phần cứng ở tầng Kernel.*
 
@@ -458,7 +458,7 @@ Device object
     ↓
 Driver
 ```
-![[Pasted image 20260919233337.png]]
+![Pasted image 20260919233337.png](../../image/Pasted%20image%2020260919233337.png)
 
 Một số kernel malware không có thành phần user mode đáng kể. Nó không cần tạo device object mà có thể tự hoạt động hoàn toàn trong kernel.
 
@@ -504,7 +504,7 @@ Việc bật chế độ debugging không bắt buộc phải luôn có debugger
 
 #### b. Cấu hình cổng nối tiếp ảo (Virtual Serial Port) trên VMware
 
-![[PMA_Fig10-3_WinDbg_Kernel.png]]
+![PMA_Fig10-3_WinDbg_Kernel.png](../../image/PMA_Fig10-3_WinDbg_Kernel.png)
 
 *Hình 10.2: Phiên làm việc gỡ lỗi Kernel thời gian thực kết nối qua Named Pipe trong WinDbg.*
 
@@ -524,7 +524,7 @@ The other end is an application
 ```
 6. Bật tùy chọn $\color{green}{\text{Yield CPU on poll}}$.
 
-![[Pasted image 20260919233741.png]]
+![Pasted image 20260919233741.png](../../image/Pasted%20image%2020260919233741.png)
 
 #### c. Kết nối bằng WinDbg
 
@@ -537,7 +537,7 @@ Trên host***
 11. Đánh dấu tùy chọn $\color{green}{\text{Pipe}}$.
 12. Khởi động máy ảo.
 
-![[Pasted image 20260919233843.png]]
+![Pasted image 20260919233843.png](../../image/Pasted%20image%2020260919233843.png)
 
 Khi kết nối thành công, nên bật verbose output để WinDbg thông báo mỗi lần driver được load hoặc unload. Điều này có thể giúp phát hiện driver đáng ngờ.
 
@@ -1354,7 +1354,7 @@ thì đó có thể là dấu hiệu của rootkit hoặc driver độc hại.
 
 ### 10.7 Kỹ Thuật Nạp Trình Điều Khiển Độc Hại
 
-![[PMA_Fig10-4_OSR_Driver_Loader.png]]
+![PMA_Fig10-4_OSR_Driver_Loader.png](../../image/PMA_Fig10-4_OSR_Driver_Loader.png)
 
 *Hình 10.3: Sử dụng tiện ích OSR Driver Loader để đăng ký và khởi chạy dịch vụ trình điều khiển Kernel trực tiếp phục vụ kiểm thử.*
 
@@ -1367,7 +1367,7 @@ Quy trình:
 3. Chọn **Start Service**.
 4. Theo dõi quá trình load bằng WinDbg.
 
-![[Pasted image 20260920000210.png]]
+![Pasted image 20260920000210.png](../../image/Pasted%20image%2020260920000210.png)
 
 Driver không đáng tin cậy chỉ nên được nạp trong máy ảo phân tích có snapshot và được cô lập phù hợp.
 
