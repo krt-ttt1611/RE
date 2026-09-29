@@ -5,26 +5,42 @@
 ## Chương 8: Nguyên Lý Gỡ Lỗi Mã Độc (Debugging Concepts & Principles)
 
 Debugger là phần mềm hoặc phần cứng dùng để kiểm tra và điều khiển quá trình thực thi của chương trình. Khác với disassembler chỉ cho ta “ảnh chụp tĩnh” của chương trình, debugger cho phép quan sát chương trình khi nó đang chạy: giá trị thanh ghi, vùng nhớ, tham số hàm và sự thay đổi của dữ liệu theo thời gian.
+
 Debugger còn cho phép thay đổi biến, thanh ghi, mã lệnh và luồng thực thi. Vì vậy, đây là công cụ rất quan trọng trong reverse engineering và phân tích malware.
+
 ### 8.1 Source-Level vs. Assembly-Level Debuggers
+
 Có hai loại debugger chính:
-- ==Source-level debugger:== làm việc trên mã nguồn, thường tích hợp trong IDE. Có thể đặt breakpoint tại từng dòng code, xem biến và chạy từng dòng.
-- ==Assembly-level debugger:== làm việc trực tiếp trên mã assembly. Có thể chạy từng instruction, đặt breakpoint tại địa chỉ mã và kiểm tra thanh ghi hoặc bộ nhớ.
+
+- $\color{green}{\text{Source-level debugger:}}$ làm việc trên mã nguồn, thường tích hợp trong IDE. Có thể đặt breakpoint tại từng dòng code, xem biến và chạy từng dòng.
+- $\color{green}{\text{Assembly-level debugger:}}$ làm việc trực tiếp trên mã assembly. Có thể chạy từng instruction, đặt breakpoint tại địa chỉ mã và kiểm tra thanh ghi hoặc bộ nhớ.
+
 Malware analyst thường sử dụng assembly-level debugger vì họ hầu như không có mã nguồn của malware.
 
 ### 8.2 Debugger User-Mode và Kernel-Mode
-==User-mode debugging== thường diễn ra trên cùng một máy: debugger và chương trình cần phân tích cùng chạy trong user mode. Mỗi tiến trình được hệ điều hành cô lập nên việc debug tương đối đơn giản.\n\n- **Kernel-mode debugging:** Phức tạp hơn vì toàn bộ hệ thống chỉ có một kernel duy nhất. Khi kernel dừng tại breakpoint, các ứng dụng khác cũng không thể tiếp tục chạy. Vì vậy, mô hình truyền thống thường sử dụng hai máy:
+
+$\color{green}{\text{User-mode debugging}}$ thường diễn ra trên cùng một máy: debugger và chương trình cần phân tích cùng chạy trong user mode. Mỗi tiến trình được hệ điều hành cô lập nên việc debug tương đối đơn giản.\n\n- **Kernel-mode debugging:** Phức tạp hơn vì toàn bộ hệ thống chỉ có một kernel duy nhất. Khi kernel dừng tại breakpoint, các ứng dụng khác cũng không thể tiếp tục chạy. Vì vậy, mô hình truyền thống thường sử dụng hai máy:
+
 - Target chạy hệ điều hành hoặc driver cần debug.
 - Host chạy debugger và điều khiển target.
+
 Hệ điều hành trên target cũng phải được cấu hình để cho phép kernel debugging.
+
 ### 8.3 Kỹ Thuật Sử Dụng Debugger
+
 Có hai cách bắt đầu debug:
-- ==Khởi chạy chương trình bằng debugger:== chương trình thường dừng trước khi thực thi entry point, giúp ta kiểm soát ngay từ đầu.
-- ==Attach debugger vào tiến trình đang chạy:== các thread của tiến trình bị tạm dừng để debugger giành quyền điều khiển.
+
+- $\color{green}{\text{Khởi chạy chương trình bằng debugger:}}$ chương trình thường dừng trước khi thực thi entry point, giúp ta kiểm soát ngay từ đầu.
+- $\color{green}{\text{Attach debugger vào tiến trình đang chạy:}}$ các thread của tiến trình bị tạm dừng để debugger giành quyền điều khiển.
+
 Attach phù hợp khi chỉ muốn phân tích chương trình sau khi nó đã chạy đến một trạng thái nhất định.
+
 #### a. Chạy từng lệnh (Single-Stepping)
+
 Single-stepping nghĩa là thực thi một instruction rồi dừng lại, cho phép quan sát chi tiết từng thay đổi trong chương trình.
+
 Tuy nhiên, không nên single-step toàn bộ một chương trình phức tạp vì sẽ mất rất nhiều thời gian. Cần tìm khu vực quan trọng bằng phân tích tĩnh hoặc breakpoint, sau đó chỉ single-step đoạn cần nghiên cứu.
+
 Ví dụ:
 ```asm
 mov edi, DWORD_00406904
@@ -37,28 +53,42 @@ loopw LOC_040106B2
 DWORD:00406904: F8FDF3D0
 ```
 Một vòng lặp XOR từng byte với `0x9C`. Khi theo dõi dữ liệu thay đổi từng bước, chuỗi ban đầu khó đọc dần được giải mã thành `LoadLibraryA`. Đây là thông tin khó nhận ra hơn nếu chỉ phân tích tĩnh.
+
 #### b. Phân biệt Step-Over, Step-Into và Step-Out
+
 Khi gặp lệnh `call`, debugger thường cung cấp ba thao tác:
-- ==Step into:== đi vào trong hàm được gọi và dừng tại instruction đầu tiên của hàm đó.
-- ==Step over:== chạy toàn bộ hàm rồi dừng tại instruction ngay sau `call`.
-- ==Step out:== chạy cho tới khi hàm hiện tại kết thúc và quay lại hàm gọi nó.
+
+- $\color{green}{\text{Step into:}}$ đi vào trong hàm được gọi và dừng tại instruction đầu tiên của hàm đó.
+- $\color{green}{\text{Step over:}}$ chạy toàn bộ hàm rồi dừng tại instruction ngay sau `call`.
+- $\color{green}{\text{Step out:}}$ chạy cho tới khi hàm hiện tại kết thúc và quay lại hàm gọi nó.
+
 Step over giúp giảm lượng code cần phân tích, đặc biệt với các API đã biết như `LoadLibrary`. Tuy nhiên, nếu step over nhầm một hàm không bao giờ return thì debugger có thể không lấy lại được quyền điều khiển.
+
 Ngược lại, nếu liên tục step into, ta rất dễ đi sâu vào các hàm thư viện hoặc hàm phụ không liên quan. Vì vậy, cần luôn xác định mình đang tìm hiểu điều gì trước khi lựa chọn thao tác.
+
 #### c. Điểm dừng thực thi (Breakpoints)
+
 Breakpoint làm chương trình tạm dừng tại một vị trí cụ thể để kiểm tra trạng thái của nó. Khi chương trình đang chạy, thanh ghi và bộ nhớ liên tục thay đổi nên rất khó quan sát; breakpoint giúp “đóng băng” trạng thái đó.
+
 Breakpoint đặc biệt hữu ích trong các trường hợp:
+
 - Xác định đích của lệnh gọi gián tiếp như `call eax`.
 - Kiểm tra tham số truyền vào API.
 - Quan sát dữ liệu trước hoặc sau một hàm biến đổi.
 - Tìm instruction đọc hoặc sửa một vùng nhớ.
+
 Ví dụ, có thể đặt breakpoint tại `CreateFileW`, rồi kiểm tra tham số `lpFileName` để biết chương trình đang mở hoặc tạo file nào. Trong ví dụ của tài liệu, tên file được xác định là `LogFile.txt`.
+
 Tương tự, nếu malware mã hóa dữ liệu trước khi gửi, ta có thể đặt breakpoint ngay trước hàm mã hóa để đọc plaintext mà không cần tự phục hồi thuật toán hoặc khóa.
+
 ##### Software Execution Breakpoints (Điểm dừng phần mềm INT 3)
 
 ![[PMA_Fig8-1_Breakpoint_Parameters.png]]
+
 *Hình 8.1: Đặt Breakpoint tại lời gọi API nhạy cảm để quan sát trực tiếp các tham số truyền vào trên Stack.*
 
 ![[PMA_Fig8-2_Data_Before_Encryption.png]]
+
 *Hình 8.2: Trích xuất nội dung văn bản gốc (Plaintext) tại bộ nhớ đệm ngay trước khi hàm mã hóa của mã độc được kích hoạt.*
 
 | Trạng thái mã lệnh | Opcode trên đĩa | Opcode trong bộ nhớ khi đặt Breakpoint | Phản hồi của CPU |
@@ -70,89 +100,141 @@ Tương tự, nếu malware mã hóa dữ liệu trước khi gửi, ta có th�
 *Bảng 8.1: Cơ chế can thiệp byte nhị phân của Software Breakpoint (INT 3).*
 
 Software breakpoint thường là loại breakpoint mặc định.
+
 Debugger triển khai nó bằng cách thay byte đầu tiên của instruction tại vị trí breakpoint bằng `0xCC`, tức opcode của instruction `INT 3`. Khi CPU thực thi `INT 3`, hệ điều hành tạo exception và chuyển quyền điều khiển cho debugger.
+
 Ưu điểm:
+
 - Có thể đặt rất nhiều software breakpoint.
 - Dễ sử dụng.
 - Chi phí bộ nhớ nhỏ.
+
 Nhược điểm:
+
 - Làm thay đổi code trong bộ nhớ.
 - Có thể bị malware phát hiện bằng kiểm tra tính toàn vẹn của code.
 - Có thể bị xóa nếu chương trình tự sửa mã.
 - Chương trình tự đọc code sẽ nhìn thấy byte `0xCC` thay vì byte ban đầu.
+
 ##### Hardware Execution Breakpoints (Điểm dừng phần cứng qua thanh ghi DR0-DR7)
+
 Hardware breakpoint được CPU hỗ trợ thông qua các thanh ghi debug.
+
 Khác với software breakpoint, nó không sửa byte mã lệnh tại địa chỉ cần theo dõi. Do đó, nó hữu ích khi:
+
 - Code có khả năng tự thay đổi.
 - Malware kiểm tra sự toàn vẹn của code.
 - Cần dừng khi một vùng nhớ được đọc hoặc ghi.
+
 Hardware breakpoint có thể theo dõi:
+
 - Execution: CPU thực thi tại địa chỉ đó.
 - Read: vùng nhớ được đọc.
 - Write: vùng nhớ bị ghi.
 - Access: vùng nhớ được đọc hoặc ghi.
+
 Hạn chế lớn nhất là x86 chỉ có bốn thanh ghi địa chỉ breakpoint: `DR0`–`DR3`. Thông tin điều khiển được lưu trong `DR7`. Malware có thể kiểm tra hoặc sửa các thanh ghi debug để phát hiện và gây khó khăn cho debugger.
+
 ##### Conditional Breakpoints (Điểm dừng có điều kiện)
+
 Conditional breakpoint chỉ thực sự dừng chương trình khi điều kiện chỉ định là đúng.
+
 Ví dụ, `GetProcAddress` có thể được gọi hàng trăm lần, nhưng ta chỉ muốn dừng khi chương trình tìm API `RegSetValue`. Khi đó có thể đặt điều kiện dựa trên tham số truyền vào hàm.
+
 Về bản chất, debugger vẫn nhận breakpoint mỗi lần instruction được thực thi, sau đó:
+
 1. Kiểm tra điều kiện.
 2. Nếu đúng thì dừng cho người phân tích.
 3. Nếu sai thì tự động tiếp tục chạy.
+
 Do phải kiểm tra điều kiện nhiều lần, loại breakpoint này có thể làm chương trình chậm nghiêm trọng nếu được đặt tại instruction chạy thường xuyên. 
+
 #### d. Xử lý ngoại lệ trong Debugger (Exceptions)
+
 Exception là cơ chế chính giúp debugger lấy quyền điều khiển từ chương trình.
+
 Không chỉ breakpoint mới tạo exception. Những sự kiện sau cũng có thể tạo exception:
+
 - Truy cập vùng nhớ không hợp lệ.
 - Chia cho 0.
 - Thực thi instruction đặc quyền trong user mode.
 - Thực thi `INT 3`.
 - Single-step.
+
 Exception cũng có thể được chương trình sử dụng như một phần của luồng điều khiển bình thường hoặc kỹ thuật anti-debug.
+
 ##### Ngoại lệ vòng đầu (First-chance) và vòng hai (Second-chance)
+
 Khi debugger đang attach, một exception thường trải qua hai giai đoạn:
+
 **First-chance exception**
+
 Debugger là bên đầu tiên nhận exception. Nó có thể:
+
 - Tự xử lý exception.
 - Chuyển exception cho chương trình.
+
 Nếu chương trình đã đăng ký exception handler, handler đó sẽ có cơ hội xử lý.
+
 **Second-chance exception**
+
 Nếu chương trình không xử lý được exception, debugger sẽ nhận nó lần thứ hai.
+
 Second-chance exception có nghĩa là nếu không có debugger thì chương trình sẽ crash. Vì vậy, nó không thể bị bỏ qua nếu muốn chương trình tiếp tục chạy.
+
 Trong malware analysis:
+
 - First-chance exception đôi khi có thể bỏ qua vì malware có thể cố tình tạo exception để điều khiển luồng hoặc chống debug.
 - Second-chance exception thường cho thấy malware bị lỗi hoặc không chấp nhận môi trường hiện tại.
+
 ##### Các loại ngoại lệ phổ biến
+
 Một số exception thường gặp:
+
 - **Breakpoint exception:** sinh ra bởi instruction `INT 3`.
 - **Single-step exception:** CPU bật Trap Flag, thực thi một instruction rồi tạo exception.
 - **Access violation:** chương trình đọc, ghi hoặc thực thi tại vùng nhớ không hợp lệ hoặc không có quyền truy cập.
 - **Privileged instruction exception:** chương trình user mode cố thực thi instruction chỉ dành cho kernel mode.
+
 Khi có debugger, debugger nhận first chance trước exception handler của chương trình. Vì thế malware có thể lợi dụng sự khác biệt này để phát hiện debugger.
+
 #### e. Can thiệp và Thay đổi Luồng Thực Thi
+
 Debugger không chỉ quan sát mà còn có thể thay đổi chương trình bằng cách sửa:
+
 - Thanh ghi.
 - Instruction pointer.
 - Cờ điều khiển.
 - Dữ liệu trong bộ nhớ.
 - Instruction của chương trình.
+
 Ví dụ, để bỏ qua một lời gọi hàm, ta có thể đặt breakpoint tại `call`, sau đó chỉnh instruction pointer đến instruction nằm sau `call`.
+
 Tuy nhiên, bỏ qua một hàm có thể khiến chương trình crash nếu hàm đó chịu trách nhiệm:
+
 - Khởi tạo dữ liệu.
 - Cấp phát bộ nhớ.
 - Thiết lập trạng thái.
 - Trả về giá trị được dùng ở phía sau.
+
 Ta cũng có thể ép CPU chạy một hàm cụ thể bằng cách tự chuẩn bị tham số, chỉnh instruction pointer về đầu hàm rồi single-step. Cách này có thể phá hỏng stack và trạng thái chương trình, nhưng vẫn hữu ích để nhanh chóng xác định một hàm đang làm gì.
+
 #### f. Thực hành can thiệp luồng thực thi
+
 Ví dụ thực tế trong tài liệu là một virus thay đổi hành vi dựa trên ngôn ngữ hệ thống:
+
 - English: hiển thị thông báo.
 - Simplified Chinese: tự gỡ bỏ và không gây hại.
 - Japanese hoặc Indonesian: ghi dữ liệu rác lên ổ đĩa.
+
 Chương trình gọi `GetSystemDefaultLCID`, sau đó so sánh giá trị trả về trong `EAX` với các locale ID.
+
 Thay vì thực sự đổi ngôn ngữ của máy, người phân tích có thể:
+
 1. Đặt breakpoint ngay sau `GetSystemDefaultLCID`.
 2. Sửa `EAX` thành `0x0411`, tương ứng với Japanese.
 3. Tiếp tục chạy để ép chương trình đi vào nhánh dành cho hệ thống Nhật.
+
 Kỹ thuật này cho phép kiểm tra nhiều nhánh chương trình mà không cần thay đổi môi trường thật. Với malware, việc đó chỉ nên được thực hiện trong máy ảo có thể hủy bỏ.
 
 ---
@@ -168,6 +250,7 @@ OllyDbg là trình gỡ lỗi hợp ngữ 32-bit (Assembly-level debugger) kinh 
 Giao diện chính của OllyDbg được chia thành 4 khung cửa sổ trực quan:
 
 ![[PMA_Fig9-2_OllyDbg_Interface.png]]
+
 *Hình 9.1: Bốn cửa sổ làm việc then chốt trong giao diện OllyDbg: Disassembler (góc trên trái), Registers (góc trên phải), Memory Dump (góc dưới trái), và Stack (góc dưới phải).*
 
 1. **Khung Disassembly (Góc trên bên trái):** Hiển thị mã hợp ngữ, địa chỉ bộ nhớ thực tế, các opcode thô và chú thích của debugger.
@@ -182,6 +265,7 @@ Giao diện chính của OllyDbg được chia thành 4 khung cửa sổ trực 
 Nhấn tổ hợp phím `Alt + M` để mở cửa sổ **Memory Map**. Cửa sổ này hiển thị toàn bộ các trang bộ nhớ mà tiến trình đang chiếm giữ:
 
 ![[PMA_Fig9-4_Memory_Map.png]]
+
 *Hình 9.2: Cửa sổ Memory Map hiển thị các phân vùng bộ nhớ của tiến trình nc.exe và các thư viện DLL đã nạp.*
 
 - **Kiểm tra quyền phân vùng:** Cột `Access` cho biết quyền hạn của từng section (ví dụ `R` - Read, `W` - Write, `E` - Execute). Section mã thực thi độc hại nạp ngầm thường có cờ `RWE` (Read, Write, Execute).
@@ -201,15 +285,19 @@ Nhấn tổ hợp phím `Alt + M` để mở cửa sổ **Memory Map**. Cửa s�
 ### 9.4 Giải Nén Mã Độc bằng OllyDump và Vá Mã (Patching)
 
 #### a. Kỹ thuật Unpacking với OllyDump
+
 Khi mã độc bị đóng gói (Packed), Unpacker Stub sẽ giải nén mã độc thật vào bộ nhớ và sau đó nhảy tới Original Entry Point (OEP).
+
 1. Tìm kiếm OEP (thường nhận biết bằng một lệnh nhảy xa `jmp` hoặc sau khi hoàn tất vòng lặp giải mã).
 2. Khi tiến trình dừng tại OEP, sử dụng plugin **OllyDump** để trích xuất (dump) toàn bộ không gian bộ nhớ của tiến trình thành một tệp PE nhị phân trên đĩa.
 3. Sử dụng công cụ **Scylla** hoặc **Import REConstructor (ImpREC)** để tái tạo lại bảng địa chỉ hàm nhập (Import Address Table - IAT) bị packer phá hủy.
 
 ![[PMA_Fig9-16_OllyDump.png]]
+
 *Hình 9.3: Giao diện plugin OllyDump trích xuất tiến trình đã giải mã tại OEP.*
 
 #### b. Vá mã lệnh (Patching)
+
 OllyDbg cho phép sửa đổi trực tiếp các lệnh assembly (ví dụ đổi lệnh nhảy có điều kiện `jz` thành nhảy không điều kiện `jmp` hoặc điền lệnh vô tác dụng `nop` `0x90` để vô hiệu hóa kiểm tra máy ảo/chống debug). Sau khi vá trong bộ nhớ, nhấp chuột phải chọn **Copy to executable -> All modifications** để lưu tệp PE đã vá vĩnh viễn ra đĩa.
 
 
@@ -217,42 +305,55 @@ OllyDbg cho phép sửa đổi trực tiếp các lệnh assembly (ví dụ đ�
 
 
 ![[PMA_Fig9-1_OllyDbg_CommandLine.png]]
+
 *Hình 9.2: Truyền tham số dòng lệnh cho mẫu mã độc khi mở trong OllyDbg (File -> Open -> Arguments).*
 
 ![[PMA_Fig9-3_OllyDbg_Modify_Register.png]]
+
 *Hình 9.4: Chỉnh sửa trực tiếp giá trị thanh ghi và cờ trạng thái CPU trong cửa sổ Registers của OllyDbg.*
 
 ![[PMA_Fig9-5_DLL_Relocation.png]]
+
 *Hình 9.5: Cơ chế tái định vị DLL (Relocation) khi nạp vào không gian bộ nhớ tiến trình.*
 
 ![[PMA_Fig9-6_OllyDbg_Threads.png]]
+
 *Hình 9.6: Cửa sổ quản lý các luồng xử lý (Threads Window) trong OllyDbg, hiển thị ID luồng, trạng thái tạm dừng và điểm nhập.*
 
 ![[PMA_Fig9-7_OllyDbg_Stack_Thread.png]]
+
 *Hình 9.7: Ngăn xếp Call Stack tại thời điểm một luồng độc hại bắt đầu khởi chạy.*
 
 ![[PMA_Fig9-8_OllyDbg_Cond_Breakpoint.png]]
+
 *Hình 9.8: Thiết lập điểm dừng có điều kiện (Conditional Breakpoint `Shift + F2`) dựa trên giá trị thanh ghi hoặc tham số bộ nhớ.*
 
 ![[PMA_Fig9-10_OllyDbg_Call_Exports.png]]
+
 *Hình 9.9: Kỹ thuật triệu gọi trực tiếp các hàm xuất (Exports) của tệp DLL mã độc trong OllyDbg.*
 
 ![[PMA_Fig9-11_OllyDbg_Cond_Tracing.png]]
+
 *Hình 9.10: Tính năng theo dõi luồng thực thi có điều kiện (Conditional Tracing) để phát hiện vùng nhớ giải nén ngầm.*
 
 ![[PMA_Fig9-12_OllyDbg_Exceptions.png]]
+
 *Hình 9.11: Cấu hình bảng chuyển tiếp ngoại lệ (Debugging Options -> Exceptions) để bỏ qua các lỗi do mã độc cố tình tạo ra.*
 
 ![[PMA_Fig9-13_OllyDbg_Patch_Options.png]]
+
 *Hình 9.12: Menu ngữ cảnh chỉnh sửa mã lệnh nhị phân (Assemble / Binary Edit / Fill with NOPs).*
 
 ![[PMA_Fig9-14_OllyDbg_Patch_To_Disk.png]]
+
 *Hình 9.13: Quy trình hai bước lưu trữ toàn bộ các sửa đổi trong bộ nhớ ra tệp thực thi sạch trên đĩa cứng.*
 
 ![[PMA_Fig9-15_OllyDbg_Set_Label.png]]
+
 *Hình 9.14: Đặt nhãn người dùng (User-defined Label `:`) để đánh dấu các địa chỉ hàm trọng tâm trong OllyDbg.*
 
 ![[PMA_Fig9-17_OllyDbg_CmdLine_BP.png]]
+
 *Hình 9.15: Thanh công cụ Command Line plugin (`Alt + F1`) giúp đặt nhanh breakpoint theo tên API (`bp CreateFileA`).*
 
 #### Bảng tra cứu phím tắt và câu lệnh điều khiển trong OllyDbg
@@ -290,32 +391,44 @@ OllyDbg cho phép sửa đổi trực tiếp các lệnh assembly (ví dụ đ�
 ## Chương 10: Gỡ Lỗi Kernel với WinDbg (Kernel Debugging with WinDbg)
 
 WinDbg là debugger miễn phí của Microsoft. So với OllyDbg, ưu thế quan trọng nhất của WinDbg là khả năng debug kernel. Chương này tập trung vào kernel debugging và phân tích rootkit, mặc dù nhiều tính năng của WinDbg cũng dùng được khi debug user mode.
+
 ### 10.1 Trình Điều Khiển Thiết Bị và Mã Lệnh Tầng Kernel (Drivers & Kernel Code)
 
 ![[PMA_Fig10-1_User_Kernel_Flow.png]]
+
 *Hình 10.1: Sơ đồ luồng xử lý lời gọi hàm từ ứng dụng User-mode đi qua I/O Manager xuống thiết bị phần cứng ở tầng Kernel.*
 
 Trước khi debug mã độc chạy trong kernel, cần hiểu driver hoạt động như thế nào và tại sao malware muốn chạy ở mức này.
+
 Windows device driver cho phép nhà phát triển bên thứ ba thực thi code trong kernel. Driver khó phân tích vì nó:
+
 - Được nạp vào kernel và thường tồn tại lâu dài trong bộ nhớ.
 - Phản hồi yêu cầu từ nhiều chương trình khác nhau.
 - Không được ứng dụng user mode gọi trực tiếp.
 - Hoạt động thông qua các device object.
+
 Device object không nhất thiết đại diện cho phần cứng vật lý. Driver có thể tự tạo và hủy device object để chương trình user mode truy cập.
+
 Ví dụ, khi cắm USB vào máy:
+
 1. Windows đã có driver quản lý USB.
 2. Hệ điều hành tạo một device object, chẳng hạn ổ `F:`.
 3. Ứng dụng gửi yêu cầu tới `F:`, không gọi trực tiếp driver USB.
 4. Windows chuyển yêu cầu từ device object tới driver tương ứng.
 5. Nếu cắm thêm USB khác, cùng driver đó có thể quản lý device object `G:`.
+
 Driver được nạp vào kernel tương tự cách DLL được nạp vào tiến trình. Khi driver bắt đầu chạy, Windows gọi hàm `DriverEntry`, gần tương đương `DllMain` của DLL.
+
 Tuy nhiên, driver thường không cung cấp chức năng thông qua export table như DLL. Thay vào đó:
+
 6. Windows tạo một cấu trúc `DRIVER_OBJECT`.
 7. Windows truyền con trỏ tới cấu trúc này cho `DriverEntry`.
 8. `DriverEntry` điền địa chỉ các callback vào bảng `MajorFunction`.
 9. Driver tạo device object.
 10. Chương trình user mode mở device object và gửi yêu cầu tới driver.
+
 Ví dụ, khi chương trình gọi `ReadFile` trên handle của một device object, kernel xử lý yêu cầu và cuối cùng gọi callback chịu trách nhiệm xử lý thao tác đọc của driver.
+
 Một API thường gặp khi phân tích driver độc hại là:
 ```
 DeviceIoControl(
@@ -330,6 +443,7 @@ DeviceIoControl(
 );
 ```
 `DeviceIoControl` là giao diện tổng quát cho phép chương trình user mode gửi một buffer đầu vào tới driver và nhận lại buffer đầu ra.
+
 Việc trace từ lời gọi user mode xuống driver khá khó vì yêu cầu phải đi qua nhiều lớp code của hệ điều hành:
 ```
 Ứng dụng
@@ -345,18 +459,28 @@ Device object
 Driver
 ```
 ![[Pasted image 20260919233337.png]]
+
 Một số kernel malware không có thành phần user mode đáng kể. Nó không cần tạo device object mà có thể tự hoạt động hoàn toàn trong kernel.
+
 Driver độc hại thường không thực sự điều khiển phần cứng. Thay vào đó, nó tương tác với:
+
 - `ntoskrnl.exe`: chứa phần lớn chức năng cốt lõi của Windows kernel.
 - `hal.dll`: Hardware Abstraction Layer, phụ trách tương tác với phần cứng ở mức thấp.
+
 ### 10.2 Thiết Lập Môi Trường Gỡ Lỗi Kernel với WinDbg
+
 Kernel debugging phức tạp hơn user-mode debugging. Khi kernel bị dừng tại breakpoint, toàn bộ hệ điều hành target cũng dừng, vì vậy không thể chạy debugger ngay trên hệ thống đó theo cách thông thường.
+
 Mô hình phổ biến gồm:
-- ==Target:== máy ảo hoặc máy vật lý chạy kernel/driver cần debug.
-- ==Host:== máy chạy WinDbg.
-- ==Kết nối debug:== serial, named pipe, USB hoặc mạng.
+
+- $\color{green}{\text{Target:}}$ máy ảo hoặc máy vật lý chạy kernel/driver cần debug.
+- $\color{green}{\text{Host:}}$ máy chạy WinDbg.
+- $\color{green}{\text{Kết nối debug:}}$ serial, named pipe, USB hoặc mạng.
+
 Tài liệu sử dụng Windows XP trong VMware và cấu hình kết nối bằng virtual serial port. Trước khi chỉnh cấu hình khởi động, nên tạo snapshot của máy ảo.
+
 #### a. Cấu hình tệp khởi động boot.ini
+
 Tài liệu thêm một entry vào `C:\boot.ini`:
 ```
 [boot loader]
@@ -369,20 +493,26 @@ multi(0)disk(0)rdisk(0)partition(1)\WINDOWS="Microsoft Windows XP Professional" 
 multi(0)disk(0)rdisk(0)partition(1)\WINDOWS="Microsoft Windows XP Professional with Kernel Debugging" /noexecute=optin /fastdetect /debug /debugport=COM1 /baudrate=115200
 ```
 Trong đó:
+
 - `/debug`: bật kernel debugging.
 - `/debugport=COM1`: sử dụng cổng COM1.
 - `/baudrate=115200`: tốc độ truyền của kết nối serial.
+
 Sau khi cấu hình, boot loader cho phép lựa chọn khởi động Windows bình thường hoặc Windows với kernel debugging được bật.
+
 Việc bật chế độ debugging không bắt buộc phải luôn có debugger kết nối. Hệ điều hành vẫn có thể chạy nếu WinDbg chưa attach.
+
 #### b. Cấu hình cổng nối tiếp ảo (Virtual Serial Port) trên VMware
 
 ![[PMA_Fig10-3_WinDbg_Kernel.png]]
+
 *Hình 10.2: Phiên làm việc gỡ lỗi Kernel thời gian thực kết nối qua Named Pipe trong WinDbg.*
 
 Tài liệu hướng dẫn thêm serial port vào máy ảo:
-1. Mở ==VM → Settings==.
-2. Chọn ==Add → Serial Port==.
-3. Chọn ==Output to Named Pipe==.
+
+1. Mở $\color{green}{\text{VM → Settings}}$.
+2. Chọn $\color{green}{\text{Add → Serial Port}}$.
+3. Chọn $\color{green}{\text{Output to Named Pipe}}$.
 4. Đặt tên pipe:
 ```
 \\.\pipe\com_1
@@ -392,20 +522,29 @@ Tài liệu hướng dẫn thêm serial port vào máy ảo:
 This end is the server
 The other end is an application
 ```
-6. Bật tùy chọn ==Yield CPU on poll==.
+6. Bật tùy chọn $\color{green}{\text{Yield CPU on poll}}$.
+
 ![[Pasted image 20260919233741.png]]
+
 #### c. Kết nối bằng WinDbg
+
 Trên host***
+
 7. Khởi chạy WinDbg.
-8. Chọn ==File → Kernel Debug==.
-9. Mở tab ==COM==.
+8. Chọn $\color{green}{\text{File → Kernel Debug}}$.
+9. Mở tab $\color{green}{\text{COM}}$.
 10. Nhập named pipe và baud rate `115200`.
-11. Đánh dấu tùy chọn ==Pipe==.
+11. Đánh dấu tùy chọn $\color{green}{\text{Pipe}}$.
 12. Khởi động máy ảo.
+
 ![[Pasted image 20260919233843.png]]
+
 Khi kết nối thành công, nên bật verbose output để WinDbg thông báo mỗi lần driver được load hoặc unload. Điều này có thể giúp phát hiện driver đáng ngờ.
+
 ### 10.3 Các Câu Lệnh Thao Tác Cơ Bản Trong WinDbg
+
 Phần lớn chức năng nâng cao của WinDbg được điều khiển qua command line. WinDbg cung cấp lệnh để:
+
 - Đọc và ghi bộ nhớ.
 - Tính toán địa chỉ.
 - Đặt breakpoint.
@@ -413,6 +552,7 @@ Phần lớn chức năng nâng cao của WinDbg được điều khiển qua co
 - Tải symbol.
 - Hiển thị cấu trúc dữ liệu kernel.
 - Tìm driver và device object.
+
 #### a. Đọc dữ liệu từ bộ nhớ (db, dw, dd, da, du, poi)
 
 | Lệnh hiển thị bộ nhớ | Định dạng dữ liệu | Mục đích kiểm tra |
@@ -450,7 +590,9 @@ Ví dụ:
 eb 0x401020 41
 ```
 Lệnh trên ghi byte `0x41`, tức ký tự `A`, vào địa chỉ `0x401020`.
+
 #### b. Sử dụng các toán tử số học trong WinDbg
+
 WinDbg cho phép thực hiện trực tiếp các phép toán trên địa chỉ, thanh ghi và biểu thức:
 ```
 +
@@ -458,19 +600,24 @@ WinDbg cho phép thực hiện trực tiếp các phép toán trên địa chỉ
 /
 ```
 Điều này hữu ích khi:
+
 - Tính offset của một trường trong structure.
 - Lấy tham số từ stack.
 - Tạo biểu thức cho conditional breakpoint.
 - Tính vị trí phần tử trong một bảng con trỏ.
+
 Tài liệu sử dụng toán tử `dwo` để dereference một con trỏ 32-bit. Giả sử chương trình 32-bit dừng tại đầu hàm và tham số đầu tiên là con trỏ tới chuỗi Unicode, tham số đó nằm tại `esp+4`:
 ```
 du dwo(esp+4)
 ```
 Ý nghĩa:
+
 1. `esp+4` xác định vị trí tham số đầu tiên trên stack.
 2. `dwo(...)` đọc DWORD tại đó để lấy giá trị con trỏ.
 3. `du` đọc dữ liệu tại địa chỉ con trỏ dưới dạng chuỗi Unicode.
+
 #### c. Thiết lập điểm dừng trong Kernel (bp, bu, ba)
+
 Lệnh `bp` đặt software breakpoint:
 ```
 bp địa_chỉ
@@ -480,11 +627,14 @@ WinDbg còn cho phép breakpoint tự động thực hiện một chuỗi lệnh
 bp GetProcAddress "da dwo(esp+8); g"
 ```
 Mỗi lần `GetProcAddress` được gọi, breakpoint sẽ:
+
 1. Lấy tham số thứ hai tại `esp+8`.
 2. Dereference con trỏ bằng `dwo`.
 3. In tên API dưới dạng ASCII bằng `da`.
 4. Dùng `g` để tiếp tục chạy ngay lập tức.
+
 Nhờ vậy, ta có thể ghi lại toàn bộ API mà chương trình phân giải động mà không cần dừng thủ công ở mỗi lần gọi.
+
 WinDbg còn hỗ trợ các cấu trúc lệnh như:
 ```
 .if
@@ -492,26 +642,36 @@ WinDbg còn hỗ trợ các cấu trúc lệnh như:
 .while
 ```
 Do đó, có thể viết script hoặc breakpoint có điều kiện khá phức tạp.
+
 Nếu tham số thứ hai của `GetProcAddress` là ordinal thay vì con trỏ chuỗi, WinDbg có thể cố đọc một địa chỉ không hợp lệ. Khi đó nó thường chỉ hiển thị:
 ```
 ????
 ```
 thay vì làm debugger crash.
+
 #### d. Liệt kê các module đã nạp (lm)
+
 Lệnh `lm` liệt kê các module đã được load:
 ```
 lm
 ```
 Trong user mode, danh sách có thể chứa:
+
 - File thực thi chính.
 - Các DLL.
+
 Trong kernel mode, danh sách còn chứa:
+
 - `ntoskrnl.exe`.
 - `hal.dll`.
 - Các driver `.sys`.
+
 WinDbg hiển thị địa chỉ bắt đầu và kết thúc của từng module, giúp xác định một địa chỉ thuộc module nào.
+
 ### 10.4 Quản Lý và Cấu Hình Ký Hiệu Gỡ Lỗi (Microsoft Symbols)
+
 Debugging symbol cung cấp tên và một phần thông tin kiểu dữ liệu từ mã nguồn.
+
 Nếu không có symbol, WinDbg có thể chỉ hiển thị:
 ```
 8050f1a2
@@ -521,13 +681,17 @@ Khi có symbol, địa chỉ đó có thể được hiển thị thành:
 nt!MmCreateProcessAddressSpace
 ```
 Tên hàm cho ta manh mối rất lớn về mục đích của code. Symbol có thể đại diện cho:
+
 - Hàm.
 - Biến toàn cục.
 - Cấu trúc.
 - Kiểu dữ liệu.
 - Trường bên trong cấu trúc.
+
 Symbol của Microsoft đặc biệt hữu ích khi phân tích kernel vì nó cung cấp thông tin về nhiều cấu trúc nội bộ vốn không được mô tả đầy đủ trong tài liệu công khai.
+
 #### a. Tìm kiếm Symbol bằng ký tự đại diện (Wildcard)
+
 Cú pháp tham chiếu symbol trong WinDbg:
 ```
 module!symbol
@@ -537,23 +701,29 @@ Ví dụ:
 nt!NtCreateProcess
 ```
 `nt` là tên module đặc biệt được dùng cho `ntoskrnl.exe`.
+
 Để disassemble hàm:
 ```
 u nt!NtCreateProcess
 ```
 Nếu không chỉ định module, WinDbg phải tìm trong symbol của tất cả module đã load, nên có thể mất nhiều thời gian.
+
 #### b. Điểm dừng chờ (Deferred Breakpoints)
+
 Lệnh `bu` cho phép đặt breakpoint dựa trên symbol ngay cả khi module chưa được load:
 ```
 bu newModule!exportedFunction
 ```
 WinDbg sẽ chờ đến khi `newModule` được load, sau đó tự động kích hoạt breakpoint.
+
 Để đặt breakpoint tại entry point của driver:
 ```
 bu $iment(driverName)
 ```
 Cách này cho phép debugger dừng trước khi code chính của driver bắt đầu thực thi.
+
 #### c. Truy vấn Symbol nâng cao với x
+
 Lệnh `x` tìm symbol:
 ```
 x nt!*CreateProcess*
@@ -568,6 +738,7 @@ nt!PsSetCreateProcessNotifyRoutine
 nt!MmCreateProcessAddressSpace
 ```
 #### d. Xác định hàm gần nhất với địa chỉ (ln)
+
 Lệnh `ln` liệt kê symbol gần nhất:
 ```
 ln 805717aa
@@ -577,6 +748,7 @@ Ví dụ, kết quả có thể cho biết địa chỉ đó chính xác là:
 nt!NtReadFile
 ```
 #### e. Khảo sát cấu trúc Kernel bằng lệnh dt
+
 Lệnh `dt` hiển thị định nghĩa của một kiểu hoặc structure:
 ```
 dt nt!_DRIVER_OBJECT
@@ -598,6 +770,7 @@ Một phần cấu trúc `_DRIVER_OBJECT`:
 +0x038 MajorFunction
 ```
 `DriverStart` cho biết địa chỉ driver được load trong bộ nhớ. `MajorFunction` là bảng chứa các callback xử lý I/O.
+
 Nếu biết địa chỉ một driver object, có thể overlay structure lên dữ liệu thật:
 ```
 dt nt!_DRIVER_OBJECT 828b2648
@@ -610,16 +783,21 @@ DriverUnload : Beep!BeepUnload
 MajorFunction: Beep!BeepOpen
 ```
 `DriverInit` rất đáng chú ý vì đây là code được chạy mỗi lần driver được load. Một số malware đặt toàn bộ payload trong hàm khởi tạo này.
+
 #### f. Thiết lập đường dẫn máy chủ Symbol của Microsoft
+
 Symbol phải khớp chính xác với phiên bản của file đang debug. Mỗi bản vá hoặc cập nhật Windows có thể thay đổi địa chỉ và symbol tương ứng.
+
 Tài liệu cấu hình symbol server bằng đường dẫn:
 ```
 SRV*c:\websymbols*http://msdl.microsoft.com/download/symbols
 ```
 Trong đó:
+
 - `SRV` chỉ định nguồn là symbol server.
 - `c:\websymbols` là thư mục cache cục bộ.
 - URL phía sau là Microsoft Symbol Server.
+
 Cấu hình hiện đại thường sử dụng:
 ```
 .symfix
@@ -633,7 +811,9 @@ hoặc:
 Nếu máy phân tích không có Internet, có thể tải trước symbol phù hợp với phiên bản, kiến trúc và bản cập nhật của Windows.
 
 ### 10.5 Thực Hành Gỡ Lỗi Kernel Trong Phân Tích Mã Độc
+
 Ví dụ thực hành phân tích một chương trình sử dụng driver để ghi file từ kernel mode.
+
 Việc ghi file từ kernel có thể khó phát hiện hơn vì malware không gọi trực tiếp các API user mode quen thuộc như:
 ```
 CreateFile
@@ -645,9 +825,12 @@ ZwCreateFile
 ZwWriteFile
 ```
 Quá trình phân tích được chia thành hai phần:
+
 1. Phân tích thành phần user mode bằng IDA.
 2. Phân tích driver trong kernel bằng WinDbg.
+
 #### a. Chuyển đổi ngữ cảnh sang không gian User-mode (.process)
+
 Đầu tiên, thành phần user mode gọi `CreateServiceA` để đăng ký driver.
 ```asm
 04001B3D push esi ; lpPassword
@@ -675,6 +858,7 @@ tương ứng với:
 SERVICE_KERNEL_DRIVER
 ```
 Điều này cho biết service được tạo là một kernel driver.
+
 Sau đó, chương trình gọi `CreateFileA` để lấy handle tới device object:
 ```asm
 04001893 xor eax, eax
@@ -692,6 +876,7 @@ Tên device được sử dụng:
 \\.\FileWriterDevice
 ```
 Ở đây chương trình không mở một file thông thường. Nó mở device object do driver tạo ra.
+
 Khi đã có handle, chương trình gọi `DeviceIoControl`:
 ```asm
 04001910 push 0 ; lpOverlapped
@@ -715,12 +900,15 @@ lpInBuffer      = dữ liệu gửi vào driver
 lpOutBuffer     = buffer nhận dữ liệu trả về
 ```
 Đây là điểm nối giữa thành phần user mode và code trong driver.
+
 #### b. Phân tích mã điều khiển trong Kernel-mode
+
 Khi bật verbose output, WinDbg thông báo mỗi lần kernel module được load:
 ```
 ModLoad: f7b0d000 f7b0e780 FileWriter.sys
 ```
 Nếu module xuất hiện đúng lúc chạy mẫu malware, nó có thể là driver đáng ngờ.
+
 Lệnh sau tìm driver object:
 ```
 !drvobj FileWriter
@@ -746,10 +934,12 @@ HARDWARE\DESCRIPTION\SYSTEM"
 +0x038 MajorFunction : [28] 0xf7b0da06 long +0
 ```
 Kết quả cho biết:
+
 - Địa chỉ driver object.
 - Tên driver.
 - Danh sách device object.
 - Trạng thái symbol.
+
 Nếu `!drvobj` thất bại hoặc tên driver object khác tên file, có thể liệt kê namespace driver:
 ```
 !object \Driver
@@ -841,10 +1031,13 @@ F7B0DD12 push FileHandle ; FileHandle
 F7B0DD18 call ds:ZwWriteFile
 ```
 Sau khi tìm được dispatch routine, có thể:
+
 - Tiếp tục phân tích động bằng WinDbg.
 - Load driver vào IDA để đọc assembly và pseudocode trước.
 - Quay lại WinDbg khi cần quan sát dữ liệu runtime.
+
 Tài liệu khuyến nghị phân tích tĩnh bằng IDA trước, sau đó sử dụng WinDbg cho những phần cần kiểm tra động.
+
 Trong dispatch routine của `FileWriter.sys`, malware gọi:
 ```
 RtlInitUnicodeString
@@ -856,7 +1049,9 @@ Tên file được tạo:
 \DosDevices\C:\secretfile.txt
 ```
 Kernel sử dụng cấu trúc `UNICODE_STRING`, không đơn thuần là chuỗi wide-character kết thúc bằng null như trong nhiều API user mode.
+
 `RtlInitUnicodeString` được dùng để khởi tạo `UNICODE_STRING` từ chuỗi wide-character.
+
 Ngoài `DeviceIoControl`, các API như `CreateFile`, `ReadFile` và `WriteFile` cũng có thể tạo request gửi tới driver. Ví dụ:
 ```
 ReadFile → IRP_MJ_READ
@@ -870,8 +1065,11 @@ nên với cấu trúc 32-bit, callback đọc được tìm bằng:
 MajorFunction + 0x3 * 4
 ```
 #### c. Truy vết đối tượng Driver Object (!drvobj và !devobj)
+
 Không phải lúc nào tên file driver cũng giúp tìm ngay driver object.
+
 Vì chương trình user mode tương tác với device object, ta có thể lần ngược từ device object tới driver object.
+
 Nếu phát hiện chương trình mở:
 ```
 \\.\FileWriterDevice
@@ -885,6 +1083,7 @@ uả chứa con trỏ:
 Device object → Driver object
 ```
 Sau khi có driver object, ta có thể xem bảng `MajorFunction` và các callback của driver.
+
 Để tìm chương trình user mode nào đang giữ handle tới device object:
 ```
 !devhandles 826eb030
@@ -917,19 +1116,25 @@ Device object
 ```
 
 ### 10.6 Kỹ Thuật Phân Tích Kernel Rootkits
+
 Rootkit sửa đổi chức năng nội bộ của hệ điều hành để che giấu sự tồn tại của nó. Nó có thể ẩn:
+
 - File.
 - Tiến trình.
 - Kết nối mạng.
 - Registry key.
 - Driver.
 - Các tài nguyên khác.
+
 Tài liệu tập trung vào kỹ thuật **System Service Descriptor Table hooking**, gọi tắt là **SSDT hooking**.
+
 SSDT là bảng được kernel sử dụng để tìm địa chỉ hàm xử lý system call. Trong ví dụ Windows XP 32-bit:
+
 1. `ntdll.dll` đưa mã số system call vào `EAX`.
 2. Chương trình thực thi `SYSENTER`.
 3. Kernel dùng giá trị `EAX` làm chỉ số vào SSDT.
 4. Entry trong SSDT chỉ tới hàm kernel tương ứng.
+
 Ví dụ:
 ```
 mov eax, 25h
@@ -959,13 +1164,18 @@ Rootkit có thể thay entry này bằng địa chỉ hook của nó:
 SSDT[0x25] = địa chỉ hook trong driver độc hại
 ```
 Khi chương trình gọi `NtCreateFile`, luồng thực thi đi qua hook trước. Hook có thể:
+
 1. Gọi `NtCreateFile` gốc.
 2. Kiểm tra tên file.
 3. Chặn hoặc lọc các file cần ẩn.
 4. Trả kết quả giả cho chương trình user mode.
+
 Chỉ hook `NtCreateFile` chưa chắc ẩn được file khỏi directory listing, vì việc liệt kê thư mục có thể sử dụng system call khác.
+
 #### a. Phân tích thực tế các cơ chế Hooking trong Kernel
+
 Cách trực tiếp để phát hiện SSDT hook là kiểm tra các địa chỉ trong SSDT.
+
 Các entry hợp lệ thông thường phải trỏ vào phạm vi địa chỉ của `ntoskrnl.exe`. Trước tiên dùng `lm` để xác định vùng địa chỉ của module `nt`:
 ```
 lm m nt
@@ -993,6 +1203,7 @@ Trong ví dụ, entry tại offset `0x25` trỏ tới:
 f7ad94a4
 ```
 Địa chỉ này nằm ngoài `ntoskrnl.exe`, nên rất đáng ngờ.
+
 Dùng `lm` để xác định module chứa địa chỉ:
 ```
 kd>lm
@@ -1008,6 +1219,7 @@ Kết quả cho thấy địa chỉ nằm trong:
 Rootkit.sys
 ```
 Sau khi xác định driver, cần tìm:
+
 - Code cài hook.
 - Hàm hook thực sự xử lý request.
 ```
@@ -1044,11 +1256,13 @@ Sau khi xác định driver, cần tìm:
 00010D5D mov dword ptr [ecx], offset sub_104A4
 ```
 Code mẫu thực hiện:
+
 1. Tạo chuỗi `NtCreateFile`.
 2. Tạo chuỗi `KeServiceDescriptorTable`.
 3. Gọi `MmGetSystemRoutineAddress` để lấy địa chỉ hai symbol này.
 4. Duyệt SSDT để tìm entry chứa địa chỉ `NtCreateFile`.
 5. Ghi địa chỉ hàm hook vào entry đó.
+
 `MmGetSystemRoutineAddress` có vai trò gần giống `GetProcAddress` trong kernel, nhưng chỉ tra cứu một số routine được export bởi các module kernel phù hợp.
 ```
 000104A4 mov edi, edi
@@ -1079,13 +1293,17 @@ Mã lỗi:
 0xC0000034 = STATUS_OBJECT_NAME_NOT_FOUND
 ```
 Vì vậy, ứng dụng nhận thông báo rằng file không tồn tại, mặc dù file thực sự vẫn có trên hệ thống.
+
 #### b. Bảng điều hướng ngắt (Interrupt Descriptor Table - IDT)
+
 Interrupt cho phép phần cứng báo cho CPU rằng một sự kiện đã xảy ra hoặc một thao tác đã hoàn thành.
+
 Driver có thể gọi:
 ```
 IoConnectInterrupt
 ```
 để đăng ký một **Interrupt Service Routine – ISR**. Khi interrupt tương ứng xuất hiện, Windows gọi ISR đó.
+
 Thông tin ISR được lưu trong **Interrupt Descriptor Table – IDT**. Có thể xem IDT trong WinDbg bằng:
 ```
 !idt
@@ -1126,45 +1344,64 @@ ACPI
 i8042prt
 ```
 Nếu một interrupt trỏ tới:
+
 - Driver không có tên.
 - Driver không được ký.
 - Module ở vùng địa chỉ đáng ngờ.
 - Driver không liên quan tới loại phần cứng đó.
+
 thì đó có thể là dấu hiệu của rootkit hoặc driver độc hại.
 
 ### 10.7 Kỹ Thuật Nạp Trình Điều Khiển Độc Hại
 
 ![[PMA_Fig10-4_OSR_Driver_Loader.png]]
+
 *Hình 10.3: Sử dụng tiện ích OSR Driver Loader để đăng ký và khởi chạy dịch vụ trình điều khiển Kernel trực tiếp phục vụ kiểm thử.*
 
 Nếu chỉ có file driver độc hại mà không có chương trình user mode dùng để cài đặt nó, tài liệu đề xuất sử dụng **OSR Driver Loader**.
+
 Quy trình:
+
 1. Chọn file `.sys`.
 2. Chọn **Register Service**.
 3. Chọn **Start Service**.
 4. Theo dõi quá trình load bằng WinDbg.
+
 ![[Pasted image 20260920000210.png]]
+
 Driver không đáng tin cậy chỉ nên được nạp trong máy ảo phân tích có snapshot và được cô lập phù hợp.
 
 ### 10.8 Các Cơ Chế Bảo Vệ Kernel Trên Windows Hiện Đại (x64)
+
 Các phiên bản Windows mới hơn Windows XP thay đổi đáng kể việc debug kernel và hoạt động của kernel malware.
+
 #### a. Cấu hình gỡ lỗi qua BCDEdit
+
 Từ Windows Vista trở đi, Windows không còn dùng `boot.ini`. Boot configuration được quản lý bằng:
 ```
 BCDEdit
 ```
 Do đó, muốn bật kernel debugging trên Windows mới phải cấu hình BCD thay vì sửa `boot.ini`.
+
 #### b. Cơ chế Kernel Patch Protection (PatchGuard)
+
 Windows x64 triển khai **Kernel Patch Protection**, thường gọi là **PatchGuard**.
+
 PatchGuard chống việc code bên thứ ba sửa đổi:
+
 - Kernel code.
 - System service table.
 - IDT.
 - Một số cấu trúc và vùng kernel quan trọng khác.
+
 Mục đích là ngăn rootkit patch trực tiếp kernel, nhưng cơ chế này cũng ảnh hưởng tới phần mềm bảo mật và công cụ debug sử dụng kỹ thuật tương tự.
+
 Tài liệu nói rằng nếu kernel debugger đã attach từ lúc boot thì PatchGuard có thể không hoạt động theo cách bình thường; còn attach sau khi boot trong một số cấu hình cũ có thể làm hệ thống crash.
+
 #### c. Bắt buộc chữ ký số trình điều khiển (Driver Signature Enforcement - DSE)
+
 Windows x64 từ Vista bắt đầu thực thi yêu cầu chữ ký số đối với kernel driver. Điều này khiến việc load driver tùy ý khó hơn.
+
 Tài liệu cũ đề cập tùy chọn:
 ```
 nointegritychecks

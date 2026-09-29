@@ -1,5 +1,6 @@
 
 # TÀI LIỆU CHUYÊN SÂU: MẬT MÃ HỌC THỰC CHIẾN DÀNH CHO REVERSE ENGINEER
+
 *(Từ Toán Học Căn Bản, Dấu Hiệu Assembly, Sơ Đồ Thuật Toán đến Script Giải Mã & Khai Thác)*
 
 ---
@@ -7,6 +8,7 @@
 ## LỜI NÓI ĐẦU: TƯ DUY MẬT MÃ HỌC TRONG REVERSE ENGINEERING
 
 Đối với một nhà phát triển phần mềm, mật mã học thường chỉ dừng lại ở việc gọi hàm thư viện (ví dụ: `AES.new()`). Tuy nhiên, đối với một **Reverse Engineer / Malware Analyst**, mật mã học là một quá trình bóc tách và nhận dạng:
+
 1. **Không có symbol / Tên hàm**: Bạn phải nhìn vào luồng thực thi (Control Flow) và các hằng số (Magic constants) để biết đó là thuật toán gì.
 2. **Khai thác lỗ hổng triển khai**: Các sai lầm kinh điển như tái sử dụng Nonce, dùng chế độ mã hóa ECB, hay seed bộ số ngẫu nhiên lỏng lẻo.
 3. **Rolling Crypto / Custom Crypto**: Tác giả mã độc thường tự sửa đổi bảng S-box, thay đổi hằng số vòng lặp (như trong TEA/XTEA) để đánh lừa các công cụ tự động.
@@ -20,6 +22,7 @@ Mọi thuật toán mật mã trên máy tính số đều được xây dựng 
 ## 1.1. Phép XOR (Exclusive-OR) và Repeated-Key XOR
 
 Phép XOR (ký hiệu $\oplus$) là phép toán cốt lõi. Trong đại số, nó tương đương với phép cộng modulo 2.
+
 Tính chất quan trọng nhất (Tính tự nghịch đảo):
 $$ A \oplus B = C \implies C \oplus B = A $$
 

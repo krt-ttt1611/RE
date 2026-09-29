@@ -1,8 +1,13 @@
 # **Lab_01-1.malware**
+
 1. 
+
 a)
+
 ![[Pasted image 20260919160816.png]]
+
 `0x004011a0`
+
 b)
 ```asm-ida
 .text:004011A0 ; int __cdecl main(int argc, const char **argv, const char **envp)
@@ -29,6 +34,7 @@ b)
 .text:004011C2 _main           endp
 ```
 *Các cấu trúc được sử dụng:* Cấu trúc rẽ nhánh ở `0x004011B1`
+
 *Chuỗi thú vị:* `http://reversing.rocks/`, vì ở đây có API `InternetCheckConnectionA` thuộc `WinINet.dll`, URL trên có liên quan đến việc malware kết nối mạng.
 
 2. 
@@ -83,6 +89,7 @@ b)
 .text:0040119A sub_401130      endp
 ```
 a) *Các tham số của InternetConnectA có nghĩa là gì*
+
 `IntrernetConnectA` là `stdcall`, các tham số lần lượt được push vào stack từ phải sang trái. Cấu trúc của gọi API này là:
 ```cpp
 HINTERNET InternetConnectA( 
@@ -97,6 +104,7 @@ HINTERNET InternetConnectA(
 		);
 ```
 Vậy nên các tham số lần lượt là:
+
 - `dwContext = 0`: giá trị context do chương trình tự định nghĩa, thường dùng để gắn thông tin với handle khi xử lý callback bất đồng bộ. `0` nghĩa là không dùng context đặc biệt.
 - `dwFlags = 0`: các cờ tùy chọn cho kết nối. `0` nghĩa là không bật flag đặc biệt nào.
 - `dwService = 3`: xác định loại dịch vụ muốn sử dụng. Giá trị `3` là `INTERNET_SERVICE_HTTP` tức chương trình đang tạo kết nối HTTP.
@@ -105,11 +113,15 @@ Vậy nên các tham số lần lượt là:
 - `nServerPort = 0x4d2`: port của server.
 - `lpszServerName = "reversing.rocks": tên server mà chương trình muốn kết nối.
 - `hInternet`: handle của WinINet session đã được tạo trước đó, thường đến từ 'OpenInternetA'.
+
 Vậy, API này thiết lập 1 kết nối http đến server `reversing.rocks`, port 1234.
 
 b) *Code này làm gì*
+
 Đầu tiên, nó khởi tạo 1 WinINet session bằng `OpenInternetA`, nếu thành công thì thực thi tiếp, không thì thoát chương trình.
+
 Tiếp theo, nó thực hiện tạo kết nối http đến `reversing.rock`, nếu lỗi thì đống handle, rồi thoát.
+
 Cuối cùng, nó gọi hàm `sub_401000`, có vẻ là hàm gửi dữ liệu, rồi đóng kết nối.
 
 3. 
@@ -245,11 +257,16 @@ Cuối cùng, nó gọi hàm `sub_401000`, có vẻ là hàm gửi dữ liệu, 
 .text:00401120                 db 10h dup(0CCh)
 ```
 a)
+
 Hàm này sử dụng 2 cấu trúc:
-- ==Cấu trúc rẽ nhánh:== `0x40102d`, `0x4010aa`, ``
-- ==Cấu trúc lặp:== `0x4010c5`, `0x4010f4`
+
+- $\color{green}{\text{Cấu trúc rẽ nhánh:}}$ `0x40102d`, `0x4010aa`, ``
+- $\color{green}{\text{Cấu trúc lặp:}}$ `0x4010c5`, `0x4010f4`
+
 b)
+
 Các API được gọi:
+
 - `FindFirstFileA`: thuộc `KERNEL32.DLL`, tìm 1 tập tin hay thư mục trong 1 đường dẫn cụ thể
 - `HttpOpenRequestA`: Tạo 1 thông điệp Http Request.
 - `HttpSendRequestEx`: Gửi thông điệp Request.
@@ -258,16 +275,23 @@ Các API được gọi:
 - `HttpEndRequestA`: Kết thúc request.
 - `InternetCloseHandle`: Đóng session handle.
 - `FindClose`: đóng handle của `FindFirstFile`.
+
 ![[Pasted image 20260919204939.png]]
+
 ![[Pasted image 20260919204956.png]]
+
 ![[Pasted image 20260919205024.png]]
+
 c) 
+
 Hàm này đang thực hiện hành vi: yêu cầu kết nối và gửi dữ liệu lên server.
 
 4. 
+
 Malware thực hiện tìm kiếm các file dữ liệu trên máy nạn nhân, rồi gửi chúng lên server.
 
 # **Lab-02-2.malware**
+
 1. 
 ```asm-ida
 .text:00401290 ; Attributes: bp-based frame fuzzy-sp
@@ -340,6 +364,7 @@ Malware thực hiện tìm kiếm các file dữ liệu trên máy nạn nhân, 
 .text:0040135B _main           **endp**
 ```
 Các API trong hàm `main`:
+
 - `AllocConsole`: Tạo 1 console mới cho tiến trình hiện tại, thường dùng bởi các gui app (vì nó không có console).
 - `FindWindowA`: Tìm một cửa sổ đang tồn tại dựa trên tên class hoặc tiêu đề cửa sổ, ở đây là tên class của cửa số.
 - `ShowWindow`: Thay đổi trạng thái hiển thị của 1 cửa sổ (ẩn/hiện/phóng to...), ở đây là ẩn cửa sổ đi.
@@ -347,6 +372,7 @@ Các API trong hàm `main`:
 - `ctime`: lấy thông tin về thời gian của máy.
 - `fputs`: ghi dữ liệu vào 1 stream, ở đây chính là ghi vào file mở bằng `fopen`.
 - `fclose`: đóng stream.
+
 Chuỗi thú vị: đó là đường dẫn `\\WINDOWS\\lzwindowlz.av` và dòng `\nstarted logging:`, có thể hành vi của chương trình là log lại các sự kiện nào đó và ghi vào file trong đường dẫn.
 
 2. 
@@ -524,6 +550,7 @@ LABEL_44:
 }
 ```
 a)
+
 API đáng chú ý nhất: `GetaSyncKeyState`: đây là api để kiểm tra trạng thái của 1 phím. Trong code này
 ```c
 if (GetAsyncKeyState(i) != -32767)
@@ -540,12 +567,17 @@ nếu phím i vừa được nhấn
     → mở file \WINDOWS\lzwindolz.av bằng mode a+
 ```
 Kết hợp với việc nhảy lại `label_22` khi size của file chưa đủ, ta có thể đoán được hàm này thực hiện ghi lại các phím mà người dùng nhập.
+
 b)
+
 ![[Pasted image 20260919213507.png]]
+
 Chỉ cần nhìn vào sơ đồ cũng có thể đoán được đây là cấu trúc switch-case.
 
 3. 
+
 Đây là 1 loại keylogger cơ bản. 1 số bằng chứng:
+
 - Đầu tiên là đường dẫn `\\WINDOWS\\lzwindowlz.av`, là file dùng để ghi log các phím được nhập.
 - Tiếp đến là API `GetaSyncKeyState` nằm trong hàm `get_keys`, nó có nhiệm vụ kiểm tra trạng thái các phím, từ đó biết được phím nào được nhập.
 - Cuối cùng là hàm `MailIt`
@@ -675,4 +707,5 @@ int __cdecl MailIt(char *name, char *Source, char *Str, char *a4, char *a5)
 }
 ```
 - ngay từ cái tên ta cũng đã biết được nhiệm vụ của nó rồi, sau khi phân tích, thì ta biết được nó dùng giao thức smtp để gửi file log đến mailserver `unknown-g@inbox.bom`
+
 Có, nó tạo ra 2 file: `\\WINDOWS\\lzwindowlz.av`, ghi log các phím nhập và `\\WINDOWS\\lzwz.av`, nhiệm vụ là nhận vào các chuỗi trả lời của chương trình, cũng với dữ liệu từ server gửi lại, nghĩa là nó cũng có nhiệm vụ là 1 log.

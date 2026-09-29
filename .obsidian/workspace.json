@@ -8,45 +8,17 @@
         "type": "tabs",
         "children": [
           {
-            "id": "1e1b9440351a693f",
+            "id": "e20a9653c7b3811c",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "MA/pma/lab/LAB_05.md",
+                "file": "MA/pma/INDEX.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "LAB_05"
-            }
-          },
-          {
-            "id": "b191b3d79b9d83db",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "MA/WinInternal/COM/BHO.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "BHO"
-            }
-          },
-          {
-            "id": "fe9164e9804da8c8",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "MA/WinInternal/COM/COM.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "COM"
+              "title": "INDEX"
             }
           }
         ]
@@ -108,7 +80,8 @@
       }
     ],
     "direction": "horizontal",
-    "width": 200.5
+    "width": 200.5,
+    "collapsed": true
   },
   "right": {
     "id": "a1e966216e3543c8",
@@ -236,13 +209,18 @@
       "sheet-plus:Create excel file": false
     }
   },
-  "active": "1e1b9440351a693f",
+  "active": "e20a9653c7b3811c",
   "lastOpenFiles": [
+    "MA/pma/lab/LAB_05.md",
+    "MA/pma/INDEX.md",
+    "MA/WinInternal/Message_Driven_Architecture.md",
+    "image/Pasted image 20260928175452.png",
+    "image/Pasted image 20260928171035.png",
+    "image/Pasted image 20260928102709.png",
     "image/Pasted image 20260928094946.png",
     "image/Pasted image 20260928085029.png",
     "image/Pasted image 20260928084823.png",
     "MA/pma/MALWARE_FUNCTIONALITY.md",
-    "MA/pma/lab/LAB_05.md",
     "image/Pasted image 20260928083708.png",
     "image/Pasted image 20260928082752.png",
     "MA/pma/AVANCED_DYNAMIC_ANALYSIS.md",
@@ -250,10 +228,6 @@
     "MA/scratch/integrate_all_figures_and_tables.py",
     "image/PMA_Fig14-3_Sample_Parsing_IDA.png",
     "image/PMA_Fig14-2_Whois_Samples.png",
-    "image/PMA_Fig13-15_Connected_Encryption_Funcs.png",
-    "image/PMA_Fig13-14_Encrypted_Write_Graph.png",
-    "image/PMA_Fig13-11_PEiD_KANAL.png",
-    "image/PMA_Fig13-10_FindCrypt2_Output.png",
     "MA/scratch/extract_all_remaining_figures.py",
     "MA/scratch",
     "MA/pma/MALWARE_FUNCTIONALITY.md.bak",
@@ -265,7 +239,6 @@
     "MA/pma/lab/LAB_03.md",
     "MA/WinInternal/COM/BHO.md",
     "MA/pma/lab/LAB_01.md",
-    "MA/WinInternal/Untitled.md",
     "MA/WinInternal/COM",
     "MA/WinInternal",
     "MA/Untitled.md",
