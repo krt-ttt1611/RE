@@ -107,7 +107,7 @@ def protect(content):
 
     def save(m):
         blocks.append(m.group(0))
-        return f'\x00{len(blocks) - 1}\x00'
+        return f'\uE000{len(blocks) - 1}\uE001'
 
     t = re.sub(r'(?m)^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\1[`~]*[ \t]*$|\Z)', save, content)
     t = re.sub(r'\$\$[\s\S]+?\$\$', save, t)
@@ -119,7 +119,7 @@ def protect(content):
 def restore(t, blocks):
     # lặp vì placeholder có thể lồng nhau
     for _ in range(3):
-        t = re.sub(r'\x00(\d+)\x00', lambda m: blocks[int(m.group(1))], t)
+        t = re.sub(r'\uE000(\d+)\uE001', lambda m: blocks[int(m.group(1))], t)
     return t
 
 
@@ -348,6 +348,9 @@ def fix_newlines(content):
 
 def process(content, md, idx, stats):
     content = content.replace('\r\n', '\n').replace('\r', '\n')
+    # NUL/control char làm GitHub không render được file -> thay bằng text
+    content = content.replace('\x00', '\\0')
+    content = re.sub(r'[\x01-\x08\x0b\x0c\x0e-\x1f]', '', content)
     front = ''
     fm = FRONTMATTER_RE.match(content)
     if fm:
