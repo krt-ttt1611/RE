@@ -25,12 +25,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "MA/lab/pma/Lab_1.md",
+                "file": "MA/lab/pma/Lab_3.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Lab_1"
+              "title": "Lab_3"
             }
           },
           {
@@ -237,8 +237,10 @@
   },
   "active": "3b72367f72a2a10c",
   "lastOpenFiles": [
-    "MA/lab/pma/Lab_3.md",
     "MA/pma/Practical Malware Analysis - The Hands-On Guide to Dissecting Malicious Software.pdf",
+    "MA/lab/pma/Lab_3.md",
+    "MA/pma/MALWARE_FUNCTIONALITY.md",
+    "MA/lab/pma/Lab_1.md",
     "MA/pma/BASIC_ANALYSIS.md",
     "image/Pasted image 20261005125806.png",
     "image/Pasted image 20261005100258.png",
@@ -250,7 +252,6 @@
     "image/Pasted image 20261005094105.png",
     "image/Pasted image 20261005094046.png",
     "image/Pasted image 20261005092748.png",
-    "MA/lab/pma/Lab_1.md",
     "MA/lab/malware_master/LAB_01.md",
     "MA/lab/malware_master/LAB_06.md",
     "MA/lab/malware_master/LAB_05.md",
@@ -259,7 +260,6 @@
     "MA/lab/malware_master/LAB_02.md",
     "documentary/Window_internal/Windows System Internals 7e Part 1.pdf",
     "documentary/WinInternal/Install_and_register_a_service..md",
-    "MA/pma/MALWARE_FUNCTIONALITY.md",
     "MA/Malware-master/Projects/Project_1/Instructions.pdf",
     "MA/Malware-master/Labs/Lab_06/Lab_06/chall.exe",
     "MA/Malware-master/Labs/Lab_06/Lab_06/Lab_06-1.malware",

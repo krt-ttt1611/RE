@@ -104,7 +104,9 @@ Chúng ta có thông tin định danh chính xác tiến trình chủ rồi, nê
 
 ## 6.
 
-![](../../../image/Pasted%20image%2020261005100209.png)Malware thực hiện truy vấn dns để tìm IP của `practicalmalwareanalysis.com`
+![](../../../image/Pasted%20image%2020261005100209.png)
+
+Malware thực hiện truy vấn dns để tìm IP của `practicalmalwareanalysis.com`
 
 ![](../../../image/Pasted%20image%2020261005125806.png)
 
