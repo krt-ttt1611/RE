@@ -64,6 +64,7 @@ Tìm kiếm chuỗi ký tự (Strings) là phương pháp trích xuất các chu
 #### b. Sử dụng công cụ `strings`
 
 Công cụ dòng lệnh `strings` (từ bộ công cụ Microsoft Sysinternals) quét toàn bộ tệp và in ra các chuỗi có độ dài từ 3 hoặc 4 ký tự liên tiếp trở lên:
+
 ```bash
 strings -a -n 5 malware_sample.exe
 ```
@@ -280,7 +281,6 @@ Phân tích mã độc đòi hỏi môi trường thực thi hoàn toàn biệt 
 
 *Hình 2.2: Thiết lập mạng ảo tùy biến (Custom Networking VMnet) kết nối nhiều máy ảo phân tích trong cùng một phân vùng cô lập.*
 
-
 Việc cấu hình card mạng của máy ảo quyết định ranh giới an toàn khi kích hoạt mã độc:
 
 1. **Bridged:** Máy ảo nhận một IP trực tiếp trong mạng LAN thật. Tuyệt đối không sử dụng chế độ này khi chạy mã độc nguy hiểm vì mã độc dạng worm có thể quét và lây lan sang toàn mạng nội bộ.
@@ -310,7 +310,6 @@ Snapshot là tính năng lưu lại trạng thái toàn vẹn (bộ nhớ RAM, c
 *Hình 2.3: Dòng thời gian sử dụng tính năng Snapshot để đưa hệ điều hành trở về trạng thái sạch sau khi thử nghiệm mã độc.*
 
 ---
-
 
 ![PMA_Fig2-6_Snapshot_Manager.png](../../image/PMA_Fig2-6_Snapshot_Manager.png)
 
@@ -357,6 +356,7 @@ Tệp thực thi `.exe` có thể chạy trực tiếp từ dấu nhắc lệnh 
 #### b. Thực thi tệp DLL độc hại với `rundll32.exe`
 
 Windows không cung cấp cách nhấn đúp để chạy tệp `.dll`. Ta sử dụng tiện ích tích hợp sẵn của Windows là `rundll32.exe`:
+
 ```bash
 rundll32.exe DLLName, ExportName [Arguments]
 ```
@@ -502,6 +502,7 @@ Mã độc thường gửi truy vấn phân giải tên miền trước khi gử
 #### b. Lắng nghe và chặn bắt kết nối ngược bằng Netcat
 
 Sau khi ApateDNS điều hướng lưu lượng về máy phân tích, ta dùng **Netcat** (`nc`) để lắng nghe kết nối đến trên cổng tương ứng:
+
 ```bash
 nc -l -p 80
 ```
@@ -557,7 +558,6 @@ Trong khi ApateDNS và Netcat chỉ hỗ trợ đơn giản, **INetSim** là m�
 ![PMA_Fig3-12_Virtual_Network_Setup.png](../../image/PMA_Fig3-12_Virtual_Network_Setup.png)
 
 *Hình 3.15: Mô hình thiết lập mạng phân tích động kết hợp giữa máy ảo Windows (chạy mẫu mã độc) và máy ảo Linux INetSim (giả lập toàn bộ dịch vụ mạng).*
-
 
 ![PMA_Fig3-16_Wireshark_CustomProto.png](../../image/PMA_Fig3-16_Wireshark_CustomProto.png)
 

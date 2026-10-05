@@ -20,9 +20,9 @@ a) Một số calling convention phổ biến của Windows x86.
 
 - __ thiscall: Con trỏ this (con trỏ ẩn, tự động trỏ đến object đang gọi hàm, ứng dụng trong C++ OOP) được truyền vào ecx, các tham số khác đẩy vào stack từ phải sang trái. Calle dọn stack.
 
-Tất cả các calling convention trên, dữ liệu trả về đều được đưa vào eax hoặc edx:eax. 
+Tất cả các calling convention trên, dữ liệu trả về đều được đưa vào eax hoặc edx:eax.
 
-b) Calling convention phổ biến của Windows x86-64. 
+b) Calling convention phổ biến của Windows x86-64.
 
 Trên Window x86-64, chỉ có 1 calling convention duy nhất là Microsoft x64 calling convention. Đặc điểm:
 
@@ -59,5 +59,3 @@ Các khía cạnh chính của ABI gồm:
 - Kích thước kiểu dữ liệu.
 
 Từ định nghĩa trên, ta thấy calling convention là 1 phần nhỏ của ABI.
-
-

@@ -49,11 +49,12 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
 - v7 sử dụng v5 và v6 để làm tham số cho hàm mã hóa.
 
 Code giải mã:
+
 ```python
 arr_1 = [
-   90, 134, 105, 126, 216, 159, 247,  93, 156, 221, 
-   45, 183,   7,  76,   9, 183,  48, 126,  44,  70, 
-  151,  15, 125, 234, 124, 234, 154, 228, 210,  29, 
+   90, 134, 105, 126, 216, 159, 247,  93, 156, 221,
+   45, 183,   7,  76,   9, 183,  48, 126,  44,  70,
+  151,  15, 125, 234, 124, 234, 154, 228, 210,  29,
   186, 203,  53, 201, 144,  50,  82, 144
 ]
 
@@ -79,5 +80,4 @@ print(text)
 
 Flag là: ISPCLUB{tiny_feistel_still_reversible}
 
-**Chú ý: Cần chú ý kiểu dữ liệu của các biến, không giống ngôn ngữ bậc cao, nếu khai báo số vượt quá giới hạn thì máy tính sẽ tự động vứt các bit thừa đi, nếu ta sử dụng ngôn ngữ bậc cao khoogn dùng bitmask để xóa bit thừa thì sẽ gây ảnh hưởng đến kết quả (như hàm rol bên trên là ví dụ).** 
-
+**Chú ý: Cần chú ý kiểu dữ liệu của các biến, không giống ngôn ngữ bậc cao, nếu khai báo số vượt quá giới hạn thì máy tính sẽ tự động vứt các bit thừa đi, nếu ta sử dụng ngôn ngữ bậc cao khoogn dùng bitmask để xóa bit thừa thì sẽ gây ảnh hưởng đến kết quả (như hàm rol bên trên là ví dụ).**

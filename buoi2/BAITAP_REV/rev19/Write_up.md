@@ -125,6 +125,7 @@ Từ logic trên, ta xây dựng chương trình giải mã. Ý tưởng như sa
 - Biết `byte_0` nên cũng  sẽ biết được lệnh mà máy ảo thực thi. Ta sẽ viết hàm giãi mã cho từng lệnh. Sau đó với mỗi bộ 3 tham số `byte_0`, `byte_1`, `arg_1` ta sẽ giải ra được chuỗi đầu vào.
 
 Code giải mã:
+
 ```python
 with open("program.bin", "rb") as f:
     data = f.read()

@@ -1,468 +1,438 @@
+#!/usr/bin/env python3
+"""
+fixmd.py - Tự sửa & format lại file Markdown từ Obsidian để GitHub đọc được hoàn chỉnh.
+
+Cách dùng (chạy ở BẤT KỲ folder nào, kể cả copy file này đi nơi khác):
+    python fixmd.py                  # xử lý folder hiện tại (cwd) + mọi folder con
+    python fixmd.py D:/notes         # xử lý folder chỉ định
+    python fixmd.py a.md docs/       # có thể truyền nhiều file/folder
+    python fixmd.py D:/notes --dry-run   # chỉ báo cáo, không ghi file
+
+Script an toàn khi chạy nhiều lần (idempotent): chạy lại không làm hỏng kết quả cũ.
+
+Các việc script làm:
+  1. ![[img.png|300]]          -> ![img.png](đường/dẫn/img.png)   (relative, %20)
+  2. ![alt](đường dẫn sai)     -> sửa lại đúng đường dẫn tới ảnh thật trong repo
+  3. [[Page|Alias#Heading]]    -> [Alias](Page.md#heading)
+  4. > [!type] Title (Obsidian) -> GitHub Alerts (> [!NOTE] ...)
+  5. ==text==                  -> chữ màu xanh (MathJax, GitHub + Obsidian đều hiển thị)
+  6. %%comment%%               -> xoá (Obsidian comment, GitHub sẽ hiện nguyên văn)
+  7. Thêm dòng trống giữa các block để GitHub render đúng (bảng, list, quote...)
+Không đụng vào: code block, inline code, công thức $...$ / $$...$$, YAML frontmatter.
+"""
 import os
 import re
 import sys
 from urllib.parse import unquote, quote
 
-# Fix Windows console encoding cho tên file tiếng Việt
-sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:
+    pass
 
-# ============================================================
-# Tự động detect thư mục gốc repo từ vị trí file script
-# ============================================================
-REPO_ROOT = os.path.dirname(os.path.abspath(__file__))
-IMAGE_DIR = os.path.join(REPO_ROOT, 'image')
+SKIP_DIRS = {'.git', '.obsidian', '.trash', 'node_modules', '.venv', 'venv', '__pycache__'}
+IMG_EXT = ('.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp', '.avif')
 
-# Regex match markdown image link chuẩn: ![alt](path)
-IMAGE_LINK_RE = re.compile(r'(!\[[^\]]*\])\(([^)]+)\)')
+# ![alt](path) - cho phép path có khoảng trắng và 1 cấp ngoặc đơn lồng nhau
+IMAGE_LINK_RE = re.compile(r'(!\[[^\]]*\])\(((?:[^()\n]|\([^()\n]*\))+)\)')
+# ![[file|alt]] (ảnh hoặc note)
+EMBED_RE = re.compile(r'!\[\[([^\]|#]+?)(?:#([^\]|]*))?(?:\\?\|([^\]]*))?\]\]')
+# [[page#heading|alias]]  (cho phép \| trong bảng)
+WIKILINK_RE = re.compile(r'(?<!!)\[\[([^\]|#]+?)(?:#([^\]|]*?))?(?:\\?\|([^\]]*?))?\]\]')
+CALLOUT_RE = re.compile(r'^((?:>[ \t]*)+)\[!(\w+)\][-+]?(?:[ \t]+(.*))?$')
+COMMENT_RE = re.compile(r'%%[\s\S]*?%%')
+HIGHLIGHT_RE = re.compile(r'==(?=\S)([^=\n]+?)(?<=\S)==')
+FRONTMATTER_RE = re.compile(r'\A---[ \t]*\n[\s\S]*?\n(?:---|\.\.\.)[ \t]*(?:\n|\Z)')
 
-# Regex match Obsidian image embed: ![[filename.ext]] hoặc ![[filename.ext|alt]]
-OBSIDIAN_IMAGE_RE = re.compile(
-    r'!\[\[([^\]|]+?\.(?:png|jpg|jpeg|gif|svg|bmp|webp))(?:\|([^\]]*))?\]\]',
-    re.IGNORECASE
-)
-
-# Regex match Obsidian wikilink: [[pagename]] hoặc [[pagename|alias]]
-OBSIDIAN_LINK_RE = re.compile(r'\[\[([^\]|#]+?)(?:#([^\]|]*?))?(?:\|([^\]]*?))?\]\]')
-
-# Obsidian callout type → emoji + label
+# Obsidian callout type -> (GitHub alert | None, emoji, label)
 CALLOUT_MAP = {
-    'note':      ('📝', 'NOTE'),
-    'info':      ('ℹ️', 'INFO'),
-    'tip':       ('💡', 'TIP'),
-    'hint':      ('💡', 'HINT'),
-    'important': ('❗', 'IMPORTANT'),
-    'warning':   ('⚠️', 'WARNING'),
-    'caution':   ('⚠️', 'CAUTION'),
-    'danger':    ('🔴', 'DANGER'),
-    'error':     ('❌', 'ERROR'),
-    'success':   ('✅', 'SUCCESS'),
-    'check':     ('✅', 'CHECK'),
-    'done':      ('✅', 'DONE'),
-    'question':  ('❓', 'QUESTION'),
-    'help':      ('❓', 'HELP'),
-    'faq':       ('❓', 'FAQ'),
-    'todo':      ('📋', 'TODO'),
-    'abstract':  ('📄', 'ABSTRACT'),
-    'summary':   ('📄', 'SUMMARY'),
-    'tldr':      ('📄', 'TLDR'),
-    'cite':      ('📌', 'CITE'),
-    'quote':     ('📌', 'QUOTE'),
-    'example':   ('📖', 'EXAMPLE'),
-    'bug':       ('🐛', 'BUG'),
+    'note': ('NOTE', '📝'), 'info': ('NOTE', 'ℹ️'), 'todo': ('NOTE', '📋'),
+    'question': ('NOTE', '❓'), 'help': ('NOTE', '❓'), 'faq': ('NOTE', '❓'),
+    'abstract': ('NOTE', '📄'), 'summary': ('NOTE', '📄'), 'tldr': ('NOTE', '📄'),
+    'tip': ('TIP', '💡'), 'hint': ('TIP', '💡'), 'success': ('TIP', '✅'),
+    'check': ('TIP', '✅'), 'done': ('TIP', '✅'),
+    'important': ('IMPORTANT', '❗'),
+    'warning': ('WARNING', '⚠️'), 'caution': ('WARNING', '⚠️'), 'attention': ('WARNING', '⚠️'),
+    'danger': ('CAUTION', '🔴'), 'error': ('CAUTION', '❌'), 'failure': ('CAUTION', '❌'),
+    'fail': ('CAUTION', '❌'), 'missing': ('CAUTION', '❌'), 'bug': ('CAUTION', '🐛'),
+    'quote': (None, '📌'), 'cite': (None, '📌'), 'example': (None, '📖'),
 }
+GITHUB_ALERTS = {'NOTE', 'TIP', 'IMPORTANT', 'WARNING', 'CAUTION'}
 
 
 # ============================================================
-# Helpers chung
+# Index file trong repo
 # ============================================================
 
-def get_all_image_files():
-    """Lấy tất cả tên file ảnh trong thư mục image/ (và toàn bộ repo)."""
-    images = {}  # filename (lowercase) -> full path
-    for root, dirs, files in os.walk(REPO_ROOT):
-        dirs[:] = [d for d in dirs if d not in ('.git', '.obsidian')]
-        for f in files:
-            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp')):
-                key = f.lower()
-                full = os.path.join(root, f)
-                # Ưu tiên file trong IMAGE_DIR
-                if key not in images or os.path.dirname(full) == IMAGE_DIR:
-                    images[key] = full
-    return images
+class Index:
+    def __init__(self, root):
+        self.root = root
+        self.images = {}   # tên lower -> full path
+        self.files = {}    # tên lower (kèm đuôi) -> full path (mọi loại file)
+        self.notes = {}    # tên note lower (không đuôi) -> full path .md
+        for r, dirs, files in os.walk(root):
+            dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+            for f in sorted(files):
+                full = os.path.join(r, f)
+                low = f.lower()
+                self.files.setdefault(low, full)
+                if low.endswith(IMG_EXT):
+                    # ưu tiên ảnh nằm trong folder tên "image"/"images"/"attachments"
+                    pref = os.path.basename(r).lower() in ('image', 'images', 'attachments', 'assets')
+                    if low not in self.images or pref:
+                        self.images[low] = full
+                elif low.endswith('.md'):
+                    self.notes.setdefault(os.path.splitext(low)[0], full)
 
 
-def get_image_files_set():
-    """Chỉ lấy tên file (không phân biệt hoa/thường) trong thư mục image/."""
-    images = set()
-    if os.path.isdir(IMAGE_DIR):
-        for f in os.listdir(IMAGE_DIR):
-            if f.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.svg', '.bmp', '.webp')):
-                images.add(f)
-    return images
+def enc(path):
+    """Encode URL-safe cho từng đoạn path (space -> %20, giữ / . ..)."""
+    return '/'.join(p if p in ('.', '..') else quote(p, safe='') for p in path.split('/'))
 
 
-def url_encode_path(path):
-    """Encode spaces → %20, giữ nguyên path separators."""
-    parts = path.split('/')
-    encoded_parts = []
-    for part in parts:
-        if part in ('..', '.'):
-            encoded_parts.append(part)
-        else:
-            encoded_parts.append(quote(part, safe=''))
-    return '/'.join(encoded_parts)
+def rel_link(md_path, target):
+    return enc(os.path.relpath(target, os.path.dirname(md_path)).replace('\\', '/'))
 
 
-def make_relative_image_path(md_file_path, image_full_path):
-    """Tính relative path từ md_file sang image, encode URL-safe."""
-    md_dir = os.path.dirname(md_file_path)
-    rel = os.path.relpath(image_full_path, md_dir).replace('\\', '/')
-    return url_encode_path(rel)
+def is_external(p):
+    return bool(re.match(r'^(?:[a-zA-Z][a-zA-Z0-9+.\-]*:|#|//)', p.strip()))
 
 
-def protect_code_blocks(content):
-    """Lưu code blocks và inline code, trả về (temp_content, blocks_list)."""
+# ============================================================
+# Bảo vệ vùng không được sửa
+# ============================================================
+
+def protect(content):
     blocks = []
 
-    def save(match):
-        blocks.append(match.group(0))
-        return f'__PROTECTED_BLOCK_{len(blocks) - 1}__'
+    def save(m):
+        blocks.append(m.group(0))
+        return f'\x00{len(blocks) - 1}\x00'
 
-    # Fenced code blocks ``` ... ```
-    temp = re.sub(r'```[\s\S]*?```', save, content)
-    # Fenced code blocks ~~~ ... ~~~
-    temp = re.sub(r'~~~[\s\S]*?~~~', save, temp)
-    # Inline code `...`
-    temp = re.sub(r'`[^`\n]*`', save, temp)
-    return temp, blocks
+    t = re.sub(r'(?m)^[ \t]*(`{3,}|~{3,})[^\n]*\n[\s\S]*?(?:^[ \t]*\1[`~]*[ \t]*$|\Z)', save, content)
+    t = re.sub(r'\$\$[\s\S]+?\$\$', save, t)
+    t = re.sub(r'(`+)(?!`)[^\n]*?(?<!`)\1(?!`)', save, t)
+    t = re.sub(r'(?<![\\$\w])\$(?![\s$])[^$\n]+?(?<![\s\\])\$(?![\d$])', save, t)
+    return t, blocks
 
 
-def restore_code_blocks(temp, blocks):
-    """Khôi phục code blocks đã được lưu."""
-    def restore(match):
-        return blocks[int(match.group(1))]
-    return re.sub(r'__PROTECTED_BLOCK_(\d+)__', restore, temp)
+def restore(t, blocks):
+    # lặp vì placeholder có thể lồng nhau
+    for _ in range(3):
+        t = re.sub(r'\x00(\d+)\x00', lambda m: blocks[int(m.group(1))], t)
+    return t
 
 
 # ============================================================
-# FIX 1: Sửa link ảnh chuẩn ![alt](path) trỏ đúng về image/
+# Các bước sửa
 # ============================================================
 
-def fix_image_links(content, md_file_path, all_images):
-    """Sửa link ảnh markdown chuẩn trỏ sai đường dẫn."""
-    changes = 0
-
-    def replace_image_link(match):
-        nonlocal changes
-        alt_part = match.group(1)        # ![alt text]
-        original_path = match.group(2)   # path trong ()
-
-        # Bỏ qua URL tuyệt đối (http/https/ftp)
-        if re.match(r'^https?://', original_path.strip()):
-            return match.group(0)
-
-        # Lấy tên file thật (decode %20 → space)
-        filename = os.path.basename(unquote(original_path))
-        key = filename.lower()
-
-        if key in all_images:
-            image_full = all_images[key]
-            encoded_rel = make_relative_image_path(md_file_path, image_full)
-            new_link = f'{alt_part}({encoded_rel})'
-            if match.group(0).rstrip() != new_link.rstrip():
-                changes += 1
-            return new_link
-
-        # Ảnh không tìm thấy → giữ nguyên
-        return match.group(0)
-
-    new_content = IMAGE_LINK_RE.sub(replace_image_link, content)
-    return new_content, changes
+def fix_embeds(t, md, idx, stats):
+    """![[file|alt]] -> ![alt](path); ![[note]] -> [note](note.md)"""
+    def rep(m):
+        name = m.group(1).strip()
+        heading, extra = m.group(2), (m.group(3) or '').strip()
+        low = os.path.basename(name).lower()
+        stats['embed'] += 1
+        if low.endswith(IMG_EXT):
+            alt = extra if extra and not re.fullmatch(r'\d+(x\d+)?', extra) else os.path.basename(name)
+            target = idx.images.get(low)
+            link = rel_link(md, target) if target else enc(name.replace('\\', '/'))
+            return f'![{alt}]({link})'
+        # embed file khác (pdf, note...)
+        if low.endswith('.md'):
+            low = low[:-3]
+            name = name[:-3]
+        target = idx.notes.get(low)
+        if target:
+            link = rel_link(md, target)
+        elif os.path.basename(name).lower() in idx.files:
+            link = rel_link(md, idx.files[os.path.basename(name).lower()])
+        else:
+            link = enc(name + '.md')
+        if heading:
+            link += '#' + anchor(heading)
+        return f'[{extra or os.path.basename(name)}]({link})'
+    return EMBED_RE.sub(rep, t)
 
 
-# ============================================================
-# FIX 2: Thêm dòng trống giữa các block markdown (GitHub render)
-# ============================================================
+def fix_image_links(t, md, idx, stats):
+    def rep(m):
+        alt, raw = m.group(1), m.group(2).strip()
+        title = ''
+        tm = re.match(r'^(.*?)(\s+"[^"]*")$', raw)
+        if tm:
+            raw, title = tm.group(1), tm.group(2)
+        if raw.startswith('<') and raw.endswith('>'):
+            raw = raw[1:-1]
+        if is_external(raw):
+            return m.group(0)
+        decoded = unquote(raw.split('?')[0])
+        cand = os.path.normpath(os.path.join(os.path.dirname(md), decoded))
+        if os.path.isfile(cand):               # đường dẫn đã đúng -> chỉ encode
+            new = rel_link(md, cand)
+        else:
+            target = idx.images.get(os.path.basename(decoded).lower())
+            if not target:
+                new = enc(decoded.replace('\\', '/'))   # không thấy ảnh: chỉ encode space
+            else:
+                new = rel_link(md, target)
+        out = f'{alt}({new}{title})'
+        if out != m.group(0):
+            stats['image'] += 1
+        return out
+    return IMAGE_LINK_RE.sub(rep, t)
 
-def fix_markdown_newlines(content):
+
+def anchor(h):
+    a = h.strip().lower().replace(' ', '-')
+    return re.sub(r'[^\w\-]', '', a)
+
+
+def fix_wikilinks(t, md, idx, stats):
+    def rep(m):
+        page = m.group(1).strip().replace('\\', '/')
+        heading, alias = m.group(2), m.group(3)
+        base = os.path.basename(page)
+        low = base.lower()
+        if low.endswith('.md'):
+            low = low[:-3]
+        if low in idx.notes:
+            link = rel_link(md, idx.notes[low])
+        elif base.lower() in idx.files:           # pdf, ảnh, file đính kèm khác
+            link = rel_link(md, idx.files[base.lower()])
+        else:
+            link = enc(page if page.lower().endswith('.md') else page + '.md')
+        if heading and heading.strip():
+            link += '#' + anchor(heading.lstrip('^'))
+        display = (alias.strip() if alias and alias.strip() else
+                   (page + (' > ' + heading.strip() if heading and heading.strip() else '')))
+        display = display.replace('[', '\\[').replace(']', '\\]')
+        stats['wikilink'] += 1
+        return f'[{display}]({link})'
+    return WIKILINK_RE.sub(rep, t)
+
+
+def fix_callouts(t, stats):
+    lines = t.split('\n')
+    out = []
+    for line in lines:
+        m = CALLOUT_RE.match(line)
+        if not m:
+            out.append(line)
+            continue
+        prefix = m.group(1).rstrip() + ' '
+        ctype = m.group(2).lower()
+        title = (m.group(3) or '').strip()
+        alert, emoji = CALLOUT_MAP.get(ctype, ('NOTE', '📌'))
+        if ctype.upper() in GITHUB_ALERTS:
+            alert = ctype.upper()
+        default_title = ctype.capitalize()
+        nested = prefix.count('>') > 1
+        if alert and not nested:
+            new = f'{prefix}[!{alert}]'
+            out.append(new)
+            if title and title.lower() != alert.lower():
+                out.append(f'{prefix}**{title}**')
+                out.append(prefix.rstrip())
+            if (new != line):
+                stats['callout'] += 1
+        else:
+            out.append(f'{prefix}**{emoji} {title or default_title}**')
+            out.append(prefix.rstrip())
+            stats['callout'] += 1
+    return '\n'.join(out)
+
+
+def fix_highlight(t, stats):
+    def tex(s):
+        s = re.sub(r'([\\{}$%&#_^~])', lambda m: {
+            '\\': r'\backslash ', '~': r'\sim ', '^': r'\^{}'}.get(m.group(1), '\\' + m.group(1)), s)
+        return s
+
+    def rep(m):
+        stats['highlight'] += 1
+        inner = re.sub(r'(\*\*|__|\*|`)', '', m.group(1))
+        return '$\\color{green}{\\text{' + tex(inner) + '}}$'
+    return HIGHLIGHT_RE.sub(rep, t)
+
+
+def fix_newlines(content):
+    """Chèn dòng trống giữa các block liền nhau (GitHub cần), không đụng code/math."""
     lines = content.split('\n')
-    result = []
+    res = []
+    fence = None          # (char, len)
+    in_math = False
+    NUM = re.compile(r'^\d+[.)]\s')
+    BUL = ('- ', '* ', '+ ')
 
-    TOGGLE_BLOCKS = ['```', '$$', '~~~']
-    NUMBERED_LIST = re.compile(r'^\d+\.\s')
-    toggle_stack = []
+    def is_list(s):
+        return s.startswith(BUL) or bool(NUM.match(s))
 
     for i, line in enumerate(lines):
-        stripped = line.strip()
+        s = line.strip()
+        fm = re.match(r'^(`{3,}|~{3,})', s)
+        if fence:
+            if fm and fm.group(1)[0] == fence[0] and len(fm.group(1)) >= fence[1] and s.strip(fence[0]) == '':
+                fence = None
+            res.append(line)
+            continue
+        if in_math:
+            if '$$' in s:
+                in_math = False
+            res.append(line)
+            continue
+        opened_fence = False
+        if fm:
+            fence = (fm.group(1)[0], len(fm.group(1)))
+            opened_fence = True
+        elif s.startswith('$$') and s.count('$$') == 1:
+            in_math = True
+            opened_fence = True
 
-        for tok in TOGGLE_BLOCKS:
-            if stripped.startswith(tok):
-                if toggle_stack and toggle_stack[-1] == tok:
-                    toggle_stack.pop()
-                else:
-                    toggle_stack.append(tok)
-                break
-
-        result.append(line)
-
-        if i >= len(lines) - 1:
+        # blank line TRƯỚC khi mở code/math block nếu dòng trước có chữ
+        if opened_fence and res and res[-1].strip() and not is_list(res[-1].strip()) \
+                and not res[-1].startswith((' ', '\t')):
+            res.append('')
+        res.append(line)
+        if opened_fence or i == len(lines) - 1:
             continue
 
-        next_line = lines[i + 1]
-        next_stripped = next_line.strip()
-
-        if toggle_stack:
+        nxt = lines[i + 1]
+        ns = nxt.strip()
+        if not s or not ns:
             continue
-        if not stripped or not next_stripped:
+        if re.match(r'^(`{3,}|~{3,}|\$\$)', ns) and (is_list(s) or line.startswith((' ', '\t'))):
             continue
-        if any(next_stripped.startswith(tok) for tok in TOGGLE_BLOCKS):
+        if line.endswith(('  ', '\\')) or '<br' in s.lower():
             continue
-        if any(stripped.startswith(tok) for tok in TOGGLE_BLOCKS):
+        if is_list(s) and (is_list(ns) or nxt.startswith((' ', '\t'))):
             continue
-
-        cur_is_list = (any(stripped.startswith(p) for p in ['- ', '* ', '+ '])
-                       or bool(NUMBERED_LIST.match(stripped)))
-        next_is_list = (any(next_stripped.startswith(p) for p in ['- ', '* ', '+ '])
-                        or bool(NUMBERED_LIST.match(next_stripped)))
-        if cur_is_list and next_is_list:
+        if line.startswith((' ', '\t')) and nxt.startswith((' ', '\t')):
             continue
-
-        if stripped.startswith('|') and next_stripped.startswith('|'):
+        if s.startswith('|') and ns.startswith('|'):
             continue
-        if stripped.startswith('>') and next_stripped.startswith('>'):
+        if s.startswith('>') and ns.startswith('>'):
             continue
-        if re.match(r'^\|?[\s\-\|:]+\|?$', next_stripped):
+        if re.fullmatch(r'=+|-{2,}', ns) and not s.startswith(('|', '>', '#')):
+            continue     # setext heading
+        if re.match(r'^<\/?[a-zA-Z]', s) and re.match(r'^<\/?[a-zA-Z]', ns):
+            continue     # HTML liền nhau
+        res.append('')
+    # đóng: gộp >2 dòng trống liên tiếp (ngoài code) thành 1
+    out, blank = [], 0
+    fence = None
+    for line in res:
+        s = line.strip()
+        fm = re.match(r'^(`{3,}|~{3,})', s)
+        if fence:
+            if fm and fm.group(1)[0] == fence[0] and len(fm.group(1)) >= fence[1] and s.strip(fence[0]) == '':
+                fence = None
+            out.append(line)
             continue
-
-        result.append('')
-
-    return '\n'.join(result)
-
-
-# ============================================================
-# FIX 3: Sửa ==text== thành chữ màu xanh lá cây (MathJax)
-# ============================================================
-
-def fix_highlight_green(content):
-    changes = 0
-    temp, blocks = protect_code_blocks(content)
-
-    pattern = r'==(?!\s)(.+?)(?<!\s)=='
-    replacement = r'$\\color{green}{\\text{\1}}$'
-
-    new_temp, n = re.subn(pattern, replacement, temp)
-    changes += n
-
-    if changes > 0:
-        return restore_code_blocks(new_temp, blocks), changes
-
-    return content, 0
-
-
-# ============================================================
-# FIX 4: Convert Obsidian image embed ![[file.png]] → ![](path)
-# ============================================================
-
-def fix_obsidian_image_embeds(content, md_file_path, all_images):
-    """
-    Chuyển ![[image.png]] hoặc ![[image.png|alt text]] sang
-    ![alt text](relative/path/to/image.png) chuẩn GitHub.
-    """
-    changes = 0
-
-    def replace_obsidian_img(match):
-        nonlocal changes
-        filename = match.group(1).strip()
-        alt_text = match.group(2).strip() if match.group(2) else filename
-        key = filename.lower()
-
-        if key in all_images:
-            image_full = all_images[key]
-            encoded_rel = make_relative_image_path(md_file_path, image_full)
-            changes += 1
-            return f'![{alt_text}]({encoded_rel})'
-
-        # Ảnh không tìm thấy → chuyển sang standard syntax với path gốc
-        changes += 1
-        encoded = url_encode_path(filename)
-        return f'![{alt_text}]({encoded})'
-
-    new_content = OBSIDIAN_IMAGE_RE.sub(replace_obsidian_img, content)
-    return new_content, changes
-
-
-# ============================================================
-# FIX 5: Convert Obsidian wikilink [[page]] → [page](page.md)
-# ============================================================
-
-def fix_obsidian_wikilinks(content, md_file_path):
-    """
-    Chuyển [[PageName]] → [PageName](PageName.md)
-    Chuyển [[PageName|Alias]] → [Alias](PageName.md)
-    Chuyển [[PageName#Heading]] → [PageName](PageName.md#heading)
-    Bỏ qua nếu đã được xử lý bởi fix_obsidian_image_embeds (image embed).
-    """
-    changes = 0
-
-    # Lấy danh sách tất cả file .md trong repo để tìm file đích
-    md_files = {}
-    for root, dirs, files in os.walk(REPO_ROOT):
-        dirs[:] = [d for d in dirs if d not in ('.git', '.obsidian')]
-        for f in files:
-            if f.endswith('.md'):
-                key = os.path.splitext(f)[0].lower()
-                full = os.path.join(root, f)
-                if key not in md_files:
-                    md_files[key] = full
-
-    def replace_wikilink(match):
-        nonlocal changes
-        page = match.group(1).strip()      # tên page
-        heading = match.group(2)           # heading sau #
-        alias = match.group(3)             # alias sau |
-
-        display = alias.strip() if alias else page
-        page_key = page.lower()
-
-        # Tính đường dẫn đến file md đích
-        if page_key in md_files:
-            target_full = md_files[page_key]
-            md_dir = os.path.dirname(md_file_path)
-            rel = os.path.relpath(target_full, md_dir).replace('\\', '/')
-            encoded_rel = url_encode_path(rel)
+        if fm:
+            fence = (fm.group(1)[0], len(fm.group(1)))
+        if not s:
+            blank += 1
+            if blank > 1:
+                continue
         else:
-            # File không tồn tại → dùng tên file đơn giản
-            encoded_rel = url_encode_path(page + '.md')
-
-        if heading:
-            # Chuẩn hoá heading anchor: chữ thường, thay space → -
-            anchor = heading.strip().lower().replace(' ', '-')
-            anchor = re.sub(r'[^\w\-]', '', anchor)
-            encoded_rel = f'{encoded_rel}#{anchor}'
-
-        changes += 1
-        return f'[{display}]({encoded_rel})'
-
-    new_content = OBSIDIAN_LINK_RE.sub(replace_wikilink, content)
-    return new_content, changes
+            blank = 0
+        out.append(line)
+    return '\n'.join(out)
 
 
 # ============================================================
-# FIX 6: Convert Obsidian callouts → GitHub-compatible blockquote
+# Xử lý 1 file
 # ============================================================
 
-def fix_obsidian_callouts(content):
-    """
-    Chuyển Obsidian callout:
-        > [!NOTE] Title
-        > body text
-    Thành GitHub blockquote với label in đậm:
-        > **📝 NOTE: Title**
-        > body text
-    """
-    changes = 0
-    lines = content.split('\n')
-    result = []
+def process(content, md, idx, stats):
+    content = content.replace('\r\n', '\n').replace('\r', '\n')
+    front = ''
+    fm = FRONTMATTER_RE.match(content)
+    if fm:
+        front, content = fm.group(0), content[fm.end():]
 
-    # Pattern: dòng bắt đầu bằng > [!TYPE] optional_title
-    CALLOUT_RE = re.compile(r'^(>\s*)\[!(\w+)\]([-+]?)(?:\s+(.*))?$')
-
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        m = CALLOUT_RE.match(line)
-        if m:
-            prefix = m.group(1)    # "> " phần blockquote
-            ctype = m.group(2).lower()
-            # group(3) là foldable marker (- hoặc +), bỏ qua
-            title = (m.group(4) or '').strip()
-
-            emoji, label = CALLOUT_MAP.get(ctype, ('📌', ctype.upper()))
-
-            if title:
-                header = f'{prefix}**{emoji} {label}: {title}**'
-            else:
-                header = f'{prefix}**{emoji} {label}**'
-
-            result.append(header)
-            changes += 1
-        else:
-            result.append(line)
-        i += 1
-
-    return '\n'.join(result), changes
+    t, blocks = protect(content)
+    t = COMMENT_RE.sub('', t)
+    t = fix_embeds(t, md, idx, stats)
+    t = fix_image_links(t, md, idx, stats)
+    t = fix_wikilinks(t, md, idx, stats)
+    t = fix_callouts(t, stats)
+    t = fix_highlight(t, stats)
+    t = restore(t, blocks)
+    t = fix_newlines(t)
+    t = '\n'.join(l.rstrip(' \t') if not l.endswith('  ') or not l.strip() else l for l in t.split('\n'))
+    t = t.rstrip('\n') + '\n' if t.strip() else t
+    return front + t
 
 
-# ============================================================
-# MAIN: Chạy tất cả fix cho toàn bộ file .md trong repo
-# ============================================================
+def collect(paths):
+    for p in paths:
+        p = os.path.abspath(p)
+        if os.path.isfile(p):
+            if p.lower().endswith('.md'):
+                yield p
+            continue
+        for r, dirs, files in os.walk(p):
+            dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+            for f in sorted(files):
+                if f.lower().endswith('.md'):
+                    yield os.path.join(r, f)
+
 
 def main():
-    all_images = get_all_image_files()
-    print(f'[*] Repo root    : {REPO_ROOT}')
-    print(f'[*] Image dir    : {IMAGE_DIR}')
-    print(f'[*] Images found : {len(all_images)}')
-    print()
+    args = [a for a in sys.argv[1:] if not a.startswith('--')]
+    dry = '--dry-run' in sys.argv
+    targets = args or [os.getcwd()]
+    for t in targets:
+        if not os.path.exists(t):
+            print(f'[ERR] Không tồn tại: {t}')
+            return 1
+    # root để tìm ảnh/note: folder được chỉ định (hoặc folder cha chứa .obsidian/.git nếu có)
+    first = os.path.abspath(targets[0])
+    root = first if os.path.isdir(first) else os.path.dirname(first)
+    probe = root
+    while True:
+        if os.path.isdir(os.path.join(probe, '.obsidian')) or os.path.isdir(os.path.join(probe, '.git')):
+            root = probe
+            break
+        parent = os.path.dirname(probe)
+        if parent == probe:
+            break
+        probe = parent
 
-    file_count = 0
-    total_img_standard = 0
-    total_img_obsidian = 0
-    total_wikilinks = 0
-    total_callouts = 0
-    total_highlights = 0
-
-    for root, dirs, files in os.walk(REPO_ROOT):
-        # Bỏ qua .git, .obsidian
-        dirs[:] = [d for d in dirs if d not in ('.git', '.obsidian')]
-
-        for file in files:
-            if not file.endswith('.md'):
-                continue
-
-            path = os.path.join(root, file)
-            rel_path = os.path.relpath(path, REPO_ROOT)
-            try:
-                with open(path, 'r', encoding='utf-8') as f:
-                    content = f.read()
-
-                # FIX 4 trước: chuyển ![[...]] → ![](...) để FIX 1 có thể pick up
-                content, n4 = fix_obsidian_image_embeds(content, path, all_images)
-                total_img_obsidian += n4
-
-                # FIX 1: sửa link ảnh chuẩn
-                content, n1 = fix_image_links(content, path, all_images)
-                total_img_standard += n1
-
-                # FIX 5: chuyển wikilink [[...]]
-                content, n5 = fix_obsidian_wikilinks(content, path)
-                total_wikilinks += n5
-
-                # FIX 6: chuyển Obsidian callout
-                content, n6 = fix_obsidian_callouts(content)
-                total_callouts += n6
-
-                # FIX 2: thêm dòng trống giữa các block
-                content = fix_markdown_newlines(content)
-
-                # FIX 3: ==text== → màu xanh
-                content, n3 = fix_highlight_green(content)
-                total_highlights += n3
-
-                with open(path, 'w', encoding='utf-8') as f:
-                    f.write(content)
-
-                status = []
-                if n4:
-                    status.append(f'{n4} obsidian img embed(s)')
-                if n1:
-                    status.append(f'{n1} image link(s)')
-                if n5:
-                    status.append(f'{n5} wikilink(s)')
-                if n6:
-                    status.append(f'{n6} callout(s)')
-                if n3:
-                    status.append(f'{n3} highlight(s)')
-
-                if status:
-                    print(f'  [FIXED] {rel_path}')
-                    for s in status:
-                        print(f'          • {s}')
-                else:
-                    print(f'  [OK]    {rel_path}')
-
-                file_count += 1
-            except Exception as e:
-                print(f'  [ERR]   {rel_path}: {e}')
-
-    print()
+    idx = Index(root)
+    print(f'[*] Root   : {root}')
+    print(f'[*] Ảnh    : {len(idx.images)} | Note: {len(idx.notes)}' + ('  (DRY RUN)' if dry else ''))
+    total = {'embed': 0, 'image': 0, 'wikilink': 0, 'callout': 0, 'highlight': 0}
+    n_files = n_changed = 0
+    for path in collect(targets):
+        rel = os.path.relpath(path, root)
+        try:
+            with open(path, 'r', encoding='utf-8-sig', newline='') as f:
+                old = f.read()
+            stats = {k: 0 for k in total}
+            new = process(old, path, idx, stats)
+            n_files += 1
+            for k in total:
+                total[k] += stats[k]
+            if new != old.replace('\r\n', '\n'):
+                n_changed += 1
+                if not dry:
+                    with open(path, 'w', encoding='utf-8', newline='\n') as f:
+                        f.write(new)
+                det = ', '.join(f'{v} {k}' for k, v in stats.items() if v)
+                print(f'  [FIXED] {rel}' + (f'  ({det})' if det else '  (format)'))
+            else:
+                print(f'  [OK]    {rel}')
+        except Exception as e:
+            print(f'  [ERR]   {rel}: {e}')
     print('=' * 60)
-    print(f'Done! Processed {file_count} file(s):')
-    print(f'  • {total_img_obsidian} Obsidian image embed(s)  ![[...]] converted')
-    print(f'  • {total_img_standard}  standard image link(s)   ![](path) fixed')
-    print(f'  • {total_wikilinks}  wikilink(s)              [[...]] converted')
-    print(f'  • {total_callouts}  callout(s)               > [!TYPE] converted')
-    print(f'  • {total_highlights}  highlight(s)             ==text== converted')
+    print(f'Xong: {n_files} file, {n_changed} file được sửa.')
+    print('  ' + ' | '.join(f'{k}: {v}' for k, v in total.items()))
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

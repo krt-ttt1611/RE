@@ -18,7 +18,7 @@ a) Thanh ghi đa dụng: Các thanh ghi này lưu được cả dữ liệu và 
 
 	- RSP luôn trỏ về đỉnh stack, RBP trỏ về đáy của khung stack.
 
-	- 
+	-
 
 b) Thanh ghi con trỏ lệnh RIP: luôn trỏ đến địa chỉ lệnh tiếp theo được thực thi.
 
@@ -120,12 +120,12 @@ d) Phép nhân.
 
 	Thực hiên: Lấy 2 toán hạng b, c (c luôn là giá trị tức thời) nhân với nhau rồi lưu vào toán hạng a. Toán hạng a luôn là thanh ghi, trong trường hợp tràn số, thanh ghi a sẽ vứt bỏ luôn phần tràn chứ không ghi đè lên thanh ghi khác giống như phép nhân 1 toán hạng.
 
-e) Phép chia 
+e) Phép chia
 
 - Div a:
 
 	Dùng cho số không dấu. Lấy cặp thanh ghi rdx:rax làm số bị chia, toán hạng a làm số chia, và cho ra 2 kết quả: thương số và số dư. Ta có bảng quy tắc (ở đây lấy a là thanh ghi thuộc RBX hoặc vùng nhớ).
-	
+
 | số chia    | số bị chia | thương số | số dư |
 
 | ---------- | ---------- | --------- | ----- |

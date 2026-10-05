@@ -1,14 +1,14 @@
-*1. PE file là gì.* 
+*1. PE file là gì.*
 
-PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho kiến trúc CPU 32 bit) và PE32+ (cho kiến trúc CPU 64 bit). Trên Window, có 
+PE (Portable Executable file format) là một định dạng file dành riêng cho hệ điều hành Windows, có 2 loại định dạng PE: PE32 (cho kiến trúc CPU 32 bit) và PE32+ (cho kiến trúc CPU 64 bit). Trên Window, có
 
-*2. PE32.* 
+*2. PE32.*
 
 ![](../image/Pasted%20image%2020260505090955.png)
 
-Hình trên là minh họa cho cấu trúc cơ bản của 1 PE32 file. 
+Hình trên là minh họa cho cấu trúc cơ bản của 1 PE32 file.
 
-2.1. DOS MZ Header. 
+2.1. DOS MZ Header.
 
 Tác dụng: Giúp chương trình tương thích ngược với hệ điều hành DOS. Cụ thể, nếu mang một Chương trình định dạng PE32 đem xuống hệ điều hành DOS chạy, hệ điều hành sẽ xem nó là 1 chương trình hợp lệ và chạy DOS Stub (phần kế tiếp). DOS Stub thường sẽ trả về chuỗi "This program must be run under Microsoft Windows" rồi thoát.
 
@@ -59,7 +59,7 @@ typedef struct _IMAGE_DOS_HEADER {      // DOS .EXE header
   } IMAGE_DOS_HEADER, *PIMAGE_DOS_HEADER;
 ```
 
-2.2. PE Header (Nt Header). 
+2.2. PE Header (Nt Header).
 
 PE Header là 1 struct _ IMAGE_NT_HEADERS có 3 member được định nghĩa trong file windows.inc, chứa các thông tin thiết yếu được sử dụng bởi loader.
 
@@ -76,14 +76,14 @@ typedef struct _IMAGE_NT_HEADERS {
 } IMAGE_NT_HEADERS32, *PIMAGE_NT_HEADERS32;
 ```
 
-2.3. Section Header. 
+2.3. Section Header.
 
 ```c
 //winnt.h
 
 #define IMAGE_SIZEOF_SHORT_NAME              8
 
-  
+
 
 typedef struct _IMAGE_SECTION_HEADER {
 
@@ -115,18 +115,18 @@ typedef struct _IMAGE_SECTION_HEADER {
 
 } IMAGE_SECTION_HEADER, *PIMAGE_SECTION_HEADER;
 
-  
+
 
 #define IMAGE_SIZEOF_SECTION_HEADER          40
 ```
 
 Mỗi phần tử trong Section Headers sẽ chứa thông tin về 1 section. 1 chương trình sau khi được biên dịch sẽ được chia thành nhiều phân vùng chứa dữ liệu, gọi là section
 
-2.4. Sections. 
+2.4. Sections.
 
 Phần này chứa nội dung của từng section.
 
-2.5. Overlay. 
+2.5. Overlay.
 
 Phần này có thể xem như phần mở rộng, vì loader không nạp phần này vào RAM.
 
@@ -227,7 +227,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 
     //
 
-  
+
 
     WORD    Magic;
 
@@ -247,7 +247,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 
     DWORD   BaseOfData;
 
-  
+
 
     //
 
@@ -255,7 +255,7 @@ typedef struct _IMAGE_OPTIONAL_HEADER {
 
     //
 
-  
+
 
     DWORD   ImageBase;
 
@@ -338,7 +338,7 @@ Phần này chứa tất cả 224 bytes dữ liệu:
 
 - Checksum (CheckSum): 0x52f45.
 
-- Subsystem: 3, cờ 3 cho biết đây là ứng dụng windows console. 
+- Subsystem: 3, cờ 3 cho biết đây là ứng dụng windows console.
 
 - DLL Characteristics: Trường này chứa các cờ liên quan đến các cơ chế bảo mật như ASLR, DEP..., ở đay bằng 0 nghĩa là không có cơ chế bảo mật nào được bật.
 
@@ -374,8 +374,7 @@ Phần này chứa thông tin về các section của file:
 
 - Characteristic: Cờ chứa thông tin về quyền của section.
 
-
-Cuối cùng là dữ liệu của các section và phần overlay. 
+Cuối cùng là dữ liệu của các section và phần overlay.
 
 *4. PE32+.*
 
@@ -390,12 +389,8 @@ PE32+ gần như tương tự với PE32, chỉ khác ở một số điểm:
 - Kích thước  các trường dữ liệu mở rộng lên 64bit.
 - ...
 
-*5. Quá trình load chương trình vào RAM.* 
+*5. Quá trình load chương trình vào RAM.*
 
 Đầu tiên, loader đọc DOS Header, kiểm tra magic bytes có đúng là `4D 5A` không, sau đó đọc `e_lfanew` để lấy offset của PE Header rồi nhảy đến đó. Tại PE Header, loader kiểm tra Signature (`50 45 00 00`), đọc `Machine` trong File Header để xác nhận tương thích kiến trúc CPU, rồi đọc `ImageBase` và `SizeOfImage` trong Optional Header để cấp phát vùng nhớ ảo. Loader sẽ ưu tiên cấp phát tại địa chỉ `ImageBase`, nếu vùng đó đã bị chiếm thì sẽ tìm vùng khác và thực hiện relocation dựa vào bảng `.reloc` (nếu có).
 
 Tiếp theo, dựa vào Section Headers, loader copy từng section từ ổ đĩa lên RAM theo cơ chế memory-mapped file — tức là chưa copy thật sự ngay mà chỉ tạo mapping, khi nào CPU truy cập mới thực sự đọc từ đĩa lên (demand paging). Địa chỉ bắt đầu của mỗi section được căn chỉnh theo `SectionAlignment`, phần dư được padding bằng 0. Quyền truy cập từng section được thiết lập dựa trên `Characteristics`. Sau đó loader đọc Import Directory, tìm và load các DLL cần thiết, resolve địa chỉ thực của từng hàm rồi ghi vào IAT. Cuối cùng, loader nhảy đến `ImageBase + AddressOfEntryPoint` để bắt đầu thực thi.
-
-
-
-

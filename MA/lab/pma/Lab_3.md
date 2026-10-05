@@ -2,7 +2,7 @@
 
 # 1.
 
-File bị packed, và có lẽ các DLL và API cũng được load thủ công (không thông qua cụm API `LoadLibrary` + `GetProcAddress`) nên dù có thử debug động bằng xdbg, ta vẫn không thể thấy được API trong bảng symbol. E chỉ có thể xem được bảng strings. 
+File bị packed, và có lẽ các DLL và API cũng được load thủ công (không thông qua cụm API `LoadLibrary` + `GetProcAddress`) nên dù có thử debug động bằng xdbg, ta vẫn không thể thấy được API trong bảng symbol. E chỉ có thể xem được bảng strings.
 
 # 2.
 
@@ -13,10 +13,12 @@ E thấy 4 chuỗi đường dẫn registry, và 1 chuỗi tên file `vmx32to64.
 ![](../../../image/Pasted%20image%2020261005092748.png)
 
 Check sự kiện bằng procmon, e thấy nó tạo 1 file mới tên là `vmx32to64.exe`, ghi dữ liệu vào đó. Rồi thực hiện persistence bằng cách thêm value vào key`RUN\VideoDriver`.
+
 ```
 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\VideoDriver: 43 00 3A 00 5C 00 57 00 49 00 4E 00 44 00 4F 00 57 00 53 00 5C 00 73 00 79 00 73 00 74 00 65 00 6D 00 33 00 32 00 5C 00 76 00 6D 00 78 00 33 00 32 00 74 00 6F 00 36 00 34 00 2E 00 65 00 78 00 65
 ```
-Đây là value được thêm vào. Dịch ra thì nó là 
+Đây là value được thêm vào. Dịch ra thì nó là
+
 ```
 C:\WINDOWS\system32\vmx32to64.exe
 ```
@@ -38,25 +40,29 @@ Dùng DiE để xem bảng export
 
 ![](../../../image/Pasted%20image%2020261004195152.png)
 
-E thấy có 2 hàm là `install` và `installA` dùng để cài đặt. Ngoài ra còn có `ServiceMain`, vậy đây là 1 Service DLL. 
+E thấy có 2 hàm là `install` và `installA` dùng để cài đặt. Ngoài ra còn có `ServiceMain`, vậy đây là 1 Service DLL.
 
 Để nó tự cài đặt, e thử chạy hàm `installA` bằng `rundll32.exe`
+
 ```
 rundll32.exe "C:\Documents and Settings\luong\Desktop\Practical Malware Analysis Labs\BinaryCollection\Chapter_3L\Lab03-02.dll",installA
 ```
-## 2. 
+## 2.
 
 Để chạy service, e cần dùng lệnh:
+
 ```
 net start <service_name>
 ```
 Vậy thì cần phải biết tên dịch vụ sau khi nó đăng kí là gì. Theo như e tra AI, thì việc đăng kí service là do `services.exe` làm. Nó sẽ thêm vào 1 subkey có tên là tên service vào đường dẫn registry:
+
 ```
 HKLM\SYSTEM\CurrentControlSet\Services\<service_name>
 ```
-Rồi thêm vào các value để cấu hình service. 
+Rồi thêm vào các value để cấu hình service.
 
 Vậy thì e nghĩ đến dùng regshot để so sánh trước và sau khi đăng kí, hoặc dùng procmon để record event (nhưng mà record event khó, vì e k hiểu toàn bộ quá trình từ lúc chạy `rundll32.exe` đến khi nó đăng kí xong gồm những bước nào).
+
 ```
 Keys added: 16
 ----------------------------------
@@ -80,6 +86,7 @@ HKLM\SYSTEM\CurrentControlSet\Services\IPRIP\Security
 Ta thấy nó chỉ thêm đúng 1 subkey vào đường dẫn, vậy thì service name sẽ là `IPRIP`.
 
 Vậy thì lệnh chạy service sẽ là:
+
 ```
 net start IPRIP
 ```
@@ -121,6 +128,7 @@ Nó chạy và tắt ngay lập tức.
 ## 2.
 
 E nghĩ câu này phân tích tĩnh sẽ tốt hơn.
+
 ```c
 _BYTE *__cdecl sub_40132C(HMODULE hModule)
 {
@@ -159,9 +167,10 @@ _BYTE *__cdecl sub_40132C(HMODULE hModule)
   return v5;
 }
 ```
-Nhìn vào là thấy ngay cụm API dùng để load resource vào bộ nhớ, ngoài ra hàm `sub_401000` trông như 1 hàm giải mã. chắc chắn là nó dùng để giải mã resource. 
+Nhìn vào là thấy ngay cụm API dùng để load resource vào bộ nhớ, ngoài ra hàm `sub_401000` trông như 1 hàm giải mã. chắc chắn là nó dùng để giải mã resource.
 
 Sau khi xong hàm đấy, nó chạy tiếp hàm `sub_4010EA`
+
 ```c
 int __cdecl sub_4010EA(LPCSTR lpApplicationName, char *lpBuffer)
 {
@@ -252,6 +261,7 @@ int __cdecl sub_4010EA(LPCSTR lpApplicationName, char *lpBuffer)
 }
 ```
 Đọc sơ qua đoạn đầu thì thấy nó tạo 1 tiến trình mới rồi lấy chính cái vùng nhớ vừa giải mã tiêm vào chính tiến trình đó. Còn tên tiến trình thì ta đọc hàm `sub_40149D`
+
 ```c
 char *__cdecl sub_40149D(char *Source, LPSTR lpBuffer, UINT uSize)
 {
@@ -290,12 +300,10 @@ Dropper, Keylogger.
 
 Khi chạy, nó tự xóa file thực thi rồi tắt ngay lập tức. Dùng regshot, thấy nó cũng không chỉnh sửa gì.
 
-# 2. 
+# 2.
 
 Nó xóa dấu vết làm cản trở việc phân tích.
 
 # 3.
 
 E k biết :(
-
-

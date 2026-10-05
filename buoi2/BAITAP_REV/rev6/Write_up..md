@@ -1,13 +1,13 @@
 Đầu tiên, chạy thử chương trình.    
 
 ![Pasted image 20260419100745](../../../image/Pasted%20image%2020260419100745.png)    
-    
+
 Không có gì đặc biệt.    
 
 Sử dung IDA để phân tích chương trình.    
 
 ![Pasted image 20260419100854](../../../image/Pasted%20image%2020260419100854.png)    
-    
+
 Dòng 9 đến dòng 12, chương trình yêu cầu nhập chuỗi và xử lí chuỗi đầu vào.    
 
 Dòng 13, ta biết chuỗi nhập cần có độ dài 37.    
@@ -33,8 +33,9 @@ Từ đó, ta có thể biết được 2 tham số trong lệnh xoay bit:
 Đọc tiếp logic bên dưới, v5 và v3 được tăng 1 sau mỗi vòng lặp, nghĩa là vòng lặp sẽ duyệt từng kí tự trong chuỗi cho trước và chuỗi nhập vào, sau đó thực hiện phép toán trên điều kiện của vòng lặp. v4 được tăng thêm 13 mỗi vòng lặp. Ngoài ra, nếu vòng lặp lặp đủ 37 lần thì sẽ thành công.    
 
 Đây là code giải mã    
+
 ```python    
-     
+
 array1 = [    
    95,  45, 129, 115, 135, 146,  57, 249,   2, 252,     
   188, 173, 225, 208, 159, 144,  44,  80, 222, 125,     
@@ -47,12 +48,12 @@ array2 = [
   133, 150, 167, 184, 201, 218, 235, 252,  13,  30,     
    47,  64,  81,  98, 115, 132, 149    
 ]    
-    
-    
+
+
 def ror(data, step):    
    return (data >> step | data << (8-step)) & 0xff #ép dữ liệu của v4 chỉ chưa trong 8 bit bằng bitmask    
-    
-    
+
+
 def solve():    
    text = ''    
    for i in range(0, 37):    
@@ -65,7 +66,7 @@ def solve():
       char &= 0xff    
       text+=chr(char)    
    return text    
-    
+
 print(solve())    
 ```    
 

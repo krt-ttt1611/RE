@@ -2,7 +2,7 @@ chuyển từ cdecl thành fastcall
 
 ![](../image/Pasted%20image%2020260502211632.png)
 
-mang giá trị âm là biến local 
+mang giá trị âm là biến local
 
 tìm hiểu về cách dùng thanh ghi rbp/ebp
 

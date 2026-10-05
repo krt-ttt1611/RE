@@ -1,6 +1,7 @@
 ![](../../../image/Pasted%20image%2020260513065344.png)
 
 Đây là dạng bài máy ảo, tác giả sẽ tạo ra 1 máy ảo, tự định nghĩa các tập lệnh, thanh ghi. Chương trình sẽ đóng vai trò như phần cứng dùng để chạy máy ảo này.
+
 ```cpp
 __int64 __fastcall main(int a1, char **a2, char **a3)
 {

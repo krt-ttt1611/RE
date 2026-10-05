@@ -58,14 +58,15 @@ Logic chương trình:
 - Cuối cùng, lấy `(char_3 + char_2)` xor với `count_1 + 32` so sánh với arg_3 (`arg_ptr[2]`), lấy `char_0 ^ char_3` xor với `count_1 + 48` rồi so sánh với arg_4 (arg_ptr[3]), lấy `char_0 + 2 * char_2` xor với `count_1 + 64` rồi so sánh với arg_5 (arg_ptr[4]).
 
 Từ logic trên, ta có thể thấy đây là 1 hệ phương trình toán học. Ta sẽ dùng thư viện z3solve để giải mã:
+
 ```python
 from z3 import *
 
 arr_1 = [
-  140, 131, 163,  74, 185, 176, 182, 140, 118, 129, 
-  217, 255, 209,  79,  31, 217, 231, 229,  89, 102, 
-  194, 241, 233,  88,   9, 200, 196, 231, 117,   0, 
-  197, 236, 255,  76, 110, 214, 233, 236, 119,  96, 
+  140, 131, 163,  74, 185, 176, 182, 140, 118, 129,
+  217, 255, 209,  79,  31, 217, 231, 229,  89, 102,
+  194, 241, 233,  88,   9, 200, 196, 231, 117,   0,
+  197, 236, 255,  76, 110, 214, 233, 236, 119,  96,
   214, 246, 200,  86,  17
 ]
 

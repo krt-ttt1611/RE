@@ -13,6 +13,7 @@ Trong bài viết này chỉ tập trung về executable file.
 ![Pasted image 20260516075154](../image/Pasted%20image%2020260516075154.png)
 
 Hình trên là cấu trúc của 1 file ELF32 từ 2 góc nhìn: Góc nhìn liên kết (nhìn từ linker) và góc nhìn thực thi (nhìn từ loader). ELF header nằm ở phần đầu của file và chứa các thông tin tổng quát về chương trình. Program header table chứa các thông tin để giúp loader tạo 1 process image. Section header table chứa các thông tin về các section của file. Trong linux, các trường thông tin (trừ section header table) được định nghĩa là các cấu trúc, có thể xem trong file elf.h.
+
 ```c
 //elf.h
 
@@ -133,7 +134,6 @@ Khác với PE, kernel không dựa vào Section Headers mà dựa vào`Program 
 
 Nếu file có segment `PT_INTERP`, kernel sẽ load thêm dynamic linker (`ld-linux.so`). Dynamic linker đọc `PT_DYNAMIC` để tìm các shared library cần thiết, load chúng lên RAM, resolve địa chỉ thực của từng symbol rồi ghi vào GOT — tương tự IAT của PE. Cuối cùng, dynamic linker nhảy vào `e_entry` để bắt đầu thực thi.
 
-
 *6. Bài tập.*
 
 Đầu tiên, kiểm tra chương trình bằng lệnh `file`.
@@ -153,6 +153,7 @@ File bên trái là file test, bên phải là prob. Bắt đầu từ byte th�
 ![](../image/Pasted%20image%2020260517094231.png)
 
 File đã được khôi phục. Dùng IDA để phần tích.
+
 ```c
 int __fastcall main(int argc, const char **argv, const char **envp)
 {
@@ -191,6 +192,7 @@ int __fastcall main(int argc, const char **argv, const char **envp)
 }
 ```
 Cụm lệnh:
+
 ```c
 v5 = 0x467774475B8E5B57LL;
 v6[0] = 0x8388858543568685LL;
@@ -203,6 +205,7 @@ Tạo ra một vùng dữ liệu 168 bits, cấu trúc như sau:
 Sau đó lấy từng byte trong khối dữ liệu, từ đi 19 rồi so sánh với từng kí tự trong chuỗi nhập.
 
 Code giải mã:
+
 ```python
 data = 0x467774475B8E5B57 | (0x8388858543568685 << 64) | (0x9081824487838885 << 64 + 32 + 8)
 data_bytes = data.to_bytes(64*3, byteorder='little')
@@ -211,7 +214,7 @@ data_bytes = data.to_bytes(64*3, byteorder='little')
 text = ''
 char = 0
 for count in range(0, 21):
-	char = (data_bytes[count] - 19) & 0xff 
+	char = (data_bytes[count] - 19) & 0xff
 	text += chr(char)
 
 print(text)

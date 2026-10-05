@@ -3,9 +3,10 @@
 Câu này cũng tương tự, duyệt từng phần tử trong 3 chuỗi dữ liệu cho trước và chuỗi đầu vào, sau đó thực hiện phép logic rồi so sánh.    
 
 Code giải mã.    
+
 ```python    
 #array1[v4] == (array3[v4] ^ __ROR1__(*v3 + array2[v4], v4 % 7 + 1))    
-    
+
 array1 = [    
   136, 246, 218, 136,  10, 117, 113,  77,   7,  65,     
   132, 139, 206, 191, 128, 145, 108, 224, 153, 157,     
@@ -30,11 +31,11 @@ array3 = [
    17,  24,  99, 106, 125,  68,  79,  86,  89, 160,     
   171, 178, 133, 140, 151, 158, 225, 232    
 ]    
-    
-    
+
+
 def rol(data, step):    
   return data >> (8 - step) | ((data << step) & 0xff)    
-    
+
 def solve():    
   text = ''    
   for i in range(0, 38):    
@@ -44,7 +45,7 @@ def solve():
     char -= array2[i]    
     text += chr(char & 0xff) # có thể bị tràn dẫn đến âm    
   return text    
-    
+
 print(solve())    
 ```    
 

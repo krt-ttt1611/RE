@@ -136,7 +136,6 @@ Thanh ghi là các vùng nhớ tốc độ cực cao nằm trực tiếp bên tr
 
 *Bảng 4.10 & 4.11: Các tiền tố lệnh lặp chuỗi dữ liệu (rep, repe, repne).*
 
-
 1. **Chuyển dữ liệu:**
    - `mov destination, source`: Gán dữ liệu từ nguồn vào đích.
    - `lea destination, [source]`: Load Effective Address – tính toán địa chỉ bộ nhớ và nạp vào thanh ghi mà không truy xuất dữ liệu bên trong địa chỉ đó.
@@ -190,7 +189,6 @@ IDA Pro (Interactive DisAssembler) là tiêu chuẩn công nghiệp trong phân 
    - Công nghệ Fast Library Identification and Recognition Technology của IDA tự động nhận diện các hàm thư viện CRT (C Runtime) thông dụng (như `memcpy`, `strcpy`, `printf`) để nhà phân tích tập trung vào mã độc hại riêng biệt.
 
 ---
-
 
 ### 5.2 Khảo Sát Giao Diện và Công Cụ Phân Tích Chuyên Sâu Trong IDA Pro
 
@@ -345,7 +343,6 @@ Trình biên dịch tối ưu hóa cấu trúc `switch-case` theo hai phương p
 
 ---
 
-
 ## Chương 7: Phân Tích Chương Trình Windows Độc Hại (Analyzing Windows Programs)
 
 ### 7.1 Giao Diện Lập Trình Ứng Dụng Windows (Windows API)
@@ -381,6 +378,7 @@ $\color{green}{\text{Handles}}$ là giá trị dùng để tham chiếu tới c�
 VD, `CreateWindowEx` trả về 1 `HWND`, tức handle của cửa sổ. Muốn gọi `DestroyWindow` cho cửa sổ đó thì phải truyền lại `HWND`
 
 Có thể hình dung đơn giản.
+
 ```
 hWnd
   │
@@ -423,7 +421,8 @@ Windows có 1 số loại file có thể truy cập gần giống file bình th�
 
 $\color{green}{\text{Shared file - file chia sẻ qua mạng}}$
 
-Có dạng như 
+Có dạng như
+
 ```
 \\serverName\share
 \\?\serverName\share
@@ -435,12 +434,14 @@ $\color{green}{\text{File accessible via namespaces - File truy cập qua namesp
 Windows có các namespaces để tổ chức các object và device hệ thống. Malware có thể dùng chúng để truy cập trực tiếp thiết bị vật lí.
 
 VD:
+
 ```
 \\.\PhysicalDrive1
 ```
 Có thể cho phép truy cập trực tiếp trên ổ đĩa, bỏ qua cách truy cập file thông thường. Nhờ đó malware có thể đọc/ghi trực tiếp vào sector trên ổ đĩa.
 
 Một số malware cũ từng dùng:
+
 ```
 \Device\PhysicalDisk1
 ```
@@ -451,6 +452,7 @@ $\color{green}{\text{Alternate data stream (ADS)}}$
 ADS là tính năng của NTFS cho phép gắn thêm 1 luồng dữ liệu ẩn vào 1 file có sẵn.
 
 VD:
+
 ```
 normalFile.txt:Stream:$DATA
 ```
@@ -483,16 +485,19 @@ Malware thường dùng registry để duy trì khả năng tồn tại (persist
 Hai root key thường gặp nhất là HKLM và HKCU.
 
 Một số key thực chất là key ảo. VD:
+
 ```
 HKEY_CURRENT_USER
 ```
 Thực chất trỏ đến
+
 ```
 HKEY_USERS\<SID>
 ```
 Trong đó `SID` là định danh bảo mật của user đang đăng nhập.
 
-Một key hay gặp là 
+Một key hay gặp là
+
 ```
 HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
 ```
@@ -525,6 +530,7 @@ Malware thường dùng WinAPI để sửa registry:
 Khi thấy các API này trong malware, điều quan trọng là phải xác định key Registry mà malware đang truy cập.
 
 #### f. Thực hành dịch ngược đoạn mã can thiệp Registry
+
 ```asm
 0040286F push 2 ; samDesired
 00402871 push eax ; ulOptions
@@ -552,12 +558,14 @@ Khi thấy các API này trong malware, điều quan trọng là phải xác đ�
 004028AA call ds:RegSetValueExW
 ```
 Đoạn code trên mở key:
+
 ```
 HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run
 ```
 bằng `RegOpenKeyExW`, sau đó gọi `RegSetValueExW` để thêm 1 value mới.
 
 Ý nghĩa chính:
+
 ```
 RegOpenKeyExW
       ↓
@@ -574,6 +582,7 @@ Chương trình có thể tự chạy khi Windows khởi động/đăng nhập
 File có phần mở rộng `.reg` chứa dữ liệu registry ở dạng văn bản. Khi người dùng click vào file, Windows sẽ nhập nội dung của nó vào registry.
 
 VD:
+
 ```
 Windows Registry Editor Version 5.00
 
@@ -621,14 +630,17 @@ Một chương trình mạng luôn có 2 phía:
 Malware có thể hoạt động theo cả 2 kiểu.
 
 Với client, thường thấy chuỗi:
+
 ```
 socket → connect → send / recv
 ```
 Với server, thường thấy:
+
 ```
 socket → bind → listen → accept → send / recv
 ```
 VD:
+
 ```asm
 00401041 push ecx ; lpWSAData
 00401042 push 202h ; wVersionRequested
@@ -698,6 +710,7 @@ Thay vì đặt toàn bộ code độc hại trong `.exe`, malware có thể đ�
 Hầu hết malware đều sử dụng các DLL chuẩn của Windows để tương tác với hệ điều hành.
 
 VD các API về:
+
 ```
 File
 Registry
@@ -726,6 +739,7 @@ DLL gần như giống hoàn toàn với file `.exe`:
 - DLL thường có nhiều exports hơn và ít imports hơn.
 
 Hàm chính của DLL là `DllMain`. `DllMain` là entry point của DLL, Windows có thể gọi nó khi:
+
 ```
 DLL được load vào process
 DLL bị unload
@@ -739,6 +753,7 @@ Nhờ đó DLL có thể khởi tạo hoặc giải phóng tài nguyên dành ri
 Malware cũng có thể chạy code bằng cách tạo process mới hoặc sửa đổi process đang tồn tại.
 
 Process là 1 đối tượng quản lí tài nguyên của chương trình. VD:
+
 ```
 Memory
 Handles
@@ -750,6 +765,7 @@ Code thực sự được CPU thực thi bởi thread nằm trong process.
 Window tách các process với nhau bằng cách cho mỗi process một không gian địa chỉ riêng.
 
 VD:
+
 ```
 Process A: 0x00400000
 Process B: 0x00400000
@@ -771,6 +787,7 @@ Malware có thể dùng `CreateProcess` để:
 Một kỹ thuật remote shell là chuyển stdin, stdout và stderr của process mới vào 1 socket.
 
 Khi đó:
+
 ```
 Attacker
    ↕
@@ -781,6 +798,7 @@ stdin / stdout / stderr
 Process mới
 ```
 VD:
+
 ```asm
 004010DA mov eax, dword ptr [esp+58h+SocketHandle]
 004010DE lea edx, [esp+58h+StartupInfo]
@@ -814,6 +832,7 @@ VD:
 00401114 call ds:CreateProcessA
 ```
 `SocketHandle` được đưa vào:
+
 ```
 hStdInput
 hStdOutput
@@ -826,6 +845,7 @@ Sau đó `CreateProcessA` tạo process mới.
 Muốn biết malware kết nối tới máy nào, phải tìm nới socket được tạo và kết nối.
 
 Malware cũng thường giấu 1 `.exe` hoặc DLL khác trong resource section:
+
 ```
 Resource section
       ↓
@@ -844,11 +864,13 @@ Process là container, còn thread mới là thứ thực sự chạy trên CPU.
 Một process có thể chứa nhiều thread.
 
 Các thread trong cùng process:
+
 ```
 Dùng chung memory/address space
 Dùng chung tài nguyên của process
 ```
 Nhưng mỗi thread có riêng:
+
 ```
 CPU registers
 Stack
@@ -860,6 +882,7 @@ Khi 1 thread chạy, các thanh ghi của CPU chứa trạng thái của thread 
 Khi nào Windows chuyển CPU sang chạy thread khác, nó phải lưu lại trạng thái của thread vào 1 cấu trúc là $\color{green}{\text{Thread Context}}$. Sau đó Windows sẽ load context của thread mới vào CPU.
 
 VD:
+
 ```asm
 004010DE lea edx, [esp+58h]
 004010E2 push edx
@@ -867,6 +890,7 @@ VD:
 Giả sử Windows chuyển sang threads khác giữa 2 lệnh này.
 
 Nó sẽ lưu:
+
 ```
 EDX
 ESP
@@ -880,9 +904,10 @@ Khi thread này được chạy lại, context được khôi phục nên 1`EDX`
 
 $\color{green}{\text{Tạo thread mới}}$
 
-Dùng API `CreateThread` để tạo thread. Một tham số quan trọng của API này đó là `lpStartAddress`, là địa chỉ hàm mà thread mới này bắt đầu chạy. 
+Dùng API `CreateThread` để tạo thread. Một tham số quan trọng của API này đó là `lpStartAddress`, là địa chỉ hàm mà thread mới này bắt đầu chạy.
 
-Khi reverse code có `CreateThread`, cần đặc biệt xem: 
+Khi reverse code có `CreateThread`, cần đặc biệt xem:
+
 ```
 lpStartAddress → trỏ tới function nào?
 ```
@@ -896,6 +921,7 @@ Malware có thể dùng `CreateThread` để:
 - chạy tác vụ song song.
 
 VD:
+
 ```asm004016EE lea eax, [ebp+ThreadId]
 004016F4 push eax                    ; lpThreadId
 004016F5 push 0                      ; dwCreationFlags
@@ -923,11 +949,13 @@ VD:
 0040172C call ds:CreateThread
 ```
 Có 2 thread mới:
+
 ```
 ThreadFunction1
 ThreadFunction2
 ```
 Thread thứ nhất:
+
 ```asm
 ...
 004012C5 call ds:ReadFile
@@ -936,6 +964,7 @@ Thread thứ nhất:
 ...
 ```
 Luồng dữ liệu:
+
 ```
 Pipe
  ↓
@@ -946,6 +975,7 @@ send
 Network
 ```
 Thread thứ 2:
+
 ```
 ...
 004011F2 call ds:recv
@@ -954,6 +984,7 @@ Thread thứ 2:
 ...
 ```
 Luồng dữ liệu ngược lại.
+
 ```
 Network
  ↓
@@ -974,6 +1005,7 @@ Mutex là object dùng để đồng bộ thread hoặc process khi nhiều bên
 Nguyên tắc: $\color{green}{\text{Một mutex chỉ có thể thuộc về 1 thread tại 1 thời điểm}}$
 
 Các API thường gặp:
+
 ```cpp
 CreateMutex
 OpenMutex
@@ -985,6 +1017,7 @@ Malware thường dùng mutex để đảm bảo: chỉ có 1 instance malware �
 Tên mutex thường được hard-code nên cũng có thể coi mutex là 1 host-based indicator.
 
 VD:
+
 ```asm
 00401000 push offset Name            ; "HGL345"
 00401005 push 0                      ; bInheritHandle
@@ -1006,6 +1039,7 @@ loc_40101E:
 00401027 call ds:CreateMutexW
 ```
 Logic:
+
 ```
 OpenMutex("HGL345")
         ↓
@@ -1040,6 +1074,7 @@ Lợi ích đối với malware:
 - đôi khi không xuất hiện dưới dạng một process riêng dễ nhận thấy trong Task Manager.
 
 Các API quan trọng:
+
 ```
 OpenSCManager
 → lấy handle tới Service Control Manager
@@ -1065,18 +1100,22 @@ $\color{green}{\text{KERNEL_DRIVER}}$
 Dùng để load driver/code vào kernel.
 
 Thông tin service được lưu trong Registry tại:
+
 ```
 HKLM\SYSTEM\CurrentControlSet\Services
 ```
 Ví dụ:
+
 ```
 HKLM\SYSTEM\CurrentControlSet\Services\VMware NAT Service
 ```
 Windows có công cụ dòng lệnh:
+
 ```
 sc
 ```
 VD:
+
 ```
 sc qc "VMware NAT Service"
 ```
@@ -1101,9 +1140,10 @@ SERVICE_START_NAME : LocalSystem
 
 #### f. Component Object Model (COM)
 
-Là cơ chế cho phép các coponent phần mềm sử dụng chức năng của nhau mà không cần biết chi tiết code bên trong 
+Là cơ chế cho phép các coponent phần mềm sử dụng chức năng của nhau mà không cần biết chi tiết code bên trong
 
 Mô hình cơ bản:
+
 ```
 COM Client
     ↓
@@ -1115,10 +1155,12 @@ COM Server / COM Object
 COM được rất nhiều phần mềm sử dụng.
 
 Trước khi một thread sử dụng COM, nó thường phải gọi:
+
 ```
 OleInitialize
 ```
 hoặc:
+
 ```
 CoInitializeEx
 ```
@@ -1129,25 +1171,30 @@ $\color{green}{\text{CLSID, IID và cách sử dụng đối tượng COM}}$
 COM dùng GUID để nhận dạng class và interface.
 
 Hai loại quan trọng:
+
 ```
 CLSID = Class Identifier
 IID   = Interface Identifier
 ```
 API phổ biến để lấy một COM object là:
+
 ```
 CoCreateInstance
 ```
 Ví dụ malware muốn dùng Internet Explorer thông qua interface:
+
 ```
 IWebBrowser2
 ```
 và sau đó gọi:
+
 ```
 Navigate
 ```
 để mở một URL.
 
 VD:
+
 ```asm
 00401024 lea eax, [esp+18h+PointerToComObject] 00401028 push eax ; ppv 00401029 push offset IID_IWebBrowser2 ; riid 0040102E push 4 ; dwClsContext 00401030 push 0 ; pUnkOuter 00401032 push offset stru_40211C ; rclsid 00401037 call CoCreateInstance
 ```
@@ -1162,48 +1209,58 @@ CLSID: `0002DF01-0000-0000-C000-000000000046`
 ![Pasted image 20260919152359.png](../../image/Pasted%20image%2020260919152359.png)
 
 Windows dùng Registry để tìm code tương ứng với CLSID:
+
 ```
 HKLM\SOFTWARE\Classes\CLSID\
 ```
 hoặc:
+
 ```
 HKCU\SOFTWARE\Classes\CLSID\
 ```
 Nếu COM server chạy thành process riêng, thường thấy:
+
 ```
 LocalServer32
 ```
 Nếu COM server là DLL được load trực tiếp vào process client:
+
 ```
 InprocServer32
 ```
 Sau khi `CoCreateInstance` trả về object, chương trình gọi method thông qua một $\color{green}{\text{vtable}}$.
 
 VD:
+
 ```asm
 0040105E push ecx 0040105F push ecx 00401060 push ecx 00401061 mov esi, eax 00401063 mov eax, [esp+24h+PointerToComObject] 00401067 mov edx, [eax] 00401069 mov edx, [edx+2Ch] 0040106C push ecx 0040106D push esi 0040106E push eax 0040106F call edx
 ```
 Ở đây:
+
 ```asm
 mov edx, [eax]
 ```
 Lấy địa chỉ vtable
 
 Sau đó:
+
 ```asm
 mov edx, [edx+2Ch]
 ```
 Lấy function pointer tại offset `0x2c`
 
 Trong ví dụ này, function đó là:
+
 ```
 IWebBrowser2::Navigate
 ```
 IDA có thể structure như:
+
 ```
 IWebBrowser2::Navigate
 ```
 Để thay cho:
+
 ```
 [edx+2Ch]
 ```
@@ -1221,6 +1278,7 @@ Một ví dụ là Browser Helper Object – BHO của Internet Explorer. Malwar
 - hoạt động mà không cần tạo process riêng.
 
 COM server dạng DLL thường export những hàm như:
+
 ```
 DllCanUnloadNow
 DllGetClassObject
@@ -1235,6 +1293,7 @@ Nếu thấy nhiều hàm này trong export table, file có thể là 1 COM serv
 $\color{green}{\text{Exception}}$ cho phép chương trình xử lý những tình huống làm gián đoạn luồng thực thi bình thường.
 
 Ví dụ:
+
 ```
 Chia cho 0
 Truy cập địa chỉ bộ nhớ không hợp lệ
@@ -1242,6 +1301,7 @@ Truy cập địa chỉ bộ nhớ không hợp lệ
 Một số exception do CPU tạo, một số do Windows tạo.
 
 Chương trình cũng có thể tự tạo exception bằng:
+
 ```
 RaiseException
 ```
@@ -1249,11 +1309,13 @@ Windows sử dụng: $\color{green}{\text{Structured Exception Hanling - SEH}}$
 
 Để xử lý exception.
 
-Trên Windows 32-bit, thông tin SEH được lưu trên stack và được liên kết thông qua: 
+Trên Windows 32-bit, thông tin SEH được lưu trên stack và được liên kết thông qua:
+
 ```
 fs:[0]
 ```
 VD:
+
 ```asm
 01006170 push offset loc_10061C0
 01006175 mov eax, large fs:0
@@ -1261,6 +1323,7 @@ VD:
 0100617C mov large fs:0, esp
 ```
 Hiểu đơn giản:
+
 ```
 Exception xảy ra
        ↓
@@ -1273,6 +1336,7 @@ Gọi handler
 Xử lý exception
 ```
 Các exception handler được lồng nhau. Nếu exception hiện tại không xử lí được exception:
+
 ```
 Handler hiện tại
       ↓
@@ -1283,6 +1347,7 @@ Handler phía ngoài
 ...
 ```
 Nếu cuối cùng không handler nào xử lí được:
+
 ```
 Program crash
 ```
@@ -1300,6 +1365,7 @@ Window sử dụng 2 mức đặc quyển của CPU:
 - $\color{green}{\text{Kernel mode}}$: nơi kernel của Windows và các driver phần cứng chạy.
 
 Các API đã học trước đó chủ yếu là user-mode API, nhưng nhiều chức năng tương tự cũng có cách thực hiện ở kernel mode.Trong user mode, mỗi process có:
+
 ```
 Không gian bộ nhớ riêng
 Quyền bảo mật riêng
@@ -1310,6 +1376,7 @@ Nếu một chương trình user mode chạy lệnh sai và crash, Windows thư�
 User mode cũng không được truy cập phần cứng trực tiếp và chỉ được sử dụng một phần các lệnh/register của CPU. Muốn thao tác với phần cứng hoặc dữ liệu trong kernel, chương trình phải đi qua các giao diện do Windows cung cấp.
 
 Khi một Windows API cần thao tác với cấu trúc trong kernel, cuối cùng nó sẽ thực hiện system call để chuyển từ user mode sang kernel mode. Trong disassembly có thể gặp các lệnh như:
+
 ```
 SYSENTER
 SYSCALL
@@ -1320,6 +1387,7 @@ Các lệnh này dùng cơ chế đã được hệ điều hành định nghĩa
 Trong kernel mode, code có quyền truy cập rất lớn và ít bị kiểm tra bảo mật hơn. Vì vậy nếu kernel-mode code gặp lỗi nghiêm trọng, Windows có thể không thể tiếp tục hoạt động và dẫn tới BSOD.
 
 Có thể hình dung:
+
 ```
 User mode
 ┌───────────────────────────────┐
@@ -1363,6 +1431,7 @@ Vì vậy phần lớn malware vẫn không cần có thành phần kernel.
 Native API là một giao diện cấp thấp hơn để tương tác với Windows.
 
 Thông thường chương trình không thao tác trực tiếp với kernel. Luồng gọi API thường có dạng:
+
 ```
 User Application
       ↓
@@ -1379,12 +1448,14 @@ Kernel Data Structures
 `kernel32.dll` và các Windows DLL khác cung cấp API quen thuộc cho chương trình.
 
 Sau đó nhiều API sẽ gọi xuống:
+
 ```
 ntdll.dll
 ```
 `ntdll.dll` là lớp quan trọng nằm sát ranh giới giữa user mode và kernel mode.
 
 Cuối cùng CPU chuyển sang kernel mode và thực thi code thường nằm trong:
+
 ```
 ntoskrnl.exe
 ```
@@ -1395,6 +1466,7 @@ Việc tách các lớp như vậy giúp Microsoft có thể thay đổi impleme
 Các hàm cấp thấp được cung cấp qua `ntdll.dll` thường được gọi là Native API.
 
 Ví dụ:
+
 ```
 Windows API        Native API
 
@@ -1402,6 +1474,7 @@ ReadFile       →   NtReadFile
 WriteFile      →   NtWriteFile
 ```
 Chương trình bình thường thường gọi:
+
 ```
 ReadFile
     ↓
@@ -1410,12 +1483,13 @@ NtReadFile
 Kernel
 ```
 Nhưng malware có thể gọi thẳng:
+
 ```
 NtReadFile
     ↓
 Kernel
 ```
-Theo sách, việc gọi Native API trực tiếp hấp dẫn malware vì hai lý do. 
+Theo sách, việc gọi Native API trực tiếp hấp dẫn malware vì hai lý do.
 
 $\color{green}{\text{Có nhiều chức năng cấp thấp hơn}}$
 
@@ -1424,15 +1498,18 @@ Một số chức năng không được expose đầy đủ qua Win32 API nhưng
 $\color{green}{\text{Có thể tránh một số cơ chế giám sát kém}}$
 
 Giả sử một chương trình bảo mật chỉ hook:
+
 ```
 kernel32.dll
 ```
 và theo dõi:
+
 ```
 ReadFile
 WriteFile
 ```
 Malware có thể gọi thẳng:
+
 ```
 NtReadFile
 NtWriteFile
@@ -1440,6 +1517,7 @@ NtWriteFile
 trong `ntdll.dll` để bỏ qua lớp bị theo dõi đó.
 
 Mô hình:
+
 ```
 Cách bình thường:
 
@@ -1454,6 +1532,7 @@ NtReadFile
 Kernel
 ```
 Trong khi:
+
 ```
 Gọi Native API trực tiếp:
 
@@ -1468,6 +1547,7 @@ Một chương trình bảo mật được thiết kế tốt phải giám sát 
 #### b. Các hàm Native API trọng yếu trong mã độc
 
 Có nhiều hàm dùng để lấy thông tin chi tiết về hệ thống:
+
 ```
 NtQuerySystemInformation
 NtQueryInformationProcess
@@ -1476,6 +1556,7 @@ NtQueryInformationFile
 NtQueryInformationKey
 ```
 Chúng có thể cung cấp thông tin chi tiết về:
+
 ```
 System
 Process
@@ -1490,6 +1571,7 @@ và đôi khi cho phép thao tác những thuộc tính chi tiết hơn so với
 $\color{green}{\text{NtContinue}}$
 
 Một Native API khác thường được malware sử dụng là:
+
 ```
 NtContinue
 ```
@@ -1498,6 +1580,7 @@ Bình thường `NtContinue` được dùng để tiếp tục thực thi sau kh
 Nó dựa vào exception context để xác định trạng thái CPU và vị trí code sẽ tiếp tục chạy.
 
 Malware có thể thay đổi context này để làm:
+
 ```
 Exception
     ↓
@@ -1510,6 +1593,7 @@ Qua đó tạo luồng thực thi phức tạp nhằm gây khó khăn cho việc
 #### c. Phân biệt ý nghĩa tiền tố Nt và Zw
 
 Trong `ntdll.dll` có thể gặp hai tên gần giống nhau:
+
 ```
 NtReadFile
 ZwReadFile

@@ -46,7 +46,7 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
 }
 ```
 
-Chương trình này cấu trúc khác hẳn các chương trình trong câu trước. 
+Chương trình này cấu trúc khác hẳn các chương trình trong câu trước.
 
 - Lệnh __ mm_unpacklo_epi64() là 1 lệnh thuộc nhóm tập lệnh sse2, nhóm tập lệnh này sẽ thao tác với các thanh ghi 128-bit từ xmm0 đến xmm15. Nhiệm vụ lệnh này là lấy 2 64bit thấp của 2 vùng nhớ ghép lại với nhau bằng thanh ghi xmm rồi đẩy vào stack.
 
@@ -57,6 +57,7 @@ Chương trình này cấu trúc khác hẳn các chương trình trong câu tr�
 - sub_ (subroutine): Đây là nhãn của 1 hàm chưa có tên.
 
 Nhảy vào 2 hàm SUB12A0 và SUB12C0 để kiểm tra.
+
 ```cpp
 //SUB_12A0
 char __fastcall sub_12A0(char a1, char a2)
@@ -100,6 +101,7 @@ Tiếp tục kiểm tra thử 2 địa chỉ &off_3DD0 và &off_3DD8. Nó nhảy
 - Loc (location): nhãn/địa chỉ đến một vị trí bên trong code.
 
 Nhảy vào loc_1290 và loc_12B0 để kiểm tra.
+
 ```nasm
 ;loc_1290
 loc_1290:                               ; DATA XREF: .data.rel.ro:off_3DD0↓o
@@ -126,6 +128,7 @@ loc_12B0:                               ; DATA XREF: .data.rel.ro:off_3DD8↓o
 Ở LOC_12b0, edi được xor với 0xffffff9d, sau đó dil (8 bit thấp nhất của edi) được xoay phải với step = 3. Sau đó dữ liệu trong edi được copy sang eax rồi đem xor với esi.
 
 Nhớ lại rằng, hàm linux dùng 1 calling convention duy nhất là system V AMD64 ABI, trong đó 6 tham số đầu truyền lần lượt vào rdi, rsi, rdx, rcx, r8, r9 nên thực chất rsi, rdi ở đây chính là tham số truyền vào. Vậy nên khả năng cao 2 cụm loc này phải là 2 hàm, ida thực chất đã dịch sai. bấm p để chuyển lại từ loc thành sub.
+
 ```c
 //sub_12B0
 __int64 __fastcall sub_12B0(int a1, int a2)
@@ -147,6 +150,7 @@ __int64 __fastcall sub_1290(int a1, int a2)
 Từ đây, ta có thể hiểu được hai lệnh ở dòng 13 và 14, thực chất mỗi thanh ghi xmm đang lưu 2 địa chỉ hàm. Khi trỏ tới thanh ghi bằng chỉ số giống như array thì sẽ hàm sẽ được gọi (xem dòng 23).
 
 1 chi tiết rất đặc biệt có thể thấy ở đoạn gọi địa chỉ hàm:
+
 ```c
 v9.m128i_i64[v3 & 3]
 ```
@@ -156,6 +160,7 @@ Việc sử dụng bitmask với 3, giúp các giá trị sẽ chạy theo vòng
 Ở dòng 23, ta thấy từng địa chỉ hàm đang được gọi, với từng kí tự của chuỗi đầu vào (s[v3]) là tham số thứ nhất, biến đếm (v3) là tham số thứ 2... Theo calling convention, ta sẽ biết được s[v3] chính là rdi, v3 là rsi. Như đã check bên trên thì các hàm chỉ sử dụng đúng 2 tham số đầu, lí do mà IDA liệt kê nhiều tham số là do khi gọi hàm từ 1 pointer, CPU không biết hàm nhận bao nhiêu tham số, nên cứ liệt kê ra như vậy cho chắc.
 
 Từ những thông tin trên, ta có thể đổi tên các biến lại như sau.
+
 ```c
 //main
 __int64 __fastcall main(int a1, char **a2, char **a3)
@@ -205,6 +210,7 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
 ```
 
 Và 4 function có tác dụng xáo trộn dữ liệu.
+
 ```c
 //func_1
 __int64 __fastcall func_1(int input_char, int count_1)
@@ -222,7 +228,7 @@ char __fastcall func_2(char input_char, char count_1)
 __int64 __fastcall func_3(int input_char, int count_1)
 {
   unsigned int v2; // edi
-  
+
   v2 = input_char ^ 0xFFFFFF9D;
   LOBYTE(v2) = __ROR1__(v2, 3);
   return count_1 ^ v2;
@@ -238,12 +244,13 @@ char __fastcall func_4(char input_char, char count_1)
 Ý tưởng của thuật toán giải mã đó là: Ta sẽ viết từng hàm giải mã cho các hàm từ func_1 đến func_4, rồi cho chạy 1 vòng for duyệt từng kí tự trong arr_1, với mỗi cặp arr_1[count_i] với i, ta sẽ chọn ra hàm giải mã của cặp đó rồi giải mã ra kí tự. Kết hợp tất cả các kí tự lại để có flag.
 
 Code giải mã:
+
 ```python
 arr_1 = [
-  107, 173, 187, 242, 122, 197, 253,  54,  46,  38, 
-  215,  69,  63,  98, 209, 132,  45, 114, 141, 227, 
-  234,  70, 203, 115, 249, 126, 100, 163, 219, 158, 
-    1, 242, 160, 118, 125,  83, 184, 170,  57, 163, 
+  107, 173, 187, 242, 122, 197, 253,  54,  46,  38,
+  215,  69,  63,  98, 209, 132,  45, 114, 141, 227,
+  234,  70, 203, 115, 249, 126, 100, 163, 219, 158,
+    1, 242, 160, 118, 125,  83, 184, 170,  57, 163,
   153, 246
 ]
 

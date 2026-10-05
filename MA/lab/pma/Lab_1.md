@@ -1,10 +1,10 @@
 # **Lab 1-1**
 
-## 1. 
+## 1.
 
 Bỏ 2 file vào VT:
 
-*Lab01-01.dll* 
+*Lab01-01.dll*
 
 ![](../../../image/Pasted%20image%2020261004150727.png)
 
@@ -20,7 +20,7 @@ Bỏ 2 file vào VT:
 - Label nhận diện phổ biến nhất là `trojan.ulise/aenjaris`.
 - VT xếp vào các nhóm: `trojan`, `downloader`, `worm`.
 
-## 2. 
+## 2.
 
 ![](../../../image/Pasted%20image%2020261004151343.png)
 
@@ -137,7 +137,7 @@ Có thể unpack bằng tool.
 
 ![](../../../image/Pasted%20image%2020261004155356.png)
 
-- `OpenSCManagerA` +`CreateServiceA` + `StartServiceCtrlDispatcherA`: Mở 1 service handle -> tạo 1 service mới -> kết nối tiến trình dịch vụ với SCM (Service Control Manager). 
+- `OpenSCManagerA` +`CreateServiceA` + `StartServiceCtrlDispatcherA`: Mở 1 service handle -> tạo 1 service mới -> kết nối tiến trình dịch vụ với SCM (Service Control Manager).
 
 ![](../../../image/Pasted%20image%2020261004155812.png)
 

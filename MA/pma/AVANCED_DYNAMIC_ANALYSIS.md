@@ -42,6 +42,7 @@ Single-stepping nghĩa là thực thi một instruction rồi dừng lại, cho 
 Tuy nhiên, không nên single-step toàn bộ một chương trình phức tạp vì sẽ mất rất nhiều thời gian. Cần tìm khu vực quan trọng bằng phân tích tĩnh hoặc breakpoint, sau đó chỉ single-step đoạn cần nghiên cứu.
 
 Ví dụ:
+
 ```asm
 mov edi, DWORD_00406904
 mov ecx, 0x0d
@@ -147,7 +148,7 @@ Về bản chất, debugger vẫn nhận breakpoint mỗi lần instruction đư
 2. Nếu đúng thì dừng cho người phân tích.
 3. Nếu sai thì tự động tiếp tục chạy.
 
-Do phải kiểm tra điều kiện nhiều lần, loại breakpoint này có thể làm chương trình chậm nghiêm trọng nếu được đặt tại instruction chạy thường xuyên. 
+Do phải kiểm tra điều kiện nhiều lần, loại breakpoint này có thể làm chương trình chậm nghiêm trọng nếu được đặt tại instruction chạy thường xuyên.
 
 #### d. Xử lý ngoại lệ trong Debugger (Exceptions)
 
@@ -300,9 +301,7 @@ Khi mã độc bị đóng gói (Packed), Unpacker Stub sẽ giải nén mã đ�
 
 OllyDbg cho phép sửa đổi trực tiếp các lệnh assembly (ví dụ đổi lệnh nhảy có điều kiện `jz` thành nhảy không điều kiện `jmp` hoặc điền lệnh vô tác dụng `nop` `0x90` để vô hiệu hóa kiểm tra máy ảo/chống debug). Sau khi vá trong bộ nhớ, nhấp chuột phải chọn **Copy to executable -> All modifications** để lưu tệp PE đã vá vĩnh viễn ra đĩa.
 
-
 ---
-
 
 ![PMA_Fig9-1_OllyDbg_CommandLine.png](../../image/PMA_Fig9-1_OllyDbg_CommandLine.png)
 
@@ -430,6 +429,7 @@ Tuy nhiên, driver thường không cung cấp chức năng thông qua export ta
 Ví dụ, khi chương trình gọi `ReadFile` trên handle của một device object, kernel xử lý yêu cầu và cuối cùng gọi callback chịu trách nhiệm xử lý thao tác đọc của driver.
 
 Một API thường gặp khi phân tích driver độc hại là:
+
 ```
 DeviceIoControl(
     hDevice,
@@ -445,6 +445,7 @@ DeviceIoControl(
 `DeviceIoControl` là giao diện tổng quát cho phép chương trình user mode gửi một buffer đầu vào tới driver và nhận lại buffer đầu ra.
 
 Việc trace từ lời gọi user mode xuống driver khá khó vì yêu cầu phải đi qua nhiều lớp code của hệ điều hành:
+
 ```
 Ứng dụng
     ↓
@@ -482,6 +483,7 @@ Tài liệu sử dụng Windows XP trong VMware và cấu hình kết nối bằ
 #### a. Cấu hình tệp khởi động boot.ini
 
 Tài liệu thêm một entry vào `C:\boot.ini`:
+
 ```
 [boot loader]
 timeout=30
@@ -567,6 +569,7 @@ Phần lớn chức năng nâng cao của WinDbg được điều khiển qua co
 *Bảng 10.1: Các lệnh đọc và hiển thị dữ liệu bộ nhớ trong WinDbg.*
 
 Nhóm lệnh `d` được sử dụng để đọc bộ nhớ:
+
 ```
 d<kiểu-hiển-thị> địa_chỉ
 ```
@@ -578,14 +581,17 @@ d<kiểu-hiển-thị> địa_chỉ
 | `dd` | Đọc và hiển thị dưới dạng các DWORD 32-bit |
 
 Ví dụ, để đọc chuỗi ASCII tại địa chỉ `0x401020`:
+
 ```
 da 0x401020
 ```
 Nhóm lệnh `e` được sử dụng để ghi dữ liệu vào bộ nhớ:
+
 ```
 e<kiểu-dữ-liệu> địa_chỉ dữ_liệu
 ```
 Ví dụ:
+
 ```
 eb 0x401020 41
 ```
@@ -594,6 +600,7 @@ Lệnh trên ghi byte `0x41`, tức ký tự `A`, vào địa chỉ `0x401020`.
 #### b. Sử dụng các toán tử số học trong WinDbg
 
 WinDbg cho phép thực hiện trực tiếp các phép toán trên địa chỉ, thanh ghi và biểu thức:
+
 ```
 +
 -
@@ -607,6 +614,7 @@ WinDbg cho phép thực hiện trực tiếp các phép toán trên địa chỉ
 - Tính vị trí phần tử trong một bảng con trỏ.
 
 Tài liệu sử dụng toán tử `dwo` để dereference một con trỏ 32-bit. Giả sử chương trình 32-bit dừng tại đầu hàm và tham số đầu tiên là con trỏ tới chuỗi Unicode, tham số đó nằm tại `esp+4`:
+
 ```
 du dwo(esp+4)
 ```
@@ -619,10 +627,12 @@ du dwo(esp+4)
 #### c. Thiết lập điểm dừng trong Kernel (bp, bu, ba)
 
 Lệnh `bp` đặt software breakpoint:
+
 ```
 bp địa_chỉ
 ```
 WinDbg còn cho phép breakpoint tự động thực hiện một chuỗi lệnh. Ví dụ:
+
 ```
 bp GetProcAddress "da dwo(esp+8); g"
 ```
@@ -636,6 +646,7 @@ Mỗi lần `GetProcAddress` được gọi, breakpoint sẽ:
 Nhờ vậy, ta có thể ghi lại toàn bộ API mà chương trình phân giải động mà không cần dừng thủ công ở mỗi lần gọi.
 
 WinDbg còn hỗ trợ các cấu trúc lệnh như:
+
 ```
 .if
 .else
@@ -644,6 +655,7 @@ WinDbg còn hỗ trợ các cấu trúc lệnh như:
 Do đó, có thể viết script hoặc breakpoint có điều kiện khá phức tạp.
 
 Nếu tham số thứ hai của `GetProcAddress` là ordinal thay vì con trỏ chuỗi, WinDbg có thể cố đọc một địa chỉ không hợp lệ. Khi đó nó thường chỉ hiển thị:
+
 ```
 ????
 ```
@@ -652,6 +664,7 @@ thay vì làm debugger crash.
 #### d. Liệt kê các module đã nạp (lm)
 
 Lệnh `lm` liệt kê các module đã được load:
+
 ```
 lm
 ```
@@ -673,10 +686,12 @@ WinDbg hiển thị địa chỉ bắt đầu và kết thúc của từng modul
 Debugging symbol cung cấp tên và một phần thông tin kiểu dữ liệu từ mã nguồn.
 
 Nếu không có symbol, WinDbg có thể chỉ hiển thị:
+
 ```
 8050f1a2
 ```
 Khi có symbol, địa chỉ đó có thể được hiển thị thành:
+
 ```
 nt!MmCreateProcessAddressSpace
 ```
@@ -693,16 +708,19 @@ Symbol của Microsoft đặc biệt hữu ích khi phân tích kernel vì nó c
 #### a. Tìm kiếm Symbol bằng ký tự đại diện (Wildcard)
 
 Cú pháp tham chiếu symbol trong WinDbg:
+
 ```
 module!symbol
 ```
 Ví dụ:
+
 ```
 nt!NtCreateProcess
 ```
 `nt` là tên module đặc biệt được dùng cho `ntoskrnl.exe`.
 
 Để disassemble hàm:
+
 ```
 u nt!NtCreateProcess
 ```
@@ -711,12 +729,14 @@ Nếu không chỉ định module, WinDbg phải tìm trong symbol của tất c
 #### b. Điểm dừng chờ (Deferred Breakpoints)
 
 Lệnh `bu` cho phép đặt breakpoint dựa trên symbol ngay cả khi module chưa được load:
+
 ```
 bu newModule!exportedFunction
 ```
 WinDbg sẽ chờ đến khi `newModule` được load, sau đó tự động kích hoạt breakpoint.
 
 Để đặt breakpoint tại entry point của driver:
+
 ```
 bu $iment(driverName)
 ```
@@ -725,10 +745,12 @@ Cách này cho phép debugger dừng trước khi code chính của driver bắt
 #### c. Truy vấn Symbol nâng cao với x
 
 Lệnh `x` tìm symbol:
+
 ```
 x nt!*CreateProcess*
 ```
 Kết quả có thể bao gồm:
+
 ```
 nt!NtCreateProcessEx
 nt!NtCreateProcess
@@ -740,20 +762,24 @@ nt!MmCreateProcessAddressSpace
 #### d. Xác định hàm gần nhất với địa chỉ (ln)
 
 Lệnh `ln` liệt kê symbol gần nhất:
+
 ```
 ln 805717aa
 ```
 Ví dụ, kết quả có thể cho biết địa chỉ đó chính xác là:
+
 ```
 nt!NtReadFile
 ```
 #### e. Khảo sát cấu trúc Kernel bằng lệnh dt
 
 Lệnh `dt` hiển thị định nghĩa của một kiểu hoặc structure:
+
 ```
 dt nt!_DRIVER_OBJECT
 ```
 Một phần cấu trúc `_DRIVER_OBJECT`:
+
 ```
 +0x000 Type
 +0x002 Size
@@ -772,10 +798,12 @@ Một phần cấu trúc `_DRIVER_OBJECT`:
 `DriverStart` cho biết địa chỉ driver được load trong bộ nhớ. `MajorFunction` là bảng chứa các callback xử lý I/O.
 
 Nếu biết địa chỉ một driver object, có thể overlay structure lên dữ liệu thật:
+
 ```
 dt nt!_DRIVER_OBJECT 828b2648
 ```
 Ví dụ với driver `Beep`:
+
 ```
 DriverName   : "\Driver\Beep"
 DriverInit   : Beep!DriverEntry
@@ -789,6 +817,7 @@ MajorFunction: Beep!BeepOpen
 Symbol phải khớp chính xác với phiên bản của file đang debug. Mỗi bản vá hoặc cập nhật Windows có thể thay đổi địa chỉ và symbol tương ứng.
 
 Tài liệu cấu hình symbol server bằng đường dẫn:
+
 ```
 SRV*c:\websymbols*http://msdl.microsoft.com/download/symbols
 ```
@@ -799,11 +828,13 @@ Trong đó:
 - URL phía sau là Microsoft Symbol Server.
 
 Cấu hình hiện đại thường sử dụng:
+
 ```
 .symfix
 .reload
 ```
 hoặc:
+
 ```
 .sympath srv*
 .reload
@@ -815,11 +846,13 @@ Nếu máy phân tích không có Internet, có thể tải trước symbol phù
 Ví dụ thực hành phân tích một chương trình sử dụng driver để ghi file từ kernel mode.
 
 Việc ghi file từ kernel có thể khó phát hiện hơn vì malware không gọi trực tiếp các API user mode quen thuộc như:
+
 ```
 CreateFile
 WriteFile
 ```
 Thay vào đó, kernel code sử dụng các hàm tương ứng:
+
 ```
 ZwCreateFile
 ZwWriteFile
@@ -832,6 +865,7 @@ Quá trình phân tích được chia thành hai phần:
 #### a. Chuyển đổi ngữ cảnh sang không gian User-mode (.process)
 
 Đầu tiên, thành phần user mode gọi `CreateServiceA` để đăng ký driver.
+
 ```asm
 04001B3D push esi ; lpPassword
 04001B3E push esi ; lpServiceStartName
@@ -850,16 +884,19 @@ Quá trình phân tích được chia thành hai phần:
 04001B59 call ds:__imp__CreateServiceA@52
 ```
 Tham số:
+
 ```
 dwServiceType = 1
 ```
 tương ứng với:
+
 ```
 SERVICE_KERNEL_DRIVER
 ```
 Điều này cho biết service được tạo là một kernel driver.
 
 Sau đó, chương trình gọi `CreateFileA` để lấy handle tới device object:
+
 ```asm
 04001893 xor eax, eax
 04001895 push eax ; hTemplateFile
@@ -872,12 +909,14 @@ Sau đó, chương trình gọi `CreateFileA` để lấy handle tới device ob
 040018A1 call esi ; CreateFileA
 ```
 Tên device được sử dụng:
+
 ```
 \\.\FileWriterDevice
 ```
 Ở đây chương trình không mở một file thông thường. Nó mở device object do driver tạo ra.
 
 Khi đã có handle, chương trình gọi `DeviceIoControl`:
+
 ```asm
 04001910 push 0 ; lpOverlapped
 04001912 sub eax, ecx
@@ -893,6 +932,7 @@ Khi đã có handle, chương trình gọi `DeviceIoControl`:
 0400192C call ds:DeviceIoControl
 ```
 Các thông tin đáng chú ý:
+
 ```
 hDevice        = handle của FileWriterDevice
 dwIoControlCode = 0x9C402408
@@ -904,15 +944,18 @@ lpOutBuffer     = buffer nhận dữ liệu trả về
 #### b. Phân tích mã điều khiển trong Kernel-mode
 
 Khi bật verbose output, WinDbg thông báo mỗi lần kernel module được load:
+
 ```
 ModLoad: f7b0d000 f7b0e780 FileWriter.sys
 ```
 Nếu module xuất hiện đúng lúc chạy mẫu malware, nó có thể là driver đáng ngờ.
 
 Lệnh sau tìm driver object:
+
 ```
 !drvobj FileWriter
 ```
+
 ```
 kd>dt nt!_DRIVER_OBJECT 0x827e3698
 nt!_DRIVER_OBJECT
@@ -941,10 +984,12 @@ Kết quả cho biết:
 - Trạng thái symbol.
 
 Nếu `!drvobj` thất bại hoặc tên driver object khác tên file, có thể liệt kê namespace driver:
+
 ```
 !object \Driver
 ```
 Sau khi lấy địa chỉ driver object, dùng:
+
 ```
 dt nt!_DRIVER_OBJECT 0x827e3698
 ```
@@ -965,10 +1010,12 @@ f7b0da68 6838d9b0f7 push offset FileWriter+0x938 (f7b0d938)
 f7b0da6d e822faffff call FileWriter+0x494 (f7b0d494)
 ```
 Trường quan trọng:
+
 ```
 MajorFunction : [28] ...
 ```
 Đây là bảng dispatch routine. Mỗi phần tử tương ứng một loại IRP như:
+
 ```
 IRP_MJ_CREATE
 IRP_MJ_READ
@@ -976,21 +1023,26 @@ IRP_MJ_WRITE
 IRP_MJ_DEVICE_CONTROL
 ```
 `DeviceIoControl` được chuyển tới callback tại chỉ số:
+
 ```
 IRP_MJ_DEVICE_CONTROL = 0xE
 ```
 Trong ví dụ 32-bit, bảng `MajorFunction` bắt đầu ở offset `0x38`, mỗi con trỏ dài 4 byte:
+
 ```
 dd 827e3698+0x38+e*4 L1
 ```
 Kết quả:
+
 ```
 827e3708 f7b0da66
 ```
 Để kiểm tra code tại địa chỉ đó:
+
 ```
 u f7b0da66
 ```
+
 ```
 F7B0DCB1 push offset aDosdevicesCSec ; "\\DosDevices\\C:\\secretfile.txt"
 F7B0DCB6 lea eax, [ebp-54h]
@@ -1039,12 +1091,14 @@ Sau khi tìm được dispatch routine, có thể:
 Tài liệu khuyến nghị phân tích tĩnh bằng IDA trước, sau đó sử dụng WinDbg cho những phần cần kiểm tra động.
 
 Trong dispatch routine của `FileWriter.sys`, malware gọi:
+
 ```
 RtlInitUnicodeString
 ZwCreateFile
 ZwWriteFile
 ```
 Tên file được tạo:
+
 ```
 \DosDevices\C:\secretfile.txt
 ```
@@ -1053,14 +1107,17 @@ Kernel sử dụng cấu trúc `UNICODE_STRING`, không đơn thuần là chuỗ
 `RtlInitUnicodeString` được dùng để khởi tạo `UNICODE_STRING` từ chuỗi wide-character.
 
 Ngoài `DeviceIoControl`, các API như `CreateFile`, `ReadFile` và `WriteFile` cũng có thể tạo request gửi tới driver. Ví dụ:
+
 ```
 ReadFile → IRP_MJ_READ
 ```
 Vì:
+
 ```
 IRP_MJ_READ = 0x3
 ```
 nên với cấu trúc 32-bit, callback đọc được tìm bằng:
+
 ```
 MajorFunction + 0x3 * 4
 ```
@@ -1071,24 +1128,29 @@ Không phải lúc nào tên file driver cũng giúp tìm ngay driver object.
 Vì chương trình user mode tương tác với device object, ta có thể lần ngược từ device object tới driver object.
 
 Nếu phát hiện chương trình mở:
+
 ```
 \\.\FileWriterDevice
 ```
 có thể chạy:
+
 ```
 !devobj FileWriterDevice
 ```
 uả chứa con trỏ:
+
 ```
 Device object → Driver object
 ```
 Sau khi có driver object, ta có thể xem bảng `MajorFunction` và các callback của driver.
 
 Để tìm chương trình user mode nào đang giữ handle tới device object:
+
 ```
 !devhandles 826eb030
 ```
 Lệnh này duyệt handle table của các tiến trình nên có thể chạy khá lâu.
+
 ```
 kd>!devhandles 826eb030
 ...
@@ -1104,10 +1166,12 @@ Image: FileWriterApp.exe
 07b8: Object: 826eb0e8 GrantedAccess: 0012019f
 ```
 Trong ví dụ, kết quả xác định:
+
 ```
 Image: FileWriterApp.exe
 ```
 Như vậy, quá trình truy vết có thể đi theo hướng:
+
 ```
 Device object
     → Driver object
@@ -1136,17 +1200,20 @@ SSDT là bảng được kernel sử dụng để tìm địa chỉ hàm xử l�
 4. Entry trong SSDT chỉ tới hàm kernel tương ứng.
 
 Ví dụ:
+
 ```
 mov eax, 25h
 mov edx, 7FFE0300h
 call dword ptr [edx]
 ```
 Sau đó:
+
 ```
 mov edx, esp
 sysenter
 ```
 Ở đây `0x25` là mã system call của `NtCreateFile` trên phiên bản Windows trong ví dụ.
+
 ```
 SSDT[0x22] = 805b28bc (NtCreateaDirectoryObject)
 SSDT[0x23] = 80603be0 (NtCreateEvent)
@@ -1160,6 +1227,7 @@ SSDT[0x27] = 805ca3ca (NtCreateJobObject)
 SSDT[0x25] = địa chỉ NtCreateFile
 ```
 Rootkit có thể thay entry này bằng địa chỉ hook của nó:
+
 ```
 SSDT[0x25] = địa chỉ hook trong driver độc hại
 ```
@@ -1177,14 +1245,17 @@ Chỉ hook `NtCreateFile` chưa chắc ẩn được file khỏi directory listi
 Cách trực tiếp để phát hiện SSDT hook là kiểm tra các địa chỉ trong SSDT.
 
 Các entry hợp lệ thông thường phải trỏ vào phạm vi địa chỉ của `ntoskrnl.exe`. Trước tiên dùng `lm` để xác định vùng địa chỉ của module `nt`:
+
 ```
 lm m nt
 ```
 Sau đó kiểm tra SSDT tại:
+
 ```
 nt!KeServiceDescriptorTable
 ```
 Nếu một entry trỏ ra ngoài phạm vi `nt`, nó có thể đã bị hook.
+
 ```
 kd> lm m nt
 ...
@@ -1199,12 +1270,14 @@ kd> lm m nt
 805012ac 8056d404 8059fba6 80599202 805c5f8e
 ```
 Trong ví dụ, entry tại offset `0x25` trỏ tới:
+
 ```
 f7ad94a4
 ```
 Địa chỉ này nằm ngoài `ntoskrnl.exe`, nên rất đáng ngờ.
 
 Dùng `lm` để xác định module chứa địa chỉ:
+
 ```
 kd>lm
 ...
@@ -1215,6 +1288,7 @@ f7aed000 f7aee280 vmmouse (deferred)
 ...
 ```
 Kết quả cho thấy địa chỉ nằm trong:
+
 ```
 Rootkit.sys
 ```
@@ -1264,6 +1338,7 @@ Code mẫu thực hiện:
 5. Ghi địa chỉ hàm hook vào entry đó.
 
 `MmGetSystemRoutineAddress` có vai trò gần giống `GetProcAddress` trong kernel, nhưng chỉ tra cứu một số routine được export bởi các module kernel phù hợp.
+
 ```
 000104A4 mov edi, edi
 000104A6 push ebp
@@ -1281,6 +1356,7 @@ Code mẫu thực hiện:
 000104C1 retn 2Ch
 ```
 Hàm hook kiểm tra `ObjectAttributes`, trong đó có thông tin như tên file:
+
 ```
 Nếu cho phép:
     jmp NtCreateFile gốc
@@ -1289,6 +1365,7 @@ Nếu muốn chặn:
     return 0xC0000034
 ```
 Mã lỗi:
+
 ```
 0xC0000034 = STATUS_OBJECT_NAME_NOT_FOUND
 ```
@@ -1299,12 +1376,14 @@ Vì vậy, ứng dụng nhận thông báo rằng file không tồn tại, mặc
 Interrupt cho phép phần cứng báo cho CPU rằng một sự kiện đã xảy ra hoặc một thao tác đã hoàn thành.
 
 Driver có thể gọi:
+
 ```
 IoConnectInterrupt
 ```
 để đăng ký một **Interrupt Service Routine – ISR**. Khi interrupt tương ứng xuất hiện, Windows gọi ISR đó.
 
 Thông tin ISR được lưu trong **Interrupt Descriptor Table – IDT**. Có thể xem IDT trong WinDbg bằng:
+
 ```
 !idt
 ```
@@ -1334,6 +1413,7 @@ fd: 806d0464 hal!HalpProfileInterrupt
 fe: 806d0604 hal!HalpPerfInterrupt
 ```
 IDT bình thường thường trỏ tới các handler của những module quen thuộc như:
+
 ```
 hal
 atapi
@@ -1378,6 +1458,7 @@ Các phiên bản Windows mới hơn Windows XP thay đổi đáng kể việc d
 #### a. Cấu hình gỡ lỗi qua BCDEdit
 
 Từ Windows Vista trở đi, Windows không còn dùng `boot.ini`. Boot configuration được quản lý bằng:
+
 ```
 BCDEdit
 ```
@@ -1403,6 +1484,7 @@ Tài liệu nói rằng nếu kernel debugger đã attach từ lúc boot thì Pa
 Windows x64 từ Vista bắt đầu thực thi yêu cầu chữ ký số đối với kernel driver. Điều này khiến việc load driver tùy ý khó hơn.
 
 Tài liệu cũ đề cập tùy chọn:
+
 ```
 nointegritychecks
 ```

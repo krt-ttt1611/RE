@@ -59,7 +59,7 @@ __int64 __fastcall main(int a1, char **a2, char **a3)
   return 1LL;
 }
 ```
-Phân tích logic chương trình: 
+Phân tích logic chương trình:
 
 - Đầu tiên, chương trình sẽ đọc file và kiểm tra magic number, nếu đúng thì sẽ yêu cầu nhập chuỗi kí tự.
 - Sau đó, chương trình sẽ thực hiện duyệt từng byte bắt đầu từ byte thứ 36 trong dữ liệu của file blob, so sánh với kết quả của phép tính:
@@ -67,6 +67,7 @@ Phân tích logic chương trình:
 __ROL1__(*input_ptr ^ *((_BYTE *)&ptr[7] + (count_1 & 7)) ^ *((_BYTE *)&ptr[3] + (count_1 & 0xF)), *((_BYTE *)&ptr[1] + (count_1 & 7))) )
 ```
 Từ logic chương trình, ta sẽ xây dựng code giải mã. Ta biết toàn bộ dự liệu trong file blob, nên chỉ cần dùng hàm xoay bit phải để đảo ngược lại dữ liệu, ta sẽ tìm được flag.
+
 ```python
 with open("blob.dat", "rb") as f:
     data = f.read()
