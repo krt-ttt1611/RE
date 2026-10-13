@@ -2,13 +2,15 @@
 
 # 1.
 
-File bị packed, và có lẽ các DLL và API cũng được load thủ công (không thông qua cụm API `LoadLibrary` + `GetProcAddress`) nên không tìm thấy import. E chỉ có thể xem được bảng strings.
+File bị packed, và dynamic resolve nên không tìm thấy import. E chỉ có thể xem được bảng strings.
 
 # 2.
 
 ![](../../../image/Pasted%20image%2020261005084824.png)
 
 E thấy 4 chuỗi đường dẫn registry, và 1 chuỗi tên file `vmx32to64.exe`. Ngoài ra còn có chuỗi `WinMX32` (tra AI thì nó bảo chuỗi này thường gắn với tên của 1 mutex object, malware có thể dùng mutex để đảm bảo chỉ duy nhất 1 tiến trình chạy tại 1 thời điểm).
+![](../../../image/Pasted%20image%2020261013212929.png)
+Đúng như dự đoán, malware tạo 1 mutex `WinMX32`.
 
 ![](../../../image/Pasted%20image%2020261005092748.png)
 
