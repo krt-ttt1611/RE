@@ -2,7 +2,7 @@
 
 # 1.
 
-File bị packed, và có lẽ các DLL và API cũng được load thủ công (không thông qua cụm API `LoadLibrary` + `GetProcAddress`) nên dù có thử debug động bằng xdbg, ta vẫn không thể thấy được API trong bảng symbol. E chỉ có thể xem được bảng strings.
+File bị packed, và có lẽ các DLL và API cũng được load thủ công (không thông qua cụm API `LoadLibrary` + `GetProcAddress`) nên không tìm thấy import. E chỉ có thể xem được bảng strings.
 
 # 2.
 

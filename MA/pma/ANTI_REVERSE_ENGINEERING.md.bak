@@ -1,0 +1,81 @@
+ref: bản dịch của anh hieesu
+# **Chap 15:** Anti - disasm
+## 1. Understanding anti - disasm.
+**Linear disasm:** Dịch tuần từ từng byte 1 để ghép thành các lệnh, không phân biệt cấu trúc. Đơn giản nhưng cũng dễ bị sai nhất.
+**Flow-Oriented disasm:** Dịch theo control flow, thông minh hơn: Gặp lệnh rẽ nhánh thì sẽ phân tích theo 2 nhánh, gặp lệnh nhảy thì sẽ nhảy thẳng đến địa chỉ chỉ định...
+
+# 2. Defeating disasm algorithm.
+Như đã nói phía trên, hiện tại có 2 loại disasm (còn loại thứ 3 thì chắc là AI :v).
+Trong sách có vài ví dụ về điểm yếu của linear disasm so với flow oriented disasm
+```asm
+jmp short near ptr loc_2+1
+; ---------------------------------------------------------------------------
+loc_2: ; CODE XREF: seg000:00000000j
+ call near ptr 15FF2A71h
+ or [ecx], dl
+ inc eax
+; ---------------------------------------------------------------------------
+ db 0
+```
+Và 
+```asm
+jmp short loc_3
+; ---------------------------------------------------------------------------
+ db 0E8h
+; ---------------------------------------------------------------------------
+loc_3: ; CODE XREF: seg000:00000000j
+ push 2Ah
+ call Sleep
+```
+2 đoạn code này là 2 bản dịch khác nhau của cùng 1 đoạn mã máy. Bên trên là linear, bên dưới là flow oriented. Ta thấy ngay được linear đã dịch sai (khó hiểu chỗ `jump loc_2 + 1`). Nguyên nhân là do người viết chèn vào 1 byte rác `0xe8`. Nếu dịch đúng, thì lệnh `jmp` sẽ nhảy qua byte đấy nên ta bỏ qua, nhưng tính chất của linear là dịch tuần tự, nên bị sai.
+ref từ bản dịch:
+> Trong linear disassembly, disassembler không phải chọn nhánh nào sẽ disassemble. Còn flow-oriented disassembler thì **có**. Những sự lựa chọn và giả định này nghe có vẻ dư thừa, nhưng machine code không hề đơn giản như vậy vì còn có pointer, exception, conditional branch, v.v.
+> Conditional branch buộc flow-oriented disassembler phải chọn một trong hai nơi để disassemble trước: **true branch** hoặc **false branch**. Với code do compiler thông thường sinh ra, disassemble true hay false trước thường không tạo khác biệt. Nhưng với handwritten assembly hoặc anti-disassembly code, hai nhánh đó có thể tạo ra **hai kết quả disassembly khác nhau** cho cùng một block byte. Khi có conflict, phần lớn disassembler sẽ **tin cách diễn giải đầu tiên** của chúng. Phần lớn flow-oriented disassembler sẽ disassemble **false branch trước** cho mọi conditional jump.
+
+## 3. Anti-Disassembly Techniques.
+Ref:
+>Cách chủ đạo để malware ép disassembler sinh ra disassembly sai là lợi dụng các choice và assumption của disassembler. Những kỹ thuật trong chương này chủ yếu khai thác các giả định cơ bản nhất của disassembler và nhìn chung tương đối dễ sửa bởi analyst. Các kỹ thuật cao cấp hơn thì lợi dụng những loại thông tin mà disassembler thường không có sẵn, hoặc tạo ra code không thể disassemble đầy đủ bằng assembly listing thông thường.
+
+### 3.1. Jump Instructions with the Same Target.
+Dùng 2 lệnh nhảy điều kiện liên tiếp để bẫy. Để dễ hiểu hơn. xét ví dụ.
+```asm
+
+74 03 jz short near ptr loc_4011C4+1
+75 01 jnz short near ptr loc_4011C4+1
+loc_4011C4: ; CODE XREF: sub_4011C0
+ ; sub_4011C0+2j
+E8 58 C3 90 90 call near ptr 90D0D521h
+```
+Theo lý thuyết về flow oriented, khi gặp 1 lệnh nhảy, nó bắt buộc phải giải mã cả 2 nhánh. Khi đó, nếu đặt vào giữa lệnh nhảy và khối lệnh các byte rác, điều này sẽ khiến trình phân tích bị confused, và dẫn đến dịch sai. Tuy nhiên, câu hỏi đặt ra là, nếu chỉ là như thế chỉ cần làm 1 lệnh nhảy thì vẫn có thể làm confused được? Vậy tại sao lại phải làm 2 lệnh nhảy? Bởi vì nếu chỉ là 1 lệnh nhảy, việc nó nhảy đến đâu còn phụ thuộc vào điều kiện. Nếu lỡ nó nhảy vào điều kiện chứa anti disasm, thì chính chương trình cũng bị crash. Vì thế nó bắt buộc phải dùng 1 cặp lệnh nhảy liên tiếp đến cùng 1 địa chỉ, đây là cách tốt nhất để có thể làm trình phân tích confused, mà chương trình vẫn có thể chạy bình thường.
+
+### 3.2. A Jump Instruction with a Constant Condition.
+Dùng 1 lệnh nhảy có điều kiện luôn đúng hoặc luôn sai.
+```asm
+33 C0 xor eax, eax
+74 01 jz short near ptr loc_4011C4+1
+loc_4011C4: ; CODE XREF: 004011C2j
+; DATA XREF: .rdata:004020ACo
+E9 58 C3 68 94 jmp near ptr 94A8D521h
+```
+Cách này là 1 biến thể từ việc chèn junk byte vào 1 nhánh điều kiện. Như đã nói bên trên, nếu điều kiện không cố định, nó sẽ làm crash cả chương trình vì đi vào junk byte. Nhưng ở đây đã khắc phục được điều đó, nó sử dụng 1 điều kiện luôn đúng, tức là nó cung tương đương với 1 lệnh nhảy không điều kiện. Tuy nhiên trình phân tích không đủ thông minh để nhận ra điều đó, nó vẫn cố gắng phân tích theo 2 nhánh, và sẽ xảy ra sai sót. Như ví dụ bên trên, `xor eax, eax` làm cho eax luôn bằng không, nên lệnh `jz` phía dưới là luôn đúng. Nhưng IDA vẫn phải phân tích 2 nhánh -> dịch sai.
+
+### 3.3. Impossible Disassembly.
+Đúng như tên gọi, tự động hóa việc disasm đoạn code sử dụng kỹ thuật này là gần như không thể. Hiểu 1 cách đơn giản, kỹ thuật này sẽ sử dụng các lệnh nhảy có điều kiện, để khiến cho 1 đoạn code duy nhất có thể mang nhiều ý nghĩa khi phân tích từ nhiều vị trí khác nhau. <đoạn này viết lại ví dụ trong sách cho dễ hiểu cho t>
+
+### 3.4. NOP-ing Out Instructions with IDA Pro.
+
+## 4. Obscuring Flow Control
+ref:
+>Disassembler hiện đại như IDA Pro làm rất tốt việc correlate function call và suy ra thông tin cấp cao nhờ hiểu quan hệ giữa các function. Kiểu phân tích này hoạt động tốt với code viết theo phong cách tiêu chuẩn, compiler tiêu chuẩn, nhưng rất dễ bị malware author đánh bại.
+
+### 4.1. The Function Pointer Problem.
+Thay vì gọi hàm trực tiếp, chương tình lưu còn trỏ hàm vào 1 biến. Việc này gây ra rất nhiều khó khăn cho việc phân tích. Vấn đề lớn nhất có lẽ là việc chúng ta sẽ không tìm thấy cross-reference (vì con trỏ hàm đang lưu vào biến local, nếu ta x-ref biến thì chỉ thấy đúng hàm đang gọi nó thôi).
+
+### 4.2. Adding Missing Code Cross-References in IDA Pro.
+<viết đoạn này cho t>
+
+### 4.3. Return Pointer Abuse.
+Viết đoạn này cho t.
+
+### 4.4. Misusing Structured Exception Handlers (làm dụng SEH).
+<viết chi tiết về thằng seh>
