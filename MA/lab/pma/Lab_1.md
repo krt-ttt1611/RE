@@ -175,7 +175,16 @@ Có thể unpack bằng tool.
 ![](../../../image/Pasted%20image%2020261004160350.png)
 
 Dấu hiệu bị packed rất rõ ràng.
-
+Để unpack được file này, trước hết e sé đọc code tĩnh trong IDA, mục đích để hiểu rõ logic của thằng stub dùng để unpack.
+Code khá rối, nhưng e tìm được 1 đoạn khá quan trọng.
+![](../../../image/Pasted%20image%2020261017111424.png)
+Malware dùng Loadlib để khôi phục import. Vậy thì có thể đặt bp để dò từ đoạn này.
+Sau khi mò 1 hồi thì e tìm được thằng OEP là `0x40190`. E nghĩ đúng vì trong đoạn code của stub cũng có 1 đoạn.
+![](../../../image/Pasted%20image%2020261017111530.png)
+Nó nhảy thẳng đến vùng nhớ đó, đây chính là tail jump.
+Đến đây thì dùng scylla để rebuild lại thôi.
+![](../../../image/Pasted%20image%2020261017111653.png)
+Đây là chương trình gốc.
 ## 3.
 
 # 4.

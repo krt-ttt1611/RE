@@ -189,10 +189,6 @@ Khi phân tích danh sách Import của mẫu này:
 
 4. **Hàm xuất (Exports):** Mẫu `.exe` này xuất hai hàm bất thường: `LowLevelKeyboardProc` và `LowLevelMouseProc`.
 
-![Pasted image 20260907223323.png](../../image/Pasted%20image%2020260907223323.png)
-
-*Hình 1.9: Chi tiết hàm callback LowLevelKeyboardProc dùng làm tham số cho SetWindowsHookEx.*
-
 Theo tài liệu Microsoft MSDN, `LowLevelKeyboardProc` là hàm callback được truyền vào `SetWindowsHookEx` để đón bắt các sự kiện bàn phím thô ở cấp độ thấp (`WH_KEYBOARD_LL`).
 
 > **❗ IMPORTANT**
