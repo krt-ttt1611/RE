@@ -1,10 +1,10 @@
 # **Lab 3-1**
 
-# 1.
+## 1.
 
 File bị packed, và dynamic resolve nên không tìm thấy import. E chỉ có thể xem được bảng strings.
 
-# 2.
+## 2.
 
 ![](../../../image/Pasted%20image%2020261005084824.png)
 
@@ -26,7 +26,7 @@ HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Run\VideoDriver: 43 00 3A 00 5C 0
 ```
 C:\WINDOWS\system32\vmx32to64.exe
 ```
-# 3.
+## 3.
 
 ![](../../../image/Pasted%20image%2020261005094703.png)
 
@@ -304,11 +304,11 @@ Dropper, Keylogger.
 
 Khi chạy, nó tự xóa file thực thi rồi tắt ngay lập tức. Dùng regshot, thấy nó cũng không chỉnh sửa gì đặc biệt.
 
-# 2.
+## 2.
 
 Nó xóa dấu vết làm cản trở việc phân tích.
 
-# 3.
+## 3.
 
 E k biết :(
 
