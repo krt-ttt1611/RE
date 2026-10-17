@@ -1,4 +1,4 @@
-ớn# **Lab 3-1**
+# **Lab 3-1**
 
 # 1.
 
@@ -9,7 +9,9 @@ File bị packed, và dynamic resolve nên không tìm thấy import. E chỉ c�
 ![](../../../image/Pasted%20image%2020261005084824.png)
 
 E thấy 4 chuỗi đường dẫn registry, và 1 chuỗi tên file `vmx32to64.exe`. Ngoài ra còn có chuỗi `WinMX32` (tra AI thì nó bảo chuỗi này thường gắn với tên của 1 mutex object, malware có thể dùng mutex để đảm bảo chỉ duy nhất 1 tiến trình chạy tại 1 thời điểm).
+
 ![](../../../image/Pasted%20image%2020261013212929.png)
+
 Đúng như dự đoán, malware tạo 1 mutex `WinMX32`.
 
 ![](../../../image/Pasted%20image%2020261005092748.png)
@@ -311,6 +313,7 @@ Nó xóa dấu vết làm cản trở việc phân tích.
 E k biết :(
 
 Phân tích tĩnh.
+
 ```c
 int __cdecl main(int argc, const char **argv, const char **envp)
 {
@@ -383,7 +386,9 @@ int __cdecl main(int argc, const char **argv, const char **envp)
 }
 ```
 Đầu tiên, ta thấy ngay malware này có nhiều chức năng, phụ thuộc vào tham số nó  truyền vào.
+
 **Nếu không truyền vào tham số**
+
 ```c
 if ( argc == 1 )
 {
@@ -418,6 +423,7 @@ int sub_401000()
 }
 ```
 Hàm này sẽ thực hiện query value `Configuration` nằm trong key `HKLM:\SOFTWARE\Microsoft \XPS`, nếu tồn tại, nó sẽ trả về `1`, còn nếu không thì trả về `0`.
+
 ```c
 void __noreturn sub_402410()
 {
@@ -460,7 +466,9 @@ int sub_402360()
 }
 ```
 Nếu query value thành công thì thực hiện hàm `sub_402410`, còn nếu không thì thực hiện hàm `sub_402360`
+
 Hàm `sub_402410` thực hiện lấy đường dẫn của file thực thi sau đó gọi `cmd.exe` với lệnh xóa `/c del ` để thực hiện xóa đi file thực thi, đúng với hành vi đã thấy khi chạy file.
+
 ```c
 int sub_402360()
 {
@@ -522,6 +530,7 @@ int __cdecl sub_401280(char *a1, int a2, char *a3, int a4, char *a5, int a6, cha
 }
 ```
 Hàm `sub_401280` tiếp tục thực hiện kiểm tra value 1 lần nữa, nếu vẫn không được thì trả về 1, còn nếu có thì nó thực hiện copy các phần của chuỗi `Data` vào các vùng nhớ `a1`, `a3`, `a5`, `a7`...
+
 ```c
 int __cdecl sub_402020(char *name)
 {
@@ -624,6 +633,7 @@ int __cdecl sub_401E60(char *a1, int a2)
 }
 ```
 Hàm `sub_1420` và `sub_1470` cũng tương tự hàm trên, nó thực hiện truy vấn value của key, rồi lấy các trường thông tin cần thiết.
+
 ```c
 int __cdecl sub_401D80(char *a1)
 {
@@ -665,6 +675,7 @@ char sub_401D10()
 }
 ```
 Hàm này thực hiện sinh 1 bộ 4 byte ngẫu nhiên, rồi ghép với kí tự `/`, rồi lưu vào `a1`.
+
 ```c
 int __cdecl sub_401AF0(char *name, u_short hostshort, const char *a3, char *Str, _DWORD *a5)
 {
@@ -748,13 +759,16 @@ int __cdecl sub_401640(SOCKET *a1, char *name, u_short hostshort)
 }
 ```
 Hàm này thực hiện truy vấn DNS để lấy IP của host (`name` truyền vào), mở socket, và kết nối đến host port tương ứng.
+
 Sau khi kết nối xong, ở hàm `sub_401AF0`, nó thực hiện cụm lệnh.
+
 ```c
 strcpy(buf, aGet);
 strcat(buf, a3);
 strcat(buf, aHttp10);
 ```
 Mục đích là để tạo thông điệp HTTP GET. Struct của 1 GET request là.
+
 ```http
 GET /path/file.html HTTP/1.0\r\n      ← 1. Request line
 Host: example.com\r\n                 ← 2. Headers (0 hoặc nhiều dòng)
@@ -762,8 +776,11 @@ User-Agent: Mozilla/4.0\r\n
 \r\n                                  ← 3. Dòng trống: kết thúc request
 ```
 Vậy thì `a3` (là `v8` truyền vào), sẽ là 1 đường dẫn.
+
 Sau đó, nó gửi request đi và lắng nghe phản hồi.
+
 Quay lại hàm `sub_401E60`
+
 ```c
 v9 = strstr(Str, SubStr: asc_40C090);
   if ( v9 == nullptr )
@@ -780,7 +797,9 @@ v9 = strstr(Str, SubStr: asc_40C090);
   return 0;
 ```
 Phần còn lại của hàm thực hiện parse thông điệp phản hồi, nó trích xuất payload được bọc trong cặp placeholder $`'`'$ .
+
 Quay lại hàm `sub_402020`.
+
 ```c
 if ( strncmp(Str1, Str2: Str2, MaxCount: strlen(Str2)) == 0 )
   {
@@ -831,6 +850,7 @@ if ( strncmp(Str1, Str2: Str2, MaxCount: strlen(Str2)) == 0 )
 }
 ```
 Nó thực hiện kiểm tra phản hồi với các chuỗi lệnh định nghĩa trước. Hành vi này cho thấy nó là 1 reverse shell.
-Các lệnh nó hỗ trợ gồm: upload dữ liệu, download dữ liệu và mở cmd.
-Ngoài tùy chọn không tham số, malware còn hỗ trợ một số các tham số khác, ta cũng phân tích tương tự.
 
+Các lệnh nó hỗ trợ gồm: upload dữ liệu, download dữ liệu và mở cmd.
+
+Ngoài tùy chọn không tham số, malware còn hỗ trợ một số các tham số khác, ta cũng phân tích tương tự.
